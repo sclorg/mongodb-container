@@ -1,0 +1,113 @@
+#!/bin/bash
+#
+# Test the MongoDB image.
+#
+# IMAGE_NAME specifies a name of the candidate image used for testing.
+# The image has to be available before this script is executed.
+#
+
+set -exo nounset
+shopt -s nullglob
+
+IMAGE_NAME=${IMAGE_NAME-openshift/mongodb-24-centos7-candidate}
+
+CIDFILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
+
+cleanup() {
+    for cidfile in $CIDFILE_DIR/* ; do
+        CONTAINER=$(cat $cidfile)
+
+        echo "Stopping and removing container $CONTAINER..."
+        docker stop $CONTAINER
+        docker rm $CONTAINER
+        rm $cidfile
+        echo "Done."
+    done
+    rmdir $CIDFILE_DIR
+}
+trap cleanup EXIT SIGINT
+
+get_cid() {
+    local id="$1" ; shift || return 1
+    echo -n $(cat "$CIDFILE_DIR/$id")
+}
+
+get_container_ip() {
+    local id="$1" ; shift
+    docker inspect --format='{{.NetworkSettings.IPAddress}}' $(get_cid "$id")
+}
+
+mongo_cmd() {
+    docker run --rm --entrypoint=scl $IMAGE_NAME enable mongodb24 -- mongo "$DB" --host $CONTAINER_IP -u "$USER" -p "$PASS" --eval "${@}"
+}
+
+mongo_admin_cmd() {
+    docker run --rm --entrypoint=scl $IMAGE_NAME enable mongodb24 -- mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
+}
+
+test_connection() { 
+    local name=$1 ; shift
+    ip=$(get_container_ip $name)
+    echo "  Testing MongoDB connection to $ip..."
+    local max_attempts=20
+    local sleep_time=2
+    for i in $(seq $max_attempts); do
+        echo "    Trying to connect..."
+        set +e
+        mongo_cmd "db.getSiblingDB('test_database');"
+        status=$?
+        set -e
+        if [ $status -eq 0 ]; then
+            echo "  Success!"
+            return 0
+        fi
+        sleep $sleep_time
+    done
+    echo "  Giving up: Failed to connect. Logs:"
+    docker logs $(get_cid $name)
+    return 1
+}
+
+test_mongo() {
+    echo "  Testing MongoDB"
+    if [ -v ADMIN_PASS ]; then
+        echo "  Testing Admin user privileges"
+        mongo_admin_cmd "db=db.getSiblingDB('${DB}'); db.removeUser('${USER}');"
+        mongo_admin_cmd "db=db.getSiblingDB('${DB}'); db.addUser({user: '${USER}', pwd: '${PASS}', roles: ['readWrite', 'userAdmin', 'dbAdmin']});"
+        mongo_admin_cmd "db=db.getSiblingDB('${DB}'); db.testData.insert({ x : 0 });"
+        mongo_cmd "db.addUser({user: 'test_user2', pwd: 'test_password2', roles: ['readWrite']});"
+    fi
+    echo "  Testing user privileges"
+    mongo_cmd "db.testData.insert({ y : 1 });"
+    mongo_cmd "db.testData.insert({ z : 2 });"
+    mongo_cmd "db.testData.find().forEach(printjson);"
+    mongo_cmd "db.testData.count();"
+    mongo_cmd "db.testData.drop();"
+    mongo_cmd "db.dropDatabase();"
+    echo "  Success!"
+}
+
+create_container() {
+    local name=$1 ; shift
+    cidfile="$CIDFILE_DIR/$name"
+    # create container with a cidfile in a directory for cleanup
+    docker run --cidfile $cidfile -d "$@" $IMAGE_NAME
+    echo "Created container $(cat $cidfile)"
+}
+
+run_tests() {
+    local name=$1 ; shift
+    envs="-e MONGODB_USERNAME=$USER -e MONGODB_PASSWORD=$PASS -e MONGODB_DATABASE=$DB"
+    if [ -v ADMIN_PASS ]; then
+        envs="$envs -e MONGODB_ADMIN_PASSWORD=$ADMIN_PASS"
+    fi
+    create_container $name $envs
+    CONTAINER_IP=$(get_container_ip $name)
+    test_connection $name
+    test_mongo $name
+}
+
+# Tests.
+
+USER="user" PASS="pass" DB="test_db" run_tests no_admin
+USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin
