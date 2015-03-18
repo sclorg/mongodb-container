@@ -27,11 +27,11 @@ RUN yum install -y epel-release && \
     yum install -y --setopt=tsflags=nodocs v8314 mongodb24-mongodb mongodb24 && \
     yum clean all
 
+COPY run-mongod.sh /usr/local/bin/
 COPY contrib /opt/openshift/
-ENV PATH /opt/openshift/bin:$PATH
 
 WORKDIR /opt/openshift
 
 VOLUME ["/var/lib/mongodb/"]
 
-ENTRYPOINT ["run.sh"]
+ENTRYPOINT ["run-mongod.sh"]

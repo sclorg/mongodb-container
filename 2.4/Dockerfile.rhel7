@@ -25,15 +25,11 @@ RUN yum install -y yum-utils && \
     yum install -y --setopt=tsflags=nodocs v8314 mongodb24-mongodb mongodb24 && \
     yum clean all
 
+COPY run-mongod.sh /usr/local/bin/
 COPY contrib /opt/openshift/
-# TODO: There is a bug in rhel7.1 image where the PATH variable is not exported
-# properly as Docker image metadata, which causes the $PATH variable do not
-# expand properly.
-#ENV PATH             /opt/openshift/src/bin:/opt/openshift/bin:/usr/local/sti:$PATH
-ENV PATH              /opt/openshift/src/bin:/opt/openshift/bin:/usr/local/sti:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 WORKDIR /opt/openshift
 
 VOLUME ["/var/lib/mongodb/"]
 
-ENTRYPOINT ["run.sh"]
+ENTRYPOINT ["run-mongod.sh"]
