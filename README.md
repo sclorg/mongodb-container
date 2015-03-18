@@ -138,5 +138,4 @@ User can choose between testing MongoDB based on RHEL or CentOS image.
     ```
 
 **Notice: By omitting the `VERSION` parameter, the build/test action will be performed
-on all of the supported versions of MongoDB. Since we are only supporting version `2.4`
-you can omit this parameter.**
+on all of the supported versions of MongoDB.**
