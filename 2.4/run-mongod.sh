@@ -11,7 +11,7 @@ function usage() {
 	echo "You must specify following environment variables:"
 	echo "  \$MONGODB_USERNAME"
 	echo "  \$MONGODB_PASSWORD"
-	echo "  \$MONGODB_DB - optional (default database - 'production')"
+	echo "  \$MONGODB_DATABASE - optional (default database - 'production')"
 	echo "  \$MONGODB_ADMIN_PASSWORD - optional"
 	exit 1
 }
