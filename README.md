@@ -37,9 +37,9 @@ Choose between CentOS7 or RHEL7 based image:
 
 	```console
 	docker pull openshift/mongodb-24-centos7
-	```	
+	```
 
-	To build MongoDB image from scratch use: 
+	To build MongoDB image from scratch use:
 
 	```console
 	git clone https://github.com/openshift/mongodb.git
@@ -79,7 +79,7 @@ directory on the host filesystem, you need to execute the following
 command:
 
 ```console
-docker run -d -e MONGODB_USERNAME=<user> -e MONGODB_PASSWORD=<password> -v /home/user/database:/var/lib/mongodb openshift/mongodb-24-centos7
+docker run -d -e MONGODB_USERNAME=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -v /home/user/database:/var/lib/mongodb openshift/mongodb-24-centos7
 ```
 
 If you are initializing the database and it's the first time you are using the
@@ -94,8 +94,8 @@ daemon will be started.
 
 ### MongoDB admin user
 The admin user is not set by default. You can create one by setting
-`MONGODB_ADMIN_PASSWORD` environment variable, in which case the admin 
-user name will be set to `admin`. This process is done upon initializing 
+`MONGODB_ADMIN_PASSWORD` environment variable, in which case the admin
+user name will be set to `admin`. This process is done upon initializing
 the database.
 
 
