@@ -11,7 +11,7 @@ function usage() {
 	echo "You must specify following environment variables:"
 	echo "  \$MONGODB_USERNAME"
 	echo "  \$MONGODB_PASSWORD"
-	echo "  \$MONGODB_DATABASE - optional (default database - 'production')"
+	echo "  \$MONGODB_DATABASE"
 	echo "  \$MONGODB_ADMIN_PASSWORD - optional"
 	exit 1
 }
@@ -60,7 +60,7 @@ function create_mongodb_users() {
 	# Make sure env variables don't propagate to mongod process.
 	mongo_user="$MONGODB_USERNAME" ; unset MONGODB_USERNAME
 	mongo_pass="$MONGODB_PASSWORD" ; unset MONGODB_PASSWORD
-	mongo_db=${MONGODB_DATABASE:-"production"} ; unset MONGODB_DATABASE
+	mongo_db="$MONGODB_DATABASE" ; unset MONGODB_DATABASE
 
 	# Create MongoDB database admin, if his password is specified with MONGODB_ADMIN_PASSWORD
 	if [ "$MONGODB_ADMIN_PASSWORD" ]; then
@@ -82,6 +82,7 @@ function create_mongodb_users() {
 
 test -z "$MONGODB_USERNAME" && usage
 test -z "$MONGODB_PASSWORD" && usage
+test -z "$MONGODB_DATABASE" && usage
 
 if [ ! -f /var/lib/mongodb/.mongodb_users_created ]; then
 	create_mongodb_users
