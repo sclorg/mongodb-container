@@ -7,6 +7,8 @@ set -e
 MAX_ATTEMPTS=60
 SLEEP_TIME=1
 
+MONGODB_CONFIG_PATH="/opt/openshift/etc/mongodb.conf"
+
 function usage() {
 	echo "You must specify following environment variables:"
 	echo "  \$MONGODB_USERNAME"
@@ -52,7 +54,7 @@ function down_test() {
 
 function create_mongodb_users() {
 	# Start MongoDB service with disabled database authentication.
-	mongod -f /opt/openshift/etc/mongodb.conf &
+	mongod -f $MONGODB_CONFIG_PATH &
 
 	# Check if the MongoDB daemon is up.
 	up_test
@@ -71,7 +73,7 @@ function create_mongodb_users() {
 
 	# Create standard user with read/write permissions, in specified database ('production' by default).
 	mongo $mongo_db --eval "db.addUser({user: '${mongo_user}', pwd: '${mongo_pass}', roles: [ 'readWrite' ]});"
-	mongo admin --eval "db.shutdownServer();"
+	mongod -f $MONGODB_CONFIG_PATH --shutdown
 
 	# Create a empty file which indicates that the database users were created.
 	touch /var/lib/mongodb/.mongodb_users_created
@@ -89,4 +91,4 @@ if [ ! -f /var/lib/mongodb/.mongodb_users_created ]; then
 fi
 
 # Start MongoDB service with enabled database authentication.
-exec mongod -f /opt/openshift/etc/mongodb.conf --auth
+exec mongod -f $MONGODB_CONFIG_PATH --auth
