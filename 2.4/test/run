@@ -13,7 +13,7 @@ IMAGE_NAME=${IMAGE_NAME-openshift/mongodb-24-centos7-candidate}
 
 CIDFILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 
-cleanup() {
+function cleanup() {
     for cidfile in $CIDFILE_DIR/* ; do
         CONTAINER=$(cat $cidfile)
 
@@ -27,25 +27,25 @@ cleanup() {
 }
 trap cleanup EXIT SIGINT
 
-get_cid() {
+function get_cid() {
     local id="$1" ; shift || return 1
     echo -n $(cat "$CIDFILE_DIR/$id")
 }
 
-get_container_ip() {
+function get_container_ip() {
     local id="$1" ; shift
     docker inspect --format='{{.NetworkSettings.IPAddress}}' $(get_cid "$id")
 }
 
-mongo_cmd() {
-    docker run --rm --entrypoint=scl $IMAGE_NAME enable mongodb24 -- mongo "$DB" --host $CONTAINER_IP -u "$USER" -p "$PASS" --eval "${@}"
+function mongo_cmd() {
+    docker run --rm $IMAGE_NAME mongo "$DB" --host $CONTAINER_IP -u "$USER" -p "$PASS" --eval "${@}"
 }
 
-mongo_admin_cmd() {
-    docker run --rm --entrypoint=scl $IMAGE_NAME enable mongodb24 -- mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
+function mongo_admin_cmd() {
+    docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
 }
 
-test_connection() { 
+function test_connection() { 
     local name=$1 ; shift
     ip=$(get_container_ip $name)
     echo "  Testing MongoDB connection to $ip..."
@@ -68,7 +68,7 @@ test_connection() {
     return 1
 }
 
-test_mongo() {
+function test_mongo() {
     echo "  Testing MongoDB"
     if [ -v ADMIN_PASS ]; then
         echo "  Testing Admin user privileges"
@@ -87,7 +87,7 @@ test_mongo() {
     echo "  Success!"
 }
 
-create_container() {
+function create_container() {
     local name=$1 ; shift
     cidfile="$CIDFILE_DIR/$name"
     # create container with a cidfile in a directory for cleanup
@@ -95,7 +95,7 @@ create_container() {
     echo "Created container $(cat $cidfile)"
 }
 
-run_tests() {
+function run_tests() {
     local name=$1 ; shift
     envs="-e MONGODB_USERNAME=$USER -e MONGODB_PASSWORD=$PASS -e MONGODB_DATABASE=$DB"
     if [ -v ADMIN_PASS ]; then
