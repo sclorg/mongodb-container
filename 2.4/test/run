@@ -87,6 +87,24 @@ function test_mongo() {
     echo "  Success!"
 }
 
+function test_config_option() {
+    local env_var=$1 ; shift
+    local setting=$1 ; shift
+    local value=$1 ; shift
+
+    # If $value is a string, it needs to be in simple quotes ''.
+    # If nothing is found, grep returns 1 and test fails.
+    docker run --rm -e $env_var=${value//\'/} $IMAGE_NAME cat /var/lib/mongodb/mongodb.conf | grep -q "$setting = $value"
+}
+
+function run_configuration_tests() {
+    echo "  Testing image configuration settings"
+    test_config_option MONGODB_NOPREALLOC noprealloc true
+    test_config_option MONGODB_SMALLFILES smallfiles true
+    test_config_option MONGODB_QUIET quiet true
+    echo "  Success!"
+}
+
 function create_container() {
     local name=$1 ; shift
     cidfile="$CIDFILE_DIR/$name"
@@ -108,6 +126,6 @@ function run_tests() {
 }
 
 # Tests.
-
+run_configuration_tests
 USER="user" PASS="pass" DB="test_db" run_tests no_admin
 USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin

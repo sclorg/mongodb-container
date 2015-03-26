@@ -52,18 +52,28 @@ Choose between CentOS7 or RHEL7 based image:
 
 The image recognizes following environment variables that you can set during initialization, by passing `-e VAR=VALUE` to the Docker run command.
 
-|    Variable name          |    Description                              |   Default  |
-| :------------------------ | -----------------------------------------   | ---------- |
-|  `MONGODB_USERNAME`           | User name for MONGODB account to be created |
+|    Variable name          |    Description                              |
+| :------------------------ | -----------------------------------------   |
+|  `MONGODB_USERNAME`       | User name for MONGODB account to be created |
 |  `MONGODB_PASSWORD`       | Password for the user account               |
-|  `MONGODB_DATABASE`       | Database name (optional)                    | production |
+|  `MONGODB_DATABASE`       | Database name                               |
 |  `MONGODB_ADMIN_PASSWORD` | Password for the admin user (optional)      |
+
+
+Following environment variables influence MongoDB configuration file. They are all optional.
+
+|    Variable name      |    Description                                                            |    Default
+| :-------------------- | ------------------------------------------------------------------------- | ----------------
+|  `MONGODB_NOPREALLOC` | Disable data file preallocation.                                          |  true
+|  `MONGODB_SMALLFILES` | Set MongoDB to use a smaller default data file size.                      |  true
+|  `MONGODB_QUIET`      | Runs MongoDB in a quiet mode that attempts to limit the amount of output. |  true
+
 
 You can also set following mount points by passing `-v /host:/container` flag to Docker.
 
-|  Volume mount point    | Description            |
-| :--------------------- | ---------------------- |
-|  `/var/lib/mongodb/`   | MongoDB data directory |
+|  Volume mount point         | Description            |
+| :-------------------------- | ---------------------- |
+|  `/var/lib/mongodb/data`   | MongoDB data directory |
 
 
 ### Usage
@@ -71,7 +81,7 @@ You can also set following mount points by passing `-v /host:/container` flag to
 We will assume that you are using the `openshift/mongodb-24-centos7` image. Suppose that you want to set only mandatory required environment variables and store the database in the `/home/user/database` directory on the host filesystem, you need to execute the following command:
 
 ```console
-docker run -d -e MONGODB_USERNAME=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -v /home/user/database:/var/lib/mongodb openshift/mongodb-24-centos7
+docker run -d -e MONGODB_USERNAME=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -v /home/user/database:/var/lib/mongodb/data openshift/mongodb-24-centos7
 ```
 
 If you are initializing the database and it's the first time you are using the specified shared volume, the database will be created, together with database administrator user and also MongoDB admin user if `MONGODB_ADMIN_PASSWORD` environment variable is specified. After that the MongoDB daemon will be started.  If you are re-attaching the volume to another container the creation of the database user and the admin user will be skipped and only the mongodb daemon will be started.
