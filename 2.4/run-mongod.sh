@@ -5,17 +5,33 @@ source /var/lib/mongodb/.bashrc
 
 set -eu
 
+# Data directory where MongoDB database files live. The data subdirectory is here
+# because .bashrc and mongodb.conf both live in /var/lib/mongodb/ and we don't want a
+# volume to override it.
+export MONGODB_DATADIR=/var/lib/mongodb/data
+
+# Configuration settings.
+export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
+export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
+export MONGODB_QUIET=${MONGODB_QUIET:-true}
+
+export MONGODB_CONFIG_PATH=/var/lib/mongodb/mongodb.conf
+export MONGODB_PID_FILE=var/run/mongodb/mongodb.pid
+
 MAX_ATTEMPTS=60
 SLEEP_TIME=1
-
-MONGODB_CONFIG_PATH="/opt/openshift/etc/mongodb.conf"
 
 function usage() {
 	echo "You must specify following environment variables:"
 	echo "  \$MONGODB_USERNAME"
 	echo "  \$MONGODB_PASSWORD"
 	echo "  \$MONGODB_DATABASE"
-	echo "  \$MONGODB_ADMIN_PASSWORD - optional"
+	echo "Optional variables:"
+	echo "  \$MONGODB_ADMIN_PASSWORD"
+	echo "MongoDB settings:"
+	echo "  \$MONGODB_NOPREALLOC (default: true)"
+	echo "  \$MONGODB_SMALLFILES (default: true)"
+	echo "  \$MONGODB_QUIET (default: false)"
 	exit 1
 }
 
@@ -81,6 +97,9 @@ function create_mongodb_users() {
 	# Check if the MongoDB daemon is down.
 	down_test
 }
+
+# Generate config file for MongoDB
+envsubst < ${MONGODB_CONFIG_PATH}.template > $MONGODB_CONFIG_PATH
 
 if [ "$1" = "mongod" ]; then
 

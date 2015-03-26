@@ -22,19 +22,19 @@ EXPOSE 27017
 # This image must forever use UID 184 for mongodb user and GID 998 for the
 # mongodb group, so our volumes are safe in the future. This should *never*
 # change, the last test is there to make sure of that.
+# Due to the bug 1206151, the whole /var/lib/mongodb/ dir has to be chown-ed.
 RUN yum install -y epel-release && \
     rpmkeys --import file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 && \
     yum -y --setopt=tsflags=nodocs install \
     https://www.softwarecollections.org/en/scls/rhscl/v8314/epel-7-x86_64/download/rhscl-v8314-epel-7-x86_64.noarch.rpm \
     https://www.softwarecollections.org/en/scls/rhscl/mongodb24/epel-7-x86_64/download/rhscl-mongodb24-epel-7-x86_64.noarch.rpm && \
-    yum install -y --setopt=tsflags=nodocs v8314 mongodb24-mongodb mongodb24 && \
+    yum install -y --setopt=tsflags=nodocs gettext v8314 mongodb24-mongodb mongodb24 && \
     yum clean all && \
-    mkdir -p /var/lib/mongodb/data && chown mongodb.mongodb /var/lib/mongodb/data && \
+    mkdir -p /var/lib/mongodb/data && chown -R mongodb.mongodb /var/lib/mongodb/ && \
     test "$(id mongodb)" = "uid=184(mongodb) gid=998(mongodb) groups=998(mongodb)"
 
 COPY run-mongod.sh /usr/local/bin/
-COPY contrib/.bashrc /var/lib/mongodb/
-COPY contrib/etc /opt/openshift/etc/
+COPY contrib /var/lib/mongodb/
 
 VOLUME ["/var/lib/mongodb/data"]
 
