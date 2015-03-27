@@ -32,7 +32,7 @@ Choose between CentOS7 or RHEL7 based image:
 
 *  **CentOS7 based image**
 
-	This image is also available on DockerHub. To download it use:
+	This image is available on DockerHub. To download it use:
 
 	```console
 	docker pull openshift/mongodb-24-centos7
