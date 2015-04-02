@@ -29,7 +29,7 @@ RUN yum install -y epel-release && \
     yum -y --setopt=tsflags=nodocs install \
     https://www.softwarecollections.org/en/scls/rhscl/v8314/epel-7-x86_64/download/rhscl-v8314-epel-7-x86_64.noarch.rpm \
     https://www.softwarecollections.org/en/scls/rhscl/mongodb24/epel-7-x86_64/download/rhscl-mongodb24-epel-7-x86_64.noarch.rpm && \
-    yum install -y --setopt=tsflags=nodocs gettext v8314 mongodb24-mongodb mongodb24 && \
+    yum install -y --setopt=tsflags=nodocs bind-utils gettext v8314 mongodb24-mongodb mongodb24 && \
     yum clean all && \
     mkdir -p /var/lib/mongodb/data && chown -R mongodb.mongodb /var/lib/mongodb/ && \
     test "$(id mongodb)" = "uid=184(mongodb) gid=998(mongodb) groups=998(mongodb)"

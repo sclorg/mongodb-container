@@ -1,0 +1,135 @@
+{
+  "kind": "Config",
+  "apiVersion": "v1beta1",
+  "id": "mongo-example",
+  "items":[
+    {
+      "kind": "Service",
+      "apiVersion": "v1beta2",
+      "id": "mongodb",
+      "portalIP": "None",
+      "labels": {
+        "name": "mongodb"
+      },
+      "port": 27017,
+      "selector": {
+        "name": "mongo-replica"
+      }
+    },
+    {
+      "kind": "Secret",
+      "apiVersion": "v1beta3",
+      "metadata": {
+        "name": "mongo-keyfile"
+      },
+      "data": {
+        "keyfile": "WGV2dXN6bjNxLzJUVkEwd25ualhJNmxXODl0NlBFdGw4YmM1MENTTUFGaU9ncDh3U3JCWTA2YVZGamdBdHlYQwpoQlhNUXNQVmUxcFRYYjRPTnRnVE52d0prckVFWmR6Wjd2WWZQclorV3VwK2NsWUlMc3M4QmJuS1g3bjRzbjFJClpjMERKclJZVXNoeEdrcmhQVXNPTlVZM1NDeHorZnFXb1ljcjV1YmE3MDlib3FMQ0N1Vy90Z0laQUhGUkQ0QXYKZ2JZU1owYTQ5NmZMMGx5ZUZxS3R4a0w2aW1OUEM3dExsY3I0OUwzMGdZMkhiQmRHOGhYRnF0TkdPS2pIWVViagoxTEoxNE9nOG0zYWZDYy9DaUY1WGdaZWx2cDFhb3gwZzRGK05pR1lUWVVHTEZNT3k3UjFTc01TRFBIT2NDMWlyCllBN25KZEJoaWl5cTRteVFQa0ZxSmM1TnJEZml1QlA5STFKNEpuQ3dKUml5MThmSzNoNjJwMzBkeWNWK2dkMkQKRTk3Y0N3NzdRSmtTdXRsY29oMWZwQ2gwSVlhdDNNalBYSCtacDRkdzZFZ3Q3STlYRmJQeHdqaGk1NW5icXhodwpYbVl1R1RETDVBUm55OFNZWUdVa0dXWk5VZzRsUlhSV0xGSTdCTGdnQmJ3QjhCQzl2eS90YmJ6a0xoVjZRUnJlCm1XZVYxRVhDMDYwM3FqT1cvcEFkN2JodFkwM3pMYXduUElXZWc2UEpkL3l4T0lYbjFsN1pHdkxpRzhsbXlpY3EKeVZyS1c0M3V2Nk1tTVZWam5BL1B2MituclBuSWcyQVgrdVJWc1JVdFRQZXpta0FQOEJCNjhaRUJscWhMUXNpMQpQSVhuUFdHMVozN3JYVjVQZHlyMTJrWUlhQzBBM0NRNDNMakRjYjJTT3FNNnlmOEdzc2hqamZnYXpiZEcraEw3Ck9PMU9LeVhyWEFWamx4dGRydm9UQ0UwcEFYQjFJSWdqN21NZ2lPM2pNZ0lwSUxSOERqNVdyeFdTNDhaZkdtbFUKT1hxcUJma0NvZWp0ZmhaWmxzeW85bFJUK0orWlRqTnlJMXZ3YXVWMmNBKzJvSzJGcDBRRDY1SVdZSUdLcnlxcwphRXh6SCtoNXdlbUp0VWMrT0FNUnUrMlFBVTJ4Q3NUMm1ORzNhMzhLdUVEYkRPUE9MRUxZWlg0QlRuTFRKMkNMCnBpd2JxV3FzeXpVOXVMSktIVjNKSHR4QTB3aFZKZWI3dllXU281N0c5K1MxRXFVK1Nha1cwWEZ6SjR0WjRWY3gKQ0srUk5sdWZycTZ4bVdhV2x3alFtVm9Ob1lvZQo="
+      }
+    },
+    {
+      "kind": "Pod",
+      "apiVersion": "v1beta2",
+      "id": "mongo-service",
+      "labels": {
+        "name": "mongo-service"
+      },
+      "desiredState": {
+        "manifest": {
+          "restartPolicy": {
+            "never": {}
+          },
+          "volumes": [
+            {
+              "name": "keyfile",
+              "source": {
+                "secret": {
+                  "target": { "name": "mongo-keyfile" }
+                }
+              }
+            }
+          ],
+          "containers": [
+            {
+              "name": "initiate",
+              "image": "openshift/mongodb-24-centos7",
+              "command": ["initiate"],
+              "volumeMounts": [
+                {
+                  "name": "keyfile",
+                  "readOnly": true,
+                  "mountPath": "/var/run/secrets/mongo"
+                }
+              ],
+              "env": [
+                { "name": "MONGODB_USERNAME",       "value": "testuser" },
+                { "name": "MONGODB_PASSWORD",       "value": "test" },
+                { "name": "MONGODB_ADMIN_PASSWORD", "value": "admin" },
+                { "name": "MONGODB_REPLICA_NAME",   "value": "rs0" },
+                { "name": "MONGODB_SERVICE_NAME",   "value": "mongodb" }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "ReplicationController",
+      "apiVersion": "v1beta2",
+      "id": "mongo",
+      "metadata": {
+        "name": "mongo",
+        "labels": {
+          "name":"mongo"
+        }
+      },
+      "desiredState": {
+        "replicas": 3,
+        "replicaSelector": {
+          "name": "mongo-replica"
+        },
+        "podTemplate": {
+          "labels": {
+            "name": "mongo-replica"
+          },
+          "desiredState": {
+            "manifest": {
+              "volumes": [
+                {
+                  "name": "keyfile",
+                  "source": {
+                    "secret": {
+                      "target": { "name": "mongo-keyfile" }
+                    }
+                  }
+                }
+              ],
+              "containers":[
+                {
+                  "name":  "member",
+                  "image": "openshift/mongodb-24-centos7",
+                  "volumeMounts": [
+                    {
+                      "name": "keyfile",
+                      "readOnly": true,
+                      "mountPath": "/var/run/secrets/mongo"
+                    }
+                  ],
+                  "env": [
+                    { "name": "MONGODB_REPLICA_NAME",   "value": "rs0" },
+                    { "name": "MONGODB_SERVICE_NAME",   "value": "mongodb" },
+                    { "name": "MONGODB_ADMIN_PASSWORD", "value": "admin" }
+                  ],
+                  "ports":[
+                    {
+                      "containerPort": 27017
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
