@@ -1,0 +1,64 @@
+{
+  "kind": "Config",
+  "apiVersion": "v1beta1",
+  "id": "mongo-example",
+  "items":[
+    {
+      "kind": "Service",
+      "apiVersion": "v1beta2",
+      "id": "mongodb",
+      "portalIP": "None",
+      "labels": {
+        "name": "mongodb"
+      },
+      "port": 27017,
+      "selector": {
+        "name": "mongodb-node"
+      }
+    },
+    {
+      "kind": "ReplicationController",
+      "apiVersion": "v1beta2",
+      "id": "mongodb",
+      "metadata": {
+        "name": "mongodb",
+        "labels": {
+          "name":"mongodb"
+        }
+      },
+      "desiredState": {
+        "replicas": 1,
+        "replicaSelector": {
+          "name": "mongodb-node"
+        },
+        "podTemplate": {
+          "labels": {
+            "name": "mongodb-node"
+          },
+          "desiredState": {
+            "manifest": {
+              "containers":[
+                {
+                  "name":  "mongo-server",
+                  "image": "openshift/mongodb-24-centos7:replica",
+                  "env": [
+                    { "name": "MONGODB_USERNAME",       "value": "user"  },
+                    { "name": "MONGODB_PASSWORD",       "value": "user"  },
+                    { "name": "MONGODB_DATABASE",       "value": "testdb" },
+                    { "name": "MONGODB_ADMIN_PASSWORD", "value": "admin"  },
+                    { "name": "MONGODB_REPLICA_NAME",   "value": "rs0"    }
+                  ],
+                  "ports":[
+                    {
+                      "containerPort": 27017
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
