@@ -20,15 +20,16 @@ export MONGODB_PID_FILE=/var/lib/mongodb/mongodb.pid
 
 function usage() {
   echo "You must specify following environment variables:"
-  echo "  \$MONGODB_USERNAME"
-  echo "  \$MONGODB_PASSWORD"
-  echo "  \$MONGODB_DATABASE"
+  echo "  MONGODB_USERNAME"
+  echo "  MONGODB_PASSWORD"
+  echo "  MONGODB_DATABASE"
   echo "Optional variables:"
-  echo "  \$MONGODB_ADMIN_PASSWORD"
+  echo "  MONGODB_ADMIN_PASSWORD"
+  echo "  MONGODB_REPLICA_NAME (if set, all required variables are ignored)"
   echo "MongoDB settings:"
-  echo "  \$MONGODB_NOPREALLOC (default: true)"
-  echo "  \$MONGODB_SMALLFILES (default: true)"
-  echo "  \$MONGODB_QUIET (default: false)"
+  echo "  MONGODB_NOPREALLOC (default: true)"
+  echo "  MONGODB_SMALLFILES (default: true)"
+  echo "  MONGODB_QUIET (default: false)"
   exit 1
 }
 
@@ -63,10 +64,15 @@ function create_mongodb_users() {
 
 function cleanup() {
   if [ ! -z "${MONGODB_REPLICA_NAME-}" ]; then
+    # FIXME: Docker gives ~10s to container shutdown until it sent the SIGKILL
     deregister && sleep 5
   fi
   echo "=> Shutting down MongoDB server ..."
-  kill -2 $(cat ${MONGODB_PID_FILE})
+  if [ -f "${MONGODB_PID_FILE}" ]; then
+    kill -2 $(cat ${MONGODB_PID_FILE})
+  else
+    pkill -2 mongod
+  fi
   wait_for_mongo_down
   exit 0
 }
@@ -77,34 +83,27 @@ cache_container_addr
 envsubst < ${MONGODB_CONFIG_PATH}.template > $MONGODB_CONFIG_PATH
 
 if [ "$1" = "mongod" ]; then
-  if ! [[ -v MONGODB_USERNAME && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]]; then
-    usage
-  fi
-
-  if [ ! -f /var/lib/mongodb/data/.mongodb_users_created ]; then
-    # Create default MongoDB user and administrator.
-    create_mongodb_users
-  fi
-
-  unset_env_vars
-
-  mongo_cmd_args="-f $MONGODB_CONFIG_PATH --noprealloc --smallfiles --oplogSize 64"
-
-  if [ ! -z "${MONGODB_REPLICA_NAME-}" ]; then
-    mongo_cmd_args+=" --replSet ${MONGODB_REPLICA_NAME}"
+  mongo_cmd_args="-f $MONGODB_CONFIG_PATH --oplogSize 64"
+  if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
+    if ! [[ -v MONGODB_USERNAME && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]]; then
+      usage
+    fi
+    if [ ! -f /var/lib/mongodb/data/.mongodb_users_created ]; then
+      # Create default MongoDB user and administrator.
+      create_mongodb_users
+    fi
+    unset_env_vars
+    exec mongod $mongo_cmd_args --auth
+  else
+    unset_env_vars
+    # The replica_supervisor is forwarding its output to named pipe which is
+    # then printed to standard output of this script.
     ( mkfifo /tmp/replica_supervisor_log && cat /tmp/replica_supervisor_log ) &
     /var/lib/mongodb/replica_supervisor.sh &
     trap 'cleanup' SIGINT SIGTERM
-    mongod $mongo_cmd_args & mongo_pid=$!
+    mongod $mongo_cmd_args --replSet ${MONGODB_REPLICA_NAME} & mongo_pid=$!
     wait $mongo_pid
-  else
-    # FIXME: MongoDB replica set currently does not support authentication as
-    # the server wont start with --auth enabled. This have to be investigated.
-    mongo_cmd_args+=" --auth"
-    exec mongod $mongo_cmd_args
   fi
-
-
 else
   exec $@
 fi

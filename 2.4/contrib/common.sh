@@ -15,7 +15,16 @@ function mongo_addr() {
 }
 
 function cache_container_addr() {
-  ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/' > /var/lib/mongodb/.address
+  echo "=> Waiting for container IP address ..."
+  for i in $(seq $MAX_ATTEMPTS); do
+    result=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
+    if [ ! -z "${result}" ]; then
+      echo -n $result > /var/lib/mongodb/.address
+      echo "=> Got $(mongo_addr)"
+      return 0
+    fi
+    sleep $SLEEP_TIME
+  done
 }
 
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
@@ -80,14 +89,15 @@ function deregister() {
 function mongo_initiate() {
   local mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
   local mongo_config="var config={ _id: \"${MONGODB_REPLICA_NAME}\", members: [ { _id: 0, host: \"$(mongo_addr)\" } ] };"
+  echo "=> Initiating MongoDB replica using: ${mongo_config}"
   mongo admin --eval "${mongo_config};rs.initiate(config);${mongo_wait}"
 }
 
 # mongo_advertise advertise the current container to other mongo replicas
 function mongo_advertise() {
-    local node="$1"
-    # Skip the current container
-    [[ "${node}" == "$(container_addr)" ]] && continue
-    echo "=> Advertising new MongoDB node to ${node}"
-    mongo admin --host ${node}:${CONTAINER_PORT} --eval "rs.add(\"$(mongo_addr)\");"
+  local node="$1"
+  # Skip the current container
+  [[ "${node}" == "$(container_addr)" ]] && continue
+  echo "=> Advertising new MongoDB node to ${node}"
+  mongo admin --host ${node}:${CONTAINER_PORT} --eval "rs.add(\"$(mongo_addr)\");"
 }
