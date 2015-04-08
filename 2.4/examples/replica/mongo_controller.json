@@ -1,0 +1,89 @@
+{
+  "kind": "Config",
+  "apiVersion": "v1beta1",
+  "id": "mongo-example",
+  "items":[
+    {
+      "kind": "Service",
+      "apiVersion": "v1beta2",
+      "id": "mongodb",
+      "portalIP": "None",
+      "labels": {
+        "name": "mongodb"
+      },
+      "port": 27017,
+      "selector": {
+        "name": "mongo"
+      }
+    },
+    {
+      "kind": "Pod",
+      "apiVersion": "v1beta2",
+      "id": "mongo",
+      "labels": {
+        "name": "mongo",
+        "role": "seeder"
+      },
+      "desiredState": {
+        "manifest": {
+          "containers": [
+            {
+              "name": "mongo-server",
+              "image": "openshift/mongodb-24-centos7:replica",
+              "env": [
+                { "name": "MONGODB_REPLICA_NAME",   "value": "rs0"    }
+              ],
+              "ports": [
+                {
+                  "containerPort": 27017
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "ReplicationController",
+      "apiVersion": "v1beta2",
+      "id": "mongodb",
+      "metadata": {
+        "name": "mongodb",
+        "labels": {
+          "name":"mongodb"
+        }
+      },
+      "desiredState": {
+        "replicas": 0,
+        "replicaSelector": {
+          "name": "mongo",
+          "role": "node"
+        },
+        "podTemplate": {
+          "labels": {
+            "name": "mongo",
+            "role": "node"
+          },
+          "desiredState": {
+            "manifest": {
+              "containers":[
+                {
+                  "name":  "mongo-server",
+                  "image": "openshift/mongodb-24-centos7:replica",
+                  "env": [
+                    { "name": "MONGODB_REPLICA_NAME",   "value": "rs0"    }
+                  ],
+                  "ports":[
+                    {
+                      "containerPort": 27017
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
