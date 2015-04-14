@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # For SCL enablement
+source /var/lib/mongodb/common.sh
 source /var/lib/mongodb/.bashrc
 
 set -eu
@@ -15,107 +16,89 @@ export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
 export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
 export MONGODB_QUIET=${MONGODB_QUIET:-true}
 
-export MONGODB_CONFIG_PATH=/var/lib/mongodb/mongodb.conf
-export MONGODB_PID_FILE=var/run/mongodb/mongodb.pid
 
-MAX_ATTEMPTS=60
-SLEEP_TIME=1
+export MONGODB_KEYFILE_SOURCE_PATH="/var/run/secrets/mongo/keyfile"
+export MONGODB_KEYFILE_PATH="/var/lib/mongodb/keyfile"
 
 function usage() {
-	echo "You must specify following environment variables:"
-	echo "  \$MONGODB_USERNAME"
-	echo "  \$MONGODB_PASSWORD"
-	echo "  \$MONGODB_DATABASE"
-	echo "Optional variables:"
-	echo "  \$MONGODB_ADMIN_PASSWORD"
-	echo "MongoDB settings:"
-	echo "  \$MONGODB_NOPREALLOC (default: true)"
-	echo "  \$MONGODB_SMALLFILES (default: true)"
-	echo "  \$MONGODB_QUIET (default: false)"
-	exit 1
-}
-
-function up_test() {
-	for i in $(seq $MAX_ATTEMPTS); do
-		echo "=> Waiting for confirmation of MongoDB service startup"
-		set +e
-		mongo admin --eval "help"
-		status=$?
-		set -e
-		if [ $status -eq 0 ]; then
-			echo "=> MongoDB service has started"
-			return 0
-		fi
-		sleep $SLEEP_TIME
-	done
-	echo "=> Giving up: Failed to start MongoDB service"
-	exit 1
-	}
-
-function down_test() {
-	for i in $(seq $MAX_ATTEMPTS); do
-		echo "=> Waiting till MongoDB service is stopped"
-		set +e
-		mongo admin --eval "help"
-		status=$?
-		set -e
-		if [ $status -ne 0 ]; then
-			echo "=> MongoDB service has stopped"
-			return 0
-		fi
-		sleep $SLEEP_TIME
-	done
-	echo "=> Giving up: Failed to stop MongoDB service"
-	exit 1
+  echo "You must specify following environment variables:"
+  echo "  MONGODB_USERNAME"
+  echo "  MONGODB_PASSWORD"
+  echo "Optional variables:"
+  echo "  MONGODB_DATABASE (default: \$MONGODB_USERNAME)"
+  echo "  MONGODB_ADMIN_PASSWORD"
+  echo "  MONGODB_REPLICA_NAME"
+  echo "MongoDB settings:"
+  echo "  MONGODB_NOPREALLOC (default: true)"
+  echo "  MONGODB_SMALLFILES (default: true)"
+  echo "  MONGODB_QUIET (default: false)"
+  exit 1
 }
 
 # Make sure env variables don't propagate to mongod process.
 function unset_env_vars() {
-	unset MONGODB_USERNAME MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+  unset MONGODB_USERNAME MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
 }
 
-function create_mongodb_users() {
-	# Start MongoDB service with disabled database authentication.
-	mongod -f $MONGODB_CONFIG_PATH &
-
-	# Check if the MongoDB daemon is up.
-	up_test
-
-	# Create MongoDB database admin, if his password is specified with MONGODB_ADMIN_PASSWORD
-	if [ -v MONGODB_ADMIN_PASSWORD ]; then
-		echo "=> Creating an admin user with a ${MONGODB_ADMIN_PASSWORD} password in MongoDB"
-		mongo admin --eval "db.addUser({user: 'admin', pwd: '$MONGODB_ADMIN_PASSWORD', roles: [ 'dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase' ]});"
-	fi
-
-	# Create standard user with read/write permissions, in specified database ('production' by default).
-	mongo $MONGODB_DATABASE --eval "db.addUser({user: '${MONGODB_USERNAME}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
-	mongod -f $MONGODB_CONFIG_PATH --shutdown
-
-	# Create a empty file which indicates that the database users were created.
-	touch /var/lib/mongodb/data/.mongodb_users_created
-
-	# Check if the MongoDB daemon is down.
-	down_test
+function cleanup() {
+  if [ ! -z "${MONGODB_REPLICA_NAME-}" ]; then
+    mongo_remove
+  fi
+  echo "=> Shutting down MongoDB server ..."
+  if [ -f "${MONGODB_PID_FILE}" ]; then
+    kill -2 $(cat ${MONGODB_PID_FILE})
+  else
+    pkill -2 mongod
+  fi
+  wait_for_mongo_down
+  exit 0
 }
+
+if [ "$1" == "initiate" ]; then
+  if ! [[ -v MONGODB_USERNAME && -v MONGODB_PASSWORD ]]; then
+    usage
+  fi
+  setup_keyfile
+  exec /var/lib/mongodb/initiate_replica.sh
+fi
 
 # Generate config file for MongoDB
 envsubst < ${MONGODB_CONFIG_PATH}.template > $MONGODB_CONFIG_PATH
 
 if [ "$1" = "mongod" ]; then
-
-	if ! [[ -v MONGODB_USERNAME && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]]; then
-		usage
-	fi
-
-	if [ ! -f /var/lib/mongodb/data/.mongodb_users_created ]; then
-		# Create default MongoDB user and administrator.
-		create_mongodb_users
-	fi
-
-	unset_env_vars
-
-	# Start MongoDB service with enabled database authentication.
-	exec mongod -f $MONGODB_CONFIG_PATH --auth
+  # Need to cache the container address for the cleanup
+  cache_container_addr
+  mongo_common_args="-f $MONGODB_CONFIG_PATH --oplogSize 64"
+  if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
+    if ! [[ -v MONGODB_USERNAME && -v MONGODB_PASSWORD ]]; then
+      usage
+    fi
+    export MONGODB_DATABASE=${MONGODB_DATABASE:-"${MONGODB_USERNAME}"}
+    # Run the MongoDB in 'standalone' mode
+    if [ ! -f /var/lib/mongodb/data/.mongodb_users_created ]; then
+      # Create MongoDB users and restart MongoDB with authentication enabled
+      # At this time the MongoDB does not accept the incoming connections.
+      mongod $mongo_common_args & #--bind_ip 127.0.0.1 --quiet >/dev/null &
+      wait_for_mongo_up
+      mongo_create_users
+      # Restart the MongoDB daemon to bind on all interfaces
+      mongod $mongo_common_args --shutdown
+      wait_for_mongo_down
+    fi
+    unset_env_vars
+    exec mongod $mongo_common_args --auth
+  else
+    setup_keyfile
+    # Run the MongoDB in 'clustered' mode with --replSet
+    if [ ! -v MONGODB_NO_SUPERVISOR ]; then
+      run_mongod_supervisor
+      trap 'cleanup' SIGINT SIGTERM
+    fi
+    unset_env_vars
+    mongod $mongo_common_args --replSet ${MONGODB_REPLICA_NAME} \
+      --keyFile ${MONGODB_KEYFILE_PATH} --auth & mongo_pid=$!
+    wait $mongo_pid
+  fi
+else
+  exec $@
 fi
-
-exec "$@"
