@@ -2,7 +2,7 @@
 
 **WARNING:**
 
-**This is only a Proof-Of-Concept example and it is not ment to be used in any
+**This is only a Proof-Of-Concept example and it is not meant to be used in any
 production. Use at your own risk.**
 
 ## What is MongoDB Replica Set?
