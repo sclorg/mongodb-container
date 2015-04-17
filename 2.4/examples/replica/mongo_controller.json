@@ -61,7 +61,7 @@
                 }
               ],
               "env": [
-                { "name": "MONGODB_USERNAME",       "value": "testuser" },
+                { "name": "MONGODB_USER",           "value": "testuser" },
                 { "name": "MONGODB_PASSWORD",       "value": "test" },
                 { "name": "MONGODB_ADMIN_PASSWORD", "value": "admin" },
                 { "name": "MONGODB_REPLICA_NAME",   "value": "rs0" },

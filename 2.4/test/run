@@ -115,7 +115,7 @@ function create_container() {
 
 function run_tests() {
     local name=$1 ; shift
-    envs="-e MONGODB_USERNAME=$USER -e MONGODB_PASSWORD=$PASS -e MONGODB_DATABASE=$DB"
+    envs="-e MONGODB_USER=$USER -e MONGODB_PASSWORD=$PASS -e MONGODB_DATABASE=$DB"
     if [ -v ADMIN_PASS ]; then
         envs="$envs -e MONGODB_ADMIN_PASSWORD=$ADMIN_PASS"
     fi
