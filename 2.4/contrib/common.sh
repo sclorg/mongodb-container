@@ -146,7 +146,7 @@ function run_mongod_supervisor() {
 }
 
 # mongo_create_users creates the MongoDB admin user and the database user
-# configured by MONGO_USERNAME
+# configured by MONGO_USER
 function mongo_create_users() {
   local admin_pwd=${MONGODB_ADMIN_PASSWORD:-$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)}
   mongo admin --eval "db.addUser({user: 'admin', pwd: '$admin_pwd', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]});"
@@ -154,7 +154,7 @@ function mongo_create_users() {
   if [ ! -z "${MONGODB_REPLICA_NAME-}" ]; then
     mongo_cmd+=" -u admin -p ${admin_pwd}"
   fi
-  $mongo_cmd --eval "db.addUser({user: '${MONGODB_USERNAME}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
+  $mongo_cmd --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
   touch /var/lib/mongodb/data/.mongodb_users_created
 }
 

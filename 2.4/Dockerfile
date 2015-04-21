@@ -6,7 +6,7 @@ MAINTAINER  Jakub Hadvig <jhadvig@redhat.com>
 # Volumes:
 #  * /var/lib/mongodb/data - Datastore for MongoDB
 # Environment:
-#  * $MONGODB_USERNAME - Database user name
+#  * $MONGODB_USER - Database user name
 #  * $MONGODB_PASSWORD - User's password
 #  * $MONGODB_DATABASE - Name of the database to create
 #  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin

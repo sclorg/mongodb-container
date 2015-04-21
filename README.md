@@ -60,7 +60,7 @@ initialization, by passing `-e VAR=VALUE` to the Docker run command.
 
 |    Variable name          |    Description                              |
 | :------------------------ | -----------------------------------------   |
-|  `MONGODB_USERNAME`       | User name for MONGODB account to be created |
+|  `MONGODB_USER`       | User name for MONGODB account to be created |
 |  `MONGODB_PASSWORD`       | Password for the user account               |
 |  `MONGODB_DATABASE`       | Database name                               |
 |  `MONGODB_ADMIN_PASSWORD` | Password for the admin user (optional)      |
@@ -91,7 +91,7 @@ in the `/home/user/database` directory on the host filesystem, you need to
 execute the following command:
 
 ```
-$ docker run -d -e MONGODB_USERNAME=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -v /home/user/database:/var/lib/mongodb/data openshift/mongodb-24-centos7
+$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -v /home/user/database:/var/lib/mongodb/data openshift/mongodb-24-centos7
 ```
 
 If you are initializing the database and it's the first time you are using the
