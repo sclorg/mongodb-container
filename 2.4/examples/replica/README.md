@@ -74,7 +74,7 @@ For the 'mongo-service' Pod, you have to set following variables:
 * `MONGODB_REPLICA_NAME` - the name of the replSet (`rs0`).
 * `MONGODB_SERVICE_NAME` - the name of the MongoDB Service (used to DNS lookup, default: 'mongodb')
 * `MONGODB_ADMIN_PASSWORD` - the password for the 'admin' user.
-* `MONGODB_USERNAME` - the name of the regular MongoDB user
+* `MONGODB_USER` - the name of the regular MongoDB user
 * `MONGODB_PASSWORD` - the regular MongoDB user password
 
 For the 'mongo' PodTemplate, you have to set following variables (they have to
@@ -84,4 +84,4 @@ match the variables above):
 * `MONGODB_SERVICE_NAME`
 * `MONGODB_ADMIN_PASSWORD`
 
-Optionally you can set `MONGODB_DATABASE` (it defaults to `MONGODB_USERNAME`).
+Optionally you can set `MONGODB_DATABASE` (it defaults to `MONGODB_USER`).
