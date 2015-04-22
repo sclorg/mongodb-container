@@ -45,7 +45,7 @@ function mongo_admin_cmd() {
     docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
 }
 
-function test_connection() { 
+function test_connection() {
     local name=$1 ; shift
     ip=$(get_container_ip $name)
     echo "  Testing MongoDB connection to $ip..."
@@ -72,10 +72,10 @@ function test_mongo() {
     echo "  Testing MongoDB"
     if [ -v ADMIN_PASS ]; then
         echo "  Testing Admin user privileges"
-        mongo_admin_cmd "db=db.getSiblingDB('${DB}'); db.removeUser('${USER}');"
-        mongo_admin_cmd "db=db.getSiblingDB('${DB}'); db.addUser({user: '${USER}', pwd: '${PASS}', roles: ['readWrite', 'userAdmin', 'dbAdmin']});"
-        mongo_admin_cmd "db=db.getSiblingDB('${DB}'); db.testData.insert({ x : 0 });"
-        mongo_cmd "db.addUser({user: 'test_user2', pwd: 'test_password2', roles: ['readWrite']});"
+        mongo_admin_cmd "db=db.getSiblingDB('${DB}');db.removeUser('${USER}');"
+        mongo_admin_cmd "db=db.getSiblingDB('${DB}');db.addUser({user:'${USER}',pwd:'${PASS}',roles:['readWrite','userAdmin','dbAdmin']});"
+        mongo_admin_cmd "db=db.getSiblingDB('${DB}');db.testData.insert({x:0});"
+        mongo_cmd "db.addUser({user:'test_user2',pwd:'test_password2',roles:['readWrite']});"
     fi
     echo "  Testing user privileges"
     mongo_cmd "db.testData.insert({y:1});"
@@ -107,9 +107,10 @@ function run_configuration_tests() {
 
 function create_container() {
     local name=$1 ; shift
+    local cargs=${CONTAINER_ARGS:-}
     cidfile="$CIDFILE_DIR/$name"
     # create container with a cidfile in a directory for cleanup
-    docker run --cidfile $cidfile -d "$@" $IMAGE_NAME
+    docker run --cidfile $cidfile -d $cargs "$@" $IMAGE_NAME
     echo "Created container $(cat $cidfile)"
 }
 
@@ -129,3 +130,6 @@ function run_tests() {
 run_configuration_tests
 USER="user" PASS="pass" DB="test_db" run_tests no_admin
 USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin
+# Test with random uid in container
+CONTAINER_ARGS="-u 12345" USER="user" PASS="pass" DB="test_db" run_tests no_admin_altuid
+CONTAINER_ARGS="-u 12345" USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin_altuid
