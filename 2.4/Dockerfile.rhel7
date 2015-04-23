@@ -12,7 +12,7 @@ MAINTAINER  Jakub Hadvig <jhadvig@redhat.com>
 #  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin
 
 # Image metadata
-ENV MONGODB_VERSION         2.4  
+ENV MONGODB_VERSION         2.4
 ENV IMAGE_DESCRIPTION       MongoDB 2.4
 ENV IMAGE_TAGS              mongodb,mongodb24
 ENV IMAGE_EXPOSE_SERVICES   27017:mongodb
@@ -40,6 +40,8 @@ COPY contrib /var/lib/mongodb/
 # 'docker exec -it openshift/mongodb-24-rhel7 /bin/bash' the mongodb
 # collection is enabled automatically.
 COPY contrib/.bashrc /opt/rh/mongodb24/root/var/lib/mongodb/
+
+RUN chmod o+w -R /var/lib/mongodb && chmod o+w -R /opt/rh/mongodb24/root/var/lib/mongodb
 
 VOLUME ["/var/lib/mongodb/data"]
 
