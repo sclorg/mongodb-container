@@ -100,5 +100,5 @@ if [ "$1" = "mongod" ]; then
     wait $mongo_pid
   fi
 else
-  exec $@
+  exec "$@"
 fi
