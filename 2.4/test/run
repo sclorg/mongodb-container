@@ -78,8 +78,8 @@ function test_mongo() {
         mongo_cmd "db.addUser({user:'test_user2',pwd:'test_password2',roles:['readWrite']});"
     fi
     echo "  Testing user privileges"
-    mongo_cmd "db.testData.insert({y:1});"
-    mongo_cmd "db.testData.insert({z:2});"
+    mongo_cmd "db.testData.insert({ y : 1 });"
+    mongo_cmd "db.testData.insert({ z : 2 });"
     mongo_cmd "db.testData.find().forEach(printjson);"
     mongo_cmd "db.testData.count();"
     mongo_cmd "db.testData.drop();"
