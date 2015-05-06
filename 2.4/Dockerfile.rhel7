@@ -11,11 +11,12 @@ MAINTAINER  Jakub Hadvig <jhadvig@redhat.com>
 #  * $MONGODB_DATABASE - Name of the database to create
 #  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin
 
-# Image metadata
-ENV MONGODB_VERSION=2.4 \
-    IMAGE_DESCRIPTION="MongoDB 2.4" \
-    IMAGE_TAGS=mongodb,mongodb24 \
-    IMAGE_EXPOSE_SERVICES=27017:mongodb
+
+ENV MONGODB_VERSION=2.4
+LABEL k8s.io/description="MongoDB is a scalable, high-performance, open source NoSQL database." \
+      k8s.io/display-name="MongoDB 2.4" \
+      openshift.io/expose-services="27017:mongodb" \
+      openshift.io/tags="database,mongodb,mongodb24"
 
 EXPOSE 27017
 
