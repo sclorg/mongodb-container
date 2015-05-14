@@ -55,10 +55,11 @@ and add it into the cluster.
 When this member is removed, the container, before it exits will properly remove
 the member from existing MongoDB cluster.
 
-To add/remove more MongoDB pods to replica set you can use following command:
+To add/remove more MongoDB pods to replica set you can use `osc resize`.
+The following command will resize the mongo replication controller up to 4 pods:
 
 ```
-$ osc update rc mongo --patch='{ "apiVersion": "v1beta1", "desiredState": { "replicas": 4 }}'
+$ osc resize rc mongo --replicas=4
 ```
 
 The provided `mongo_controller.json` example will start three MongoDB replica by
