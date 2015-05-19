@@ -47,7 +47,7 @@ RUN yum install -y epel-release && \
 
 VOLUME ["/var/lib/mongodb/data"]
 
-USER mongodb
+USER 184
 
 ENTRYPOINT ["run-mongod.sh"]
 CMD ["mongod"]
