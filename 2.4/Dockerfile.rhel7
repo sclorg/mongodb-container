@@ -45,7 +45,7 @@ RUN yum install -y yum-utils && \
 
 VOLUME ["/var/lib/mongodb/data"]
 
-USER mongodb
+USER 184
 
 ENTRYPOINT ["run-mongod.sh"]
 CMD ["mongod"]
