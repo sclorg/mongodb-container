@@ -128,8 +128,6 @@ function run_tests() {
 
 # Tests.
 run_configuration_tests
-USER="user" PASS="pass" DB="test_db" run_tests no_admin
 USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin
 # Test with random uid in container
-CONTAINER_ARGS="-u 12345" USER="user" PASS="pass" DB="test_db" run_tests no_admin_altuid
 CONTAINER_ARGS="-u 12345" USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin_altuid

@@ -63,7 +63,7 @@ initialization, by passing `-e VAR=VALUE` to the Docker run command.
 |  `MONGODB_USER`       | User name for MONGODB account to be created |
 |  `MONGODB_PASSWORD`       | Password for the user account               |
 |  `MONGODB_DATABASE`       | Database name                               |
-|  `MONGODB_ADMIN_PASSWORD` | Password for the admin user (optional)      |
+|  `MONGODB_ADMIN_PASSWORD` | Password for the admin user                 |
 
 
 Following environment variables influence MongoDB configuration file. They are all optional.
@@ -95,23 +95,23 @@ in the `/home/user/database` directory on the host filesystem, you need to
 execute the following command:
 
 ```
-$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -v /home/user/database:/var/lib/mongodb/data openshift/mongodb-24-centos7
+$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -e MONGODB_ADMIN_PASSWORD=<admin_password> -v /home/user/database:/var/lib/mongodb/data openshift/mongodb-24-centos7
 ```
 
 If you are initializing the database and it's the first time you are using the
 specified shared volume, the database will be created, together with database
-administrator user and also MongoDB admin user if `MONGODB_ADMIN_PASSWORD`
-environment variable is specified. After that the MongoDB daemon will be started.
-If you are re-attaching the volume to another container the creation of the
-database user and the admin user will be skipped and only the mongodb daemon
-will be started.
+administrator user and also MongoDB admin user. After that the MongoDB daemon 
+will be started. If you are re-attaching the volume to another container the 
+creation of the database user and the admin user will be skipped and only the 
+mongodb daemon will be started.
 
 
 MongoDB admin user
 ---------------------------------
-The admin user is not set by default. You can create one by setting
-`MONGODB_ADMIN_PASSWORD` environment variable, in which case the admin user name
-will be set to `admin`. This process is done upon initializing the database.
+
+Admin user name is set to `admin` and you have to to specify his password by
+setting `MONGODB_ADMIN_PASSWORD` environment variable. This process is done
+upon database initialization.
 
 
 Test
