@@ -24,9 +24,9 @@ function usage() {
   echo "You must specify following environment variables:"
   echo "  MONGODB_USER"
   echo "  MONGODB_PASSWORD"
-  echo "Optional variables:"
-  echo "  MONGODB_DATABASE (default: \$MONGODB_USER)"
+  echo "  MONGODB_DATABASE"
   echo "  MONGODB_ADMIN_PASSWORD"
+  echo "Optional variables:"
   echo "  MONGODB_REPLICA_NAME"
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
@@ -55,7 +55,7 @@ function cleanup() {
 }
 
 if [ "$1" == "initiate" ]; then
-  if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD ]]; then
+  if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
     usage
   fi
   setup_keyfile
@@ -70,10 +70,9 @@ if [ "$1" = "mongod" ]; then
   cache_container_addr
   mongo_common_args="-f $MONGODB_CONFIG_PATH --oplogSize 64"
   if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
-    if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD ]]; then
+    if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
       usage
     fi
-    export MONGODB_DATABASE=${MONGODB_DATABASE:-"${MONGODB_USER}"}
     # Run the MongoDB in 'standalone' mode
     if [ ! -f /var/lib/mongodb/data/.mongodb_users_created ]; then
       # Create MongoDB users and restart MongoDB with authentication enabled
