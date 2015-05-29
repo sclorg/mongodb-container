@@ -154,7 +154,7 @@ function mongo_create_users() {
     mongo_cmd+=" -u admin -p ${MONGODB_ADMIN_PASSWORD}"
   fi
   $mongo_cmd --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
-  touch /var/lib/mongodb/data/.mongodb_users_created
+  touch /var/lib/mongodb/data/.mongodb_datadir_initialized
 }
 
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
