@@ -74,7 +74,7 @@ if [ "$1" = "mongod" ]; then
       usage
     fi
     # Run the MongoDB in 'standalone' mode
-    if [ ! -f /var/lib/mongodb/data/.mongodb_users_created ]; then
+    if [ ! -f /var/lib/mongodb/data/.mongodb_datadir_initialized ]; then
       # Create MongoDB users and restart MongoDB with authentication enabled
       # At this time the MongoDB does not accept the incoming connections.
       mongod $mongo_common_args & #--bind_ip 127.0.0.1 --quiet >/dev/null &
