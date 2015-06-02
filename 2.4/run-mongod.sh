@@ -83,6 +83,8 @@ if [ "$1" = "mongod" ]; then
       # Restart the MongoDB daemon to bind on all interfaces
       mongod $mongo_common_args --shutdown
       wait_for_mongo_down
+    else
+      echo "=> Database directory is already initialized. Skipping creation of users..."
     fi
     unset_env_vars
     exec mongod $mongo_common_args --auth
