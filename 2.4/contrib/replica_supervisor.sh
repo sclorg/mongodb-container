@@ -4,7 +4,6 @@
 # unregisters it when the container is terminated.
 
 source /var/lib/mongodb/common.sh
-source /var/lib/mongodb/.bashrc
 
 # Redirect all stdout && stderr into a FIFO pipe
 exec 1<&-

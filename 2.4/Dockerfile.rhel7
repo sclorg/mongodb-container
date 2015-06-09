@@ -12,7 +12,9 @@ MAINTAINER  Jakub Hadvig <jhadvig@redhat.com>
 #  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin
 
 
-ENV MONGODB_VERSION=2.4
+ENV MONGODB_VERSION=2.4 \
+    BASH_ENV=/var/lib/mongodb/.bashrc
+
 LABEL k8s.io/description="MongoDB is a scalable, high-performance, open source NoSQL database." \
       k8s.io/display-name="MongoDB 2.4" \
       openshift.io/expose-services="27017:mongodb" \
