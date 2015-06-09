@@ -1,7 +1,6 @@
 #!/bin/bash
 
 source /var/lib/mongodb/common.sh
-source /var/lib/mongodb/.bashrc
 
 echo -n "=> Waiting for MongoDB endpoints ..."
 while true; do

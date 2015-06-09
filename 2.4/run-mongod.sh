@@ -2,7 +2,6 @@
 
 # For SCL enablement
 source /var/lib/mongodb/common.sh
-source /var/lib/mongodb/.bashrc
 
 set -eu
 
