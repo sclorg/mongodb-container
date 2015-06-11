@@ -20,6 +20,12 @@ LABEL k8s.io/description="MongoDB is a scalable, high-performance, open source N
       openshift.io/expose-services="27017:mongodb" \
       openshift.io/tags="database,mongodb,mongodb24"
 
+# Labels consumed by Red Hat build service
+LABEL Component="mongodb24" \
+      Name="openshift3/mongodb-24-rhel7" \
+      Version="2.4" \
+      Release="1"
+
 EXPOSE 27017
 
 COPY run-mongod.sh /usr/local/bin/
