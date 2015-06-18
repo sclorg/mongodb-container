@@ -59,7 +59,7 @@ To add/remove more MongoDB pods to replica set you can use `osc scale`.
 The following command will scale the mongo replication controller up to 4 pods:
 
 ```
-$ osc scale rc mongo --replicas=4
+$ oc scale rc mongo --replicas=4
 ```
 
 The provided `mongo_controller.json` example will start three MongoDB replica by
