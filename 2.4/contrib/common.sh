@@ -6,6 +6,7 @@ SLEEP_TIME=1
 
 export MONGODB_CONFIG_PATH=/var/lib/mongodb/mongodb.conf
 export MONGODB_PID_FILE=/var/lib/mongodb/mongodb.pid
+export MONGODB_KEYFILE_PATH=/var/lib/mongodb/keyfile
 
 export CONTAINER_PORT=$(echo -n $IMAGE_EXPOSE_SERVICES | cut -d ':' -f 1)
 
@@ -160,10 +161,10 @@ function mongo_create_users() {
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
 # mounts the secret files with 'too open' permissions.
 function setup_keyfile() {
-  if [ ! -f "${MONGODB_KEYFILE_SOURCE_PATH}" ]; then
-    echo "ERROR: You have to provide the 'keyfile' in ${MONGODB_KEYFILE_SOURCE_PATH}"
+  if [ -z "${MONGODB_KEYFILE_VALUE}" ]; then
+    echo "ERROR: You have to provide the 'keyfile' value in ${MONGODB_KEYFILE_VALUE}"
     exit 1
   fi
-  cp ${MONGODB_KEYFILE_SOURCE_PATH} ${MONGODB_KEYFILE_PATH}
+  echo ${MONGODB_KEYFILE_VALUE} > ${MONGODB_KEYFILE_PATH}
   chmod 0600 ${MONGODB_KEYFILE_PATH}
 }
