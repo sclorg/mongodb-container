@@ -7,8 +7,7 @@ SLEEP_TIME=1
 export MONGODB_CONFIG_PATH=/var/lib/mongodb/mongodb.conf
 export MONGODB_PID_FILE=/var/lib/mongodb/mongodb.pid
 export MONGODB_KEYFILE_PATH=/var/lib/mongodb/keyfile
-
-export CONTAINER_PORT=$(echo -n $IMAGE_EXPOSE_SERVICES | cut -d ':' -f 1)
+export CONTAINER_PORT=27017
 
 # container_addr returns the current container external IP address
 function container_addr() {
@@ -94,8 +93,6 @@ function no_endpoints() {
   [ "$(endpoints)" == "$(container_addr)" ]
 }
 
-
-
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
 # initialization
 function build_mongo_config() {
@@ -149,12 +146,10 @@ function run_mongod_supervisor() {
 # mongo_create_users creates the MongoDB admin user and the database user
 # configured by MONGO_USER
 function mongo_create_users() {
-  mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]});"
-  local mongo_cmd="mongo ${MONGODB_DATABASE}"
-  if [ ! -z "${MONGODB_REPLICA_NAME-}" ]; then
-    mongo_cmd+=" -u admin -p ${MONGODB_ADMIN_PASSWORD}"
-  fi
-  $mongo_cmd --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
+  mongo ${MONGODB_DATABASE} --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
+ 
+  mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
+
   touch /var/lib/mongodb/data/.mongodb_datadir_initialized
 }
 

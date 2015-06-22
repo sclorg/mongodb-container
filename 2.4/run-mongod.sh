@@ -94,9 +94,15 @@ if [ "$1" = "mongod" ]; then
       run_mongod_supervisor
       trap 'cleanup' SIGINT SIGTERM
     fi
+    auth_args=" --auth"
+    # When initializing the MongoDB cluster, we have to run without
+    # authentication
+    if [ ! -v MONGODB_NO_AUTH ]; then
+      auth_args=""
+    fi
     unset_env_vars
     mongod $mongo_common_args --replSet ${MONGODB_REPLICA_NAME} \
-      --keyFile ${MONGODB_KEYFILE_PATH} --auth & mongo_pid=$!
+      --keyFile ${MONGODB_KEYFILE_PATH} ${auth_args} & mongo_pid=$!
     wait $mongo_pid
   fi
 else
