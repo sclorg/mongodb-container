@@ -25,12 +25,11 @@ echo "=> Initiating the replSet ${MONGODB_REPLICA_NAME} ..."
 # This MongoDB server is just temporary and will be removed later in this
 # script.
 export MONGODB_REPLICA_NAME
-export MONGODB_NO_SUPERVISOR=1
-/usr/local/bin/run-mongod.sh mongod &>/dev/null &
+MONGODB_NO_SUPERVISOR=1 MONGODB_NO_AUTH=1 /usr/local/bin/run-mongod.sh mongod &
 wait_for_mongo_up
 
 # This will perform the 'rs.initiate()' command on the current MongoDB.
-mongo_initiate &>/dev/null
+mongo_initiate
 
 echo "=> Creating MongoDB users ..."
 mongo_create_users

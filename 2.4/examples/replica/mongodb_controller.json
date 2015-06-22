@@ -11,6 +11,9 @@
       "tags": "database,mongodb,replication"
     }
   },
+  "labels": {
+    "template": "mongodb-replica-example"
+  },
   "parameters": [
     {
       "name": "MONGODB_USER",
@@ -57,9 +60,9 @@
       "kind": "Service",
       "apiVersion": "v1",
       "metadata": {
-        "name": "mongodb",
+        "name": "${MONGODB_SERVICE_NAME}",
         "labels": {
-          "name": "mongodb"
+          "name": "${MONGODB_SERVICE_NAME}"
         }
       },
       "spec": {
@@ -83,8 +86,8 @@
       }
     },
     {
-      "kind": "DeploymentConfig",
-      "apiVersion": "v1",
+      "kind": "Pod",
+      "apiVersion": "v1beta3",
       "metadata": {
         "name": "mongodb-service",
         "creationTimestamp": null,
@@ -93,76 +96,52 @@
         }
       },
       "spec": {
-        "strategy": {
-          "type": "Recreate",
-          "resources": {}
-        },
-        "triggers": [
+        "restartPolicy": "Never",
+        "dnsPolicy": "ClusterFirst",
+        "containers": [
           {
-            "type":"ConfigChange"
-          }
-        ],
-        "replicas": 1,
-        "selector": {
-          "name": "mongodb-replica"
-        },
-        "template": {
-          "metadata": {
-            "creationTimestamp": null,
-            "labels": {
-              "name": "mongodb-replica"
-            }
-          },
-          "spec": {
-            "containers": [
+            "name": "initiate",
+            "image": "openshift/mongodb-24-centos7",
+            "args": ["initiate"],
+            "env": [
               {
-                "name": "initiate",
-                "image": "openshift/mongodb-24-centos7",
-                "args": ["initiate"],
-                "env": [
-                  {
-                    "name": "MONGODB_USER",
-                    "value": "${MONGODB_USER}"
-                  },
-                  {
-                    "name": "MONGODB_PASSWORD",
-                    "value": "${MONGODB_PASSWORD}"
-                  },
-                  {
-                    "name": "MONGODB_DATABASE",
-                    "value": "${MONGODB_DATABASE}"
-                  },
-                  {
-                    "name": "MONGODB_ADMIN_PASSWORD",
-                    "value": "${MONGODB_ADMIN_PASSWORD}"
-                  },
-                  {
-                    "name": "MONGODB_REPLICA_NAME",
-                    "value": "${MONGODB_REPLICA_NAME}"
-                  },
-                  {
-                    "name": "MONGODB_SERVICE_NAME",
-                    "value": "${MONGODB_SERVICE_NAME}"
-                  },
-                  {
-                    "name": "MONGODB_KEYFILE_VALUE",
-                    "value": "${MONGODB_KEYFILE_VALUE}"
-                  }
-                ]
+                "name": "MONGODB_USER",
+                "value": "${MONGODB_USER}"
+              },
+              {
+                "name": "MONGODB_PASSWORD",
+                "value": "${MONGODB_PASSWORD}"
+              },
+              {
+                "name": "MONGODB_DATABASE",
+                "value": "${MONGODB_DATABASE}"
+              },
+              {
+                "name": "MONGODB_ADMIN_PASSWORD",
+                "value": "${MONGODB_ADMIN_PASSWORD}"
+              },
+              {
+                "name": "MONGODB_REPLICA_NAME",
+                "value": "${MONGODB_REPLICA_NAME}"
+              },
+              {
+                "name": "MONGODB_SERVICE_NAME",
+                "value": "${MONGODB_SERVICE_NAME}"
+              },
+              {
+                "name": "MONGODB_KEYFILE_VALUE",
+                "value": "${MONGODB_KEYFILE_VALUE}"
               }
             ]
           }
-        },
-        "restartPolicy": "Never",
-        "dnsPolicy": "ClusterFirst"
-      },
-      "status": {}
+        ]
+      }
     },
     {
       "kind": "DeploymentConfig",
       "apiVersion": "v1",
       "metadata": {
-        "name": "mongodb",
+        "name": "${MONGODB_SERVICE_NAME}",
         "creationTimestamp": null
       },
       "spec": {
@@ -175,7 +154,7 @@
             "type":"ConfigChange"
           }
         ],
-        "replicas": 1,
+        "replicas": 3,
         "selector": {
           "name": "mongodb-replica"
         },
