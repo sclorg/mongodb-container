@@ -18,11 +18,11 @@ CentOS versions currently supported are:
 
 Installation
 ---------------------------------
-Choose between CentOS7 or RHEL7 based image:
+Choose either the CentOS7 or RHEL7 based image:
 
 *  **RHEL7 based image**
 
-	To build a rhel7-based image, you need to run Docker build on a properly
+	To build a RHEL7 based image, you need to run Docker build on a properly
     subscribed RHEL machine.
 
 	```
@@ -33,13 +33,13 @@ Choose between CentOS7 or RHEL7 based image:
 
 *  **CentOS7 based image**
 
-	This image is available on DockerHub. To download it use:
+	This image is available on DockerHub. To download it run:
 
 	```
 	$ docker pull openshift/mongodb-24-centos7
 	```
 
-	To build MongoDB image from scratch use:
+	To build a MongoDB image from scratch run:
 
 	```
 	$ git clone https://github.com/openshift/mongodb.git
@@ -48,15 +48,15 @@ Choose between CentOS7 or RHEL7 based image:
 	```
 
 **Notice: By omitting the `VERSION` parameter, the build/test action will be performed
-on all provided versions of MongoDB. Since we are now providing only version `2.4`,
+on all provided versions of MongoDB. Since we are currently providing only version `2.4`,
 you can omit this parameter.**
 
 
 Environment variables
 ---------------------------------
 
-The image recognizes following environment variables that you can set during
-initialization, by passing `-e VAR=VALUE` to the Docker run command.
+The image recognizes the following environment variables that you can set during
+initialization by passing `-e VAR=VALUE` to the Docker run command.
 
 |    Variable name          |    Description                              |
 | :------------------------ | -----------------------------------------   |
@@ -66,7 +66,7 @@ initialization, by passing `-e VAR=VALUE` to the Docker run command.
 |  `MONGODB_ADMIN_PASSWORD` | Password for the admin user                 |
 
 
-Following environment variables influence MongoDB configuration file. They are all optional.
+The following environment variables influence the MongoDB configuration file. They are all optional.
 
 |    Variable name      |    Description                                                            |    Default
 | :-------------------- | ------------------------------------------------------------------------- | ----------------
@@ -75,13 +75,13 @@ Following environment variables influence MongoDB configuration file. They are a
 |  `MONGODB_QUIET`      | Runs MongoDB in a quiet mode that attempts to limit the amount of output. |  true
 
 
-You can also set following mount points by passing `-v /host:/container` flag to Docker.
+You can also set the following mount points by passing the `-v /host:/container` flag to Docker.
 
 |  Volume mount point         | Description            |
 | :-------------------------- | ---------------------- |
 |  `/var/lib/mongodb/data`   | MongoDB data directory |
 
-**Notice: When mouting directory from host into the container, ensure that the mounted
+**Notice: When mouting a directory from the host into the container, ensure that the mounted
 directory has the appropriate permissions and that the owner and group of the directory
 matches the user UID or name which is running inside the container.**
 
@@ -89,42 +89,41 @@ matches the user UID or name which is running inside the container.**
 Usage
 ---------------------------------
 
-We will assume that you are using the `openshift/mongodb-24-centos7` image.
-If you want to set only mandatory environment variables and store the database
-in the `/home/user/database` directory on the host filesystem, you need to
-execute the following command:
+For this, we will assume that you are using the `openshift/mongodb-24-centos7` image.
+If you want to set only the mandatory environment variables and store the database
+in the `/home/user/database` directory on the host filesystem, execute the following command:
 
 ```
 $ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -e MONGODB_ADMIN_PASSWORD=<admin_password> -v /home/user/database:/var/lib/mongodb/data openshift/mongodb-24-centos7
 ```
 
 If you are initializing the database and it's the first time you are using the
-specified shared volume, the database will be created, together with database
-administrator user and also MongoDB admin user. After that the MongoDB daemon 
-will be started. If you are re-attaching the volume to another container the 
-creation of the database user and the admin user will be skipped and only the 
-mongodb daemon will be started.
+specified shared volume, the database will be created together with the database
+administrator user and MongoDB admin user. After that the MongoDB daemon 
+will be started. If you are re-attaching the volume to another container, the 
+creation of the database user and admin user will be skipped and only the 
+MongoDB daemon will be started.
 
 
 MongoDB admin user
 ---------------------------------
 
-Admin user name is set to `admin` and you have to to specify his password by
-setting `MONGODB_ADMIN_PASSWORD` environment variable. This process is done
+The admin user name is set to `admin` and you have to to specify the password by
+setting the `MONGODB_ADMIN_PASSWORD` environment variable. This process is done
 upon database initialization.
 
 
 Test
 ---------------------------------
 
-This repository also provides test framework, which checks basic functionality
+This repository also provides a test framework which checks basic functionality
 of the MongoDB image.
 
-User can choose between testing MongoDB based on RHEL or CentOS image.
+Users can choose between testing MongoDB based on a RHEL or CentOS image.
 
 *  **RHEL based image**
 
-    To test a rhel7-based MongoDB image, you need to run the test on a properly
+    To test a RHEL7 based MongoDB image, you need to run the test on a properly
     subscribed RHEL machine.
 
     ```
@@ -140,5 +139,5 @@ User can choose between testing MongoDB based on RHEL or CentOS image.
     ```
 
 **Notice: By omitting the `VERSION` parameter, the build/test action will be performed
-on all provided versions of MongoDB. Since we are now providing only version `2.4`,
+on all provided versions of MongoDB. Since we are currently providing only version `2.4`,
 you can omit this parameter.**
