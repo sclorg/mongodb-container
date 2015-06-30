@@ -14,10 +14,10 @@ MAINTAINER  Jakub Hadvig <jhadvig@redhat.com>
 
 ENV MONGODB_VERSION=2.4
 
-LABEL k8s.io/description="MongoDB is a scalable, high-performance, open source NoSQL database." \
-      k8s.io/display-name="MongoDB 2.4" \
-      openshift.io/expose-services="27017:mongodb" \
-      openshift.io/tags="database,mongodb,mongodb24"
+LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
+      io.k8s.display-name="MongoDB 2.4" \
+      io.openshift.expose-services="27017:mongodb" \
+      io.openshift.tags="database,mongodb,mongodb24"
 
 EXPOSE 27017
 
