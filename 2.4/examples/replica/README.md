@@ -16,7 +16,7 @@ In order to run this Docker image, you need to have the latest version of
 OpenShift Origin v3.
 
 * `openshift start --latest-images &> server.log &`
-* `oc create -f ./2.4/examples/replica/mongodb_controller.json`
+* `oc create -f ./2.4/examples/replica/mongodb-clustered.json`
 
 ## How does it work?
 
