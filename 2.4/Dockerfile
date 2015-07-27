@@ -19,10 +19,25 @@ LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source N
       io.openshift.expose-services="27017:mongodb" \
       io.openshift.tags="database,mongodb,mongodb24"
 
+# Support for atomic run/install/uninstall
+LABEL INSTALL docker run -t -i --rm --privileged -u 0:0 -v /:/host --net=host \
+      --ipc=host --pid=host -e HOST=/host -e LOGDIR=\${LOGDIR} -e CONFDIR=\${CONFDIR} \
+      -e DATADIR=\${DATADIR} -e IMAGE=\${IMAGE} -e NAME=\${NAME} -e OPT1 -e OPT2 -e OPT3 \
+      \${OPT1} \${IMAGE} /usr/share/cont-layer/mongodb/atomic/install.sh
+
+LABEL UNINSTALL docker run -t -i --rm --privileged -u 0:0 -v /:/host --net=host \
+      --ipc=host --pid=host -e HOST=/host -e LOGDIR=\${LOGDIR} -e CONFDIR=\${CONFDIR} \
+      -e DATADIR=\${DATADIR} -e IMAGE=\${IMAGE} -e NAME=\${NAME} -e OPT1 -e OPT2 -e OPT3 \
+      \${OPT1} \${IMAGE} /usr/share/cont-layer/mongodb/atomic/uninstall.sh
+
+LABEL RUN docker run -t -i --rm --name=\${NAME} -e OPT1 -e OPT2 -e OPT3 \${OPT1} \
+      \${IMAGE}
+
 EXPOSE 27017
 
 COPY run-mongod.sh /usr/local/bin/
 COPY contrib /var/lib/mongodb/
+COPY atomic /usr/share/cont-layer/mongodb/atomic/
 
 # This image must forever use UID 184 for mongodb user and GID 998 for the
 # mongodb group, so our volumes are safe in the future. This should *never*
