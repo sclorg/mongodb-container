@@ -1,5 +1,5 @@
 FROM centos:centos7
-MAINTAINER docker@softwarecollections.org
+MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
 # MongoDB image for OpenShift.
 #
