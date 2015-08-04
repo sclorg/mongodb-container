@@ -2,6 +2,7 @@
 
 # For SCL enablement
 source /var/lib/mongodb/common.sh
+source /var/lib/mongodb/setup_fh.sh
 
 set -eu
 
@@ -78,7 +79,8 @@ if [ "$1" = "mongod" ]; then
       # At this time the MongoDB does not accept the incoming connections.
       mongod $mongo_common_args & #--bind_ip 127.0.0.1 --quiet >/dev/null &
       wait_for_mongo_up
-      mongo_create_users
+      setUpMbaasDB
+      setUpReporting
       # Restart the MongoDB daemon to bind on all interfaces
       mongod $mongo_common_args --shutdown
       wait_for_mongo_down

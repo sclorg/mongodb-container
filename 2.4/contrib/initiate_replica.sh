@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source /var/lib/mongodb/common.sh
-
+source /var/lib/mongodb/setup_fh.sh
 echo -n "=> Waiting for MongoDB endpoints ..."
 while true; do
   if [ ! -z "$(endpoints)" ]; then
@@ -32,7 +32,8 @@ wait_for_mongo_up
 mongo_initiate
 
 echo "=> Creating MongoDB users ..."
-mongo_create_users
+setUpMbaasDB
+setUpReporting
 
 echo "=> Waiting for replication to finish ..."
 # TODO: Replace this with polling or a Mongo script that will check if all
