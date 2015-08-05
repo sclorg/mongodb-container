@@ -147,9 +147,16 @@ function run_mongod_supervisor() {
 # configured by MONGO_USER
 function mongo_create_users() {
   mongo ${MONGODB_DATABASE} --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
- 
-  mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
+  
+}
 
+
+function mongo_create_admin(){
+    mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
+}
+
+
+function mongo_data_initialised(){
   touch /var/lib/mongodb/data/.mongodb_datadir_initialized
 }
 

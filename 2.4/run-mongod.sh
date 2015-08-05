@@ -79,8 +79,10 @@ if [ "$1" = "mongod" ]; then
       # At this time the MongoDB does not accept the incoming connections.
       mongod $mongo_common_args & #--bind_ip 127.0.0.1 --quiet >/dev/null &
       wait_for_mongo_up
+      mongo_create_admin
       setUpMbaasDB
       setUpReporting
+      mongo_data_initialised
       # Restart the MongoDB daemon to bind on all interfaces
       mongod $mongo_common_args --shutdown
       wait_for_mongo_down

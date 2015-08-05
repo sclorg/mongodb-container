@@ -20,4 +20,3 @@ function setUpReporting(){
   mongo_create_users
 }
 
-
