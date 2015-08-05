@@ -32,9 +32,9 @@ wait_for_mongo_up
 mongo_initiate
 
 echo "=> Creating MongoDB users ..."
-mongo_create_admin
 setUpMbaasDB
 setUpReporting
+mongo_create_admin
 mongo_data_initialised
 
 echo "=> Waiting for replication to finish ..."
