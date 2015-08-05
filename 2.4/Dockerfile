@@ -1,5 +1,5 @@
 FROM centos:centos7
-MAINTAINER  Jakub Hadvig <jhadvig@redhat.com>
+MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
 # MongoDB image for OpenShift.
 #
