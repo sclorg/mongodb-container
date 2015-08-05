@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source ./common.sh
+source /var/lib/mongodb/common.sh
 
 
 
