@@ -2,7 +2,7 @@
 
 # For SCL enablement
 source /var/lib/mongodb/common.sh
-source /var/lib/mongodb/setup_fh.sh
+source /var/lib/mongodb/setup_rhmap.sh
 
 set -eu
 
@@ -37,7 +37,8 @@ function usage() {
 
 # Make sure env variables don't propagate to mongod process.
 function unset_env_vars() {
-  unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+  unset MONGODB_ADMIN_PASSWORD MONGODB_FHMBAAS_USER MONGODB_FHMBAAS_PASSWORD MONGODB_FHREPORTING_USER MONGODB_FHREPORTING_PASSWORD
+  unset MONGODB_FHMBAAS_DATABASE MONGODB_FHREPORTING_DATABASE
 }
 
 function cleanup() {
@@ -54,8 +55,8 @@ function cleanup() {
   exit 0
 }
 
-if [ "$1" == "initiate" ]; then
-  if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
+if [ "$1" == "initiate" ]; then  
+  if ! [[ -v MONGODB_ADMIN_PASSWORD ]]; then
     usage
   fi
   setup_keyfile
@@ -70,7 +71,7 @@ if [ "$1" = "mongod" ]; then
   cache_container_addr
   mongo_common_args="-f $MONGODB_CONFIG_PATH --oplogSize 64"
   if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
-    if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
+    if ! [[ -v MONGODB_ADMIN_PASSWORD ]]; then
       usage
     fi
     # Run the MongoDB in 'standalone' mode
@@ -79,9 +80,8 @@ if [ "$1" = "mongod" ]; then
       # At this time the MongoDB does not accept the incoming connections.
       mongod $mongo_common_args & #--bind_ip 127.0.0.1 --quiet >/dev/null &
       wait_for_mongo_up
+      setUpDatabases
       mongo_create_admin
-      setUpMbaasDB
-      setUpReporting
       mongo_data_initialised
       # Restart the MongoDB daemon to bind on all interfaces
       mongod $mongo_common_args --shutdown

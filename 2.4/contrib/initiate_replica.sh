@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source /var/lib/mongodb/common.sh
-source /var/lib/mongodb/setup_fh.sh
+source /var/lib/mongodb/setup_rhmap.sh
 echo -n "=> Waiting for MongoDB endpoints ..."
 while true; do
   if [ ! -z "$(endpoints)" ]; then
@@ -31,9 +31,8 @@ wait_for_mongo_up
 # This will perform the 'rs.initiate()' command on the current MongoDB.
 mongo_initiate
 
-echo "=> Creating MongoDB users ..."
-setUpMbaasDB
-setUpReporting
+echo "=> Creating MongoDB users and databases ..."
+setUpDatabases
 mongo_create_admin
 mongo_data_initialised
 
