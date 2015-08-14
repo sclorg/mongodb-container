@@ -1,10 +1,8 @@
 {
   "kind": "Template",
   "apiVersion": "v1",
-
   "metadata": {
     "name": "mongodb-replica-example",
-    "creationTimestamp": null,
     "annotations": {
       "description": "MongoDB Replication Example",
       "icon": "icon-database",
@@ -40,7 +38,7 @@
     },
     {
       "name": "MONGODB_REPLICA_NAME",
-      "description": " The name of the replSet ",
+      "description": "The name of the replica set",
       "value": "rs0"
     },
     {
@@ -68,73 +66,15 @@
       "spec": {
         "ports": [
           {
-            "protocol": "TCP",
+            "name": "mongodb",
             "port": 27017,
-            "targetPort": 27017,
-            "nodePort": 0
+            "targetPort": 27017
           }
         ],
         "selector": {
           "name": "mongodb-replica"
         },
-        "portalIP": "None",
-        "type": "ClusterIP",
-        "sessionAffinity": "None"
-      },
-      "status": {
-        "loadBalancer": {}
-      }
-    },
-    {
-      "kind": "Pod",
-      "apiVersion": "v1beta3",
-      "metadata": {
-        "name": "mongodb-service",
-        "creationTimestamp": null,
-        "labels": {
-          "name": "mongodb-service"
-        }
-      },
-      "spec": {
-        "restartPolicy": "Never",
-        "dnsPolicy": "ClusterFirst",
-        "containers": [
-          {
-            "name": "initiate",
-            "image": "openshift/mongodb-24-centos7",
-            "args": ["initiate"],
-            "env": [
-              {
-                "name": "MONGODB_USER",
-                "value": "${MONGODB_USER}"
-              },
-              {
-                "name": "MONGODB_PASSWORD",
-                "value": "${MONGODB_PASSWORD}"
-              },
-              {
-                "name": "MONGODB_DATABASE",
-                "value": "${MONGODB_DATABASE}"
-              },
-              {
-                "name": "MONGODB_ADMIN_PASSWORD",
-                "value": "${MONGODB_ADMIN_PASSWORD}"
-              },
-              {
-                "name": "MONGODB_REPLICA_NAME",
-                "value": "${MONGODB_REPLICA_NAME}"
-              },
-              {
-                "name": "MONGODB_SERVICE_NAME",
-                "value": "${MONGODB_SERVICE_NAME}"
-              },
-              {
-                "name": "MONGODB_KEYFILE_VALUE",
-                "value": "${MONGODB_KEYFILE_VALUE}"
-              }
-            ]
-          }
-        ]
+        "clusterIP": "None"
       }
     },
     {
@@ -147,7 +87,17 @@
       "spec": {
         "strategy": {
           "type": "Recreate",
-          "resources": {}
+          "recreateParams": {
+            "post": {
+              "failurePolicy": "Retry",
+              "execNewPod": {
+                "command": [
+                  "run-mongod.sh", "initiate"
+                ],
+                "containerName": "mongodb"
+              }
+            }
+          }
         },
         "triggers": [
           {
@@ -160,7 +110,6 @@
         },
         "template": {
           "metadata": {
-            "creationTimestamp": null,
             "labels": {
               "name": "mongodb-replica"
             }
@@ -168,7 +117,7 @@
           "spec": {
             "containers": [
               {
-                "name":  "member",
+                "name":  "mongodb",
                 "image": "openshift/mongodb-24-centos7",
                 "env": [
                   {
@@ -202,8 +151,7 @@
                 ],
                 "ports":[
                   {
-                    "containerPort": 27017,
-                    "protocol": "TCP"
+                    "containerPort": 27017
                   }
                 ]
               }

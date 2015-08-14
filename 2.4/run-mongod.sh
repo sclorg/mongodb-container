@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# For SCL enablement
 source /var/lib/mongodb/common.sh
 
 set -eu

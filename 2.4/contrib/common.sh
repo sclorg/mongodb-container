@@ -98,7 +98,9 @@ function no_endpoints() {
 function build_mongo_config() {
   local members="{ _id: 0, host: \"$(mongo_addr)\"},"
   local member_id=1
+  local container_addr="$(container_addr)"
   for node in $(endpoints); do
+    [ "$node" == container_addr ] && continue
     members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
     let member_id++
   done
@@ -147,7 +149,7 @@ function run_mongod_supervisor() {
 # configured by MONGO_USER
 function mongo_create_users() {
   mongo ${MONGODB_DATABASE} --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
- 
+
   mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
 
   touch /var/lib/mongodb/data/.mongodb_datadir_initialized
