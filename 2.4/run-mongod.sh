@@ -5,8 +5,8 @@ source /var/lib/mongodb/common.sh
 set -eu
 
 # Data directory where MongoDB database files live. The data subdirectory is here
-# because .bashrc and mongodb.conf both live in /var/lib/mongodb/ and we don't want a
-# volume to override it.
+# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
+# override it.
 export MONGODB_DATADIR=/var/lib/mongodb/data
 
 # Configuration settings.
@@ -19,7 +19,7 @@ export MONGODB_KEYFILE_SOURCE_PATH="/var/run/secrets/mongo/keyfile"
 export MONGODB_KEYFILE_PATH="/var/lib/mongodb/keyfile"
 
 function usage() {
-  echo "You must specify following environment variables:"
+  echo "You must specify the following environment variables:"
   echo "  MONGODB_USER"
   echo "  MONGODB_PASSWORD"
   echo "  MONGODB_DATABASE"
@@ -29,7 +29,7 @@ function usage() {
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
   echo "  MONGODB_SMALLFILES (default: true)"
-  echo "  MONGODB_QUIET (default: false)"
+  echo "  MONGODB_QUIET (default: true)"
   exit 1
 }
 
