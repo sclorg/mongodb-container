@@ -55,6 +55,23 @@
   ],
   "objects":[
     {
+      "kind": "PersistentVolumeClaim",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "mongodb-data-claim"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "2Gi"
+          }
+        }
+      }
+    },
+    {
       "kind": "Service",
       "apiVersion": "v1",
       "metadata": {
@@ -115,10 +132,23 @@
             }
           },
           "spec": {
+            "volumes": [
+              {
+                "name": "mongodb-data",
+                "persistentVolumeClaim": {
+                  "claimName": "mongodb-data-claim"
+                }
+              }
+            ],
             "containers": [
               {
                 "name":  "mongodb",
                 "image": "openshift/mongodb-24-centos7",
+                "ports":[
+                  {
+                    "containerPort": 27017
+                  }
+                ],
                 "env": [
                   {
                     "name": "MONGODB_USER",
@@ -149,9 +179,10 @@
                     "value": "${MONGODB_KEYFILE_VALUE}"
                   }
                 ],
-                "ports":[
+                "volumeMounts": [
                   {
-                    "containerPort": 27017
+                    "name": "mongodb-data",
+                    "mountPath": "/var/lib/mongodb/data"
                   }
                 ]
               }
