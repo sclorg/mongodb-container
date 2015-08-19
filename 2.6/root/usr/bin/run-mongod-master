@@ -1,0 +1,5 @@
+#!/bin/bash
+
+MONGODB_REPLICA_INIT=1
+
+source /usr/bin/run-mongod
