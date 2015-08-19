@@ -9,7 +9,7 @@
 set -exo nounset
 shopt -s nullglob
 
-IMAGE_NAME=${IMAGE_NAME-openshift/mongodb-24-centos7-candidate}
+IMAGE_NAME=${IMAGE_NAME-rhscl/rh-mongodb26-centos7-candidate}
 
 CIDFILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 
@@ -84,6 +84,21 @@ test_scl_usage() {
         echo "ERROR[/bin/bash -c "${run_cmd}"] Expected '${expected}', got '${out}'"
         return 1
     fi
+    #out=$(docker run --rm -i ${IMAGE_NAME} /bin/bash -i <<< "${run_cmd}")
+    # if ! echo "${out}" | grep -q "${expected}"; then
+    #     echo "ERROR[-i /bin/bash -c "${run_cmd}"] Expected '${expected}', got '${out}'"
+    #     return 1
+    # fi
+    # out=$(docker run --rm -i ${IMAGE_NAME} /bin/bash -l <<< "${run_cmd}")
+    # if ! echo "${out}" | grep -q "${expected}"; then
+    #     echo "ERROR[-i /bin/bash -l "${run_cmd}"] Expected '${expected}', got '${out}'"
+    #     return 1
+    # fi
+    # out=$(docker run --rm -i ${IMAGE_NAME} /bin/sh -ic "${run_cmd}")
+    # if ! echo "${out}" | grep -q "${expected}"; then
+    #     echo "ERROR[/bin/sh -c "${run_cmd}"] Expected '${expected}', got '${out}'"
+    #     return 1
+    # fi
     out=$(docker exec $(get_cid $name) /bin/bash -c "${run_cmd}" 2>&1)
     if ! echo "${out}" | grep -q "${expected}"; then
         echo "ERROR[exec /bin/bash -c "${run_cmd}"] Expected '${expected}', got '${out}'"
@@ -152,7 +167,7 @@ function run_tests() {
     CONTAINER_IP=$(get_container_ip $name)
     test_connection $name
     echo "  Testing scl usage"
-    test_scl_usage $name 'mongo --version' '2.4'
+    test_scl_usage $name 'mongo --version' '2.6'
     test_mongo $name
     mongo_cmd_local $name <<< ""
 }
