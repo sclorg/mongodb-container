@@ -9,7 +9,7 @@
 set -exo nounset
 shopt -s nullglob
 
-IMAGE_NAME=${IMAGE_NAME-rhscl/rh-mongodb26-centos7-candidate}
+IMAGE_NAME=${IMAGE_NAME-rhscl/mongodb-26-centos7-candidate}
 
 CIDFILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 

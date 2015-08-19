@@ -48,10 +48,9 @@ function squash {
 dirs=${VERSION:-$VERSIONS}
 
 for dir in ${dirs}; do
+  IMAGE_NAME="${BASE_IMAGE_NAME}-${dir//./}-${OS}"
   if [ "$dir" == "2.6" ]; then
-    IMAGE_NAME=rhscl/rh-mongodb${dir//./}-${OS}
-  else
-    IMAGE_NAME="${BASE_IMAGE_NAME}-${dir//./}-${OS}"
+    IMAGE_NAME=rhscl/${BASE_DIR_NAME}-${dir//./}-${OS}
   fi
 
   if [[ -v TEST_MODE ]]; then

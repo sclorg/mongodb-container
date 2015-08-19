@@ -19,10 +19,11 @@ LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source N
       io.openshift.tags="database,mongodb,rh-mongodb26"
 
 # Labels consumed by Red Hat build service
-LABEL Component="rh-mongodb26" \
-      Name="openshift3/mongodb-26-rhel7" \
+LABEL BZComponent="rh-mongodb26-docker" \
+      Name="rhscl/mongodb-26-rhel7" \
       Version="2.6" \
-      Release="1"
+      Release="1" \
+      Architecture="x86_64"
 
 EXPOSE 27017
 
