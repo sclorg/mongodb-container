@@ -11,7 +11,6 @@ MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 #  * $MONGODB_DATABASE - Name of the database to create
 #  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin
 
-
 ENV MONGODB_VERSION=2.4
 
 LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
@@ -20,9 +19,6 @@ LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source N
       io.openshift.tags="database,mongodb,mongodb24"
 
 EXPOSE 27017
-
-COPY run-mongod.sh /usr/local/bin/
-COPY contrib /var/lib/mongodb/
 
 # This image must forever use UID 184 for mongodb user and GID 998 for the
 # mongodb group, so our volumes are safe in the future. This should *never*
@@ -38,7 +34,14 @@ RUN yum install -y epel-release && \
     yum clean all && \
     mkdir -p /var/lib/mongodb/data && chown -R mongodb.mongodb /var/lib/mongodb/ && \
     test "$(id mongodb)" = "uid=184(mongodb) gid=998(mongodb) groups=998(mongodb)" && \
-    chmod o+w -R /var/lib/mongodb && chmod o+w -R /opt/rh/mongodb24/root/var/lib/mongodb
+    # Loosen permission bits to avoid problems running container with arbitrary UID
+    chmod -R a+rwx /opt/rh/mongodb24/root/var/lib/mongodb
+
+COPY run-mongod.sh /usr/local/bin/
+COPY contrib /var/lib/mongodb/
+
+# Loosen permission bits to avoid problems running container with arbitrary UID
+RUN chmod -R a+rwx /var/lib/mongodb
 
 # When bash is started non-interactively, to run a shell script, for example it
 # looks for this variable and source the content of this file. This will enable
