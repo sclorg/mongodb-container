@@ -83,6 +83,12 @@ if [ "$1" = "mongod" ]; then
       wait_for_mongo_down
     else
       echo "=> Database directory is already initialized. Skipping creation of users ..."
+      # Ensure passwords match environment variables
+      mongod $mongo_common_args &
+      wait_for_mongo_up
+      mongo_reset_passwords
+      mongod $mongo_common_args --shutdown
+      wait_for_mongo_down
     fi
     unset_env_vars
     exec mongod $mongo_common_args --auth

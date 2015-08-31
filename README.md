@@ -99,9 +99,9 @@ $ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB
 
 If you are initializing the database and it's the first time you are using the
 specified shared volume, the database will be created together with the database
-administrator user and MongoDB admin user. After that the MongoDB daemon 
-will be started. If you are re-attaching the volume to another container, the 
-creation of the database user and admin user will be skipped and only the 
+administrator user and MongoDB admin user. After that the MongoDB daemon
+will be started. If you are re-attaching the volume to another container, the
+creation of the database user and admin user will be skipped and only the
 MongoDB daemon will be started.
 
 
@@ -111,6 +111,20 @@ MongoDB admin user
 The admin user name is set to `admin` and you have to to specify the password by
 setting the `MONGODB_ADMIN_PASSWORD` environment variable. This process is done
 upon database initialization.
+
+
+Changing passwords
+------------------
+
+Since passwords are part of the image configuration, the only supported method
+to change passwords for the database user (`MONGODB_USER`) and admin user is by
+changing the environment variables `MONGODB_PASSWORD` and
+`MONGODB_ADMIN_PASSWORD`, respectively.
+
+Changing database passwords directly in MongoDB will cause a mismatch between
+the values stored in the variables and the actual passwords. Whenever a database
+container starts it will reset the passwords to the values stored in the
+environment variables.
 
 
 Test
