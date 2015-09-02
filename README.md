@@ -8,6 +8,7 @@ Versions
 ---------------------------------
 MongoDB versions currently provided are:
 * mongodb-2.4
+* mongodb-2.6
 
 RHEL versions currently supported are:
 * RHEL7
@@ -48,8 +49,7 @@ Choose either the CentOS7 or RHEL7 based image:
 	```
 
 **Notice: By omitting the `VERSION` parameter, the build/test action will be performed
-on all provided versions of MongoDB. Since we are currently providing only version `2.4`,
-you can omit this parameter.**
+on all provided versions of MongoDB.**
 
 
 Environment variables
@@ -153,5 +153,4 @@ Users can choose between testing MongoDB based on a RHEL or CentOS image.
     ```
 
 **Notice: By omitting the `VERSION` parameter, the build/test action will be performed
-on all provided versions of MongoDB. Since we are currently providing only version `2.4`,
-you can omit this parameter.**
+on all provided versions of MongoDB.**
