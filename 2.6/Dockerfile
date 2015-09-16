@@ -37,9 +37,9 @@ RUN yum install -y epel-release && \
     https://www.softwarecollections.org/en/scls/rhscl/rh-java-common/epel-7-x86_64/download/rhscl-rh-java-common-epel-7-x86_64.noarch.rpm && \
     yum install -y --setopt=tsflags=nodocs bind-utils gettext iproute v8314 rh-mongodb26-mongodb rh-mongodb26 && \
     yum clean all && \
-    mkdir -p /var/lib/mongodb/data && chown -R mongodb.mongodb /var/lib/mongodb/ && \
+    mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ /var/opt/rh/rh-mongodb26/lib/mongodb && \
     test "$(id mongodb)" = "uid=184(mongodb) gid=998(mongodb) groups=998(mongodb)" && \
-    chmod o+w -R /var/lib/mongodb && chmod o+w -R /var/opt/rh/rh-mongodb26/lib/mongodb
+    chmod g+w -R /var/lib/mongodb /var/opt/rh/rh-mongodb26/lib/mongodb
 
 # When bash is started non-interactively, to run a shell script, for example it
 # looks for this variable and source the content of this file. This will enable
