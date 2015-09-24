@@ -98,8 +98,7 @@ $ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB
 ```
 
 If you are initializing the database and it's the first time you are using the
-specified shared volume, the database will be created together with the database
-administrator user and MongoDB admin user. After that the MongoDB daemon
+specified shared volume, the database will be created with two users: `admin` and `MONGODB_USER`. After that the MongoDB daemon
 will be started. If you are re-attaching the volume to another container, the
 creation of the database user and admin user will be skipped and only the
 MongoDB daemon will be started.
