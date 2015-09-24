@@ -32,7 +32,7 @@ RUN yum install -y epel-release && \
     https://www.softwarecollections.org/en/scls/rhscl/mongodb24/epel-7-x86_64/download/rhscl-mongodb24-epel-7-x86_64.noarch.rpm && \
     yum install -y --setopt=tsflags=nodocs bind-utils gettext iproute v8314 mongodb24-mongodb mongodb24 && \
     yum clean all && \
-    mkdir -p /var/lib/mongodb/data && chown -R mongodb.mongodb /var/lib/mongodb/ && \
+    mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ && \
     test "$(id mongodb)" = "uid=184(mongodb) gid=998(mongodb) groups=998(mongodb)" && \
     # Loosen permission bits to avoid problems running container with arbitrary UID
     chmod -R a+rwx /opt/rh/mongodb24/root/var/lib/mongodb
@@ -41,7 +41,7 @@ COPY run-mongod.sh /usr/local/bin/
 COPY contrib /var/lib/mongodb/
 
 # Loosen permission bits to avoid problems running container with arbitrary UID
-RUN chmod -R a+rwx /var/lib/mongodb
+RUN chmod -R g+rwx /var/lib/mongodb
 
 # When bash is started non-interactively, to run a shell script, for example it
 # looks for this variable and source the content of this file. This will enable
