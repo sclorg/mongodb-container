@@ -12,7 +12,8 @@ MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 #  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin
 
 
-ENV MONGODB_VERSION=2.6
+ENV MONGODB_VERSION=2.6 \
+    HOME=/var/lib/mongodb
 
 LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
       io.k8s.display-name="MongoDB 2.6" \
