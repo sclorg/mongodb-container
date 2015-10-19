@@ -1,5 +1,5 @@
-MongoDB Docker image
-====================
+MongoDB Docker images
+=====================
 
 This repository contains Dockerfiles for MongoDB images for OpenShift.
 Users can choose between RHEL and CentOS based images.
