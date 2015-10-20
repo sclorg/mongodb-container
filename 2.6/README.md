@@ -4,7 +4,6 @@ MongoDB Docker image
 This repository contains Dockerfiles for MongoDB images for general usage and OpenShift.
 Users can choose between RHEL and CentOS based images.
 
-
 Environment variables
 ---------------------------------
 
