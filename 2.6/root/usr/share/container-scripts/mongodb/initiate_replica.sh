@@ -15,10 +15,7 @@ done
 current_endpoints=$(endpoints)
 mongo_node="$(echo -n ${current_endpoints} | cut -d ' ' -f 1):${CONTAINER_PORT}"
 
-echo "=> Waiting for all endpoints to accept connections..."
-for node in ${current_endpoints}; do
-  wait_for_mongo_up ${node} &>/dev/null
-done
+wait_for_all_hosts
 
 echo "=> Initiating the replSet ${MONGODB_REPLICA_NAME} ..."
 # Start the MongoDB without authentication to initialize and kick-off the cluster:
