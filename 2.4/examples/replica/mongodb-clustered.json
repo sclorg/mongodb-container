@@ -92,7 +92,7 @@
               "failurePolicy": "Retry",
               "execNewPod": {
                 "command": [
-                  "run-mongod.sh", "initiate"
+                  "run-mongod", "initiate"
                 ],
                 "containerName": "mongodb"
               }

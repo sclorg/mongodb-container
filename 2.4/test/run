@@ -120,9 +120,22 @@ function test_config_option() {
     local setting=$1 ; shift
     local value=$1 ; shift
 
+    local name="configuration_${setting}"
+
     # If $value is a string, it needs to be in simple quotes ''.
+    DOCKER_ARGS="
+-e MONGODB_DATABASE=db
+-e MONGODB_USER=user
+-e MONGODB_PASSWORD=password
+-e MONGODB_ADMIN_PASSWORD=adminPassword
+-e $env_var=${value//\'/}
+"
+    create_container ${name} ${DOCKER_ARGS}
+
     # If nothing is found, grep returns 1 and test fails.
-    docker run --rm -e $env_var=${value//\'/} $IMAGE_NAME cat /var/lib/mongodb/mongodb.conf | grep -q "$setting = $value"
+    docker exec -i $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "$setting = $value"
+
+    docker stop $(get_cid ${name})
 }
 
 function run_configuration_tests() {
