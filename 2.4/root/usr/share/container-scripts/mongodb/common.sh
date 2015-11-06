@@ -4,14 +4,14 @@
 MAX_ATTEMPTS=60
 SLEEP_TIME=1
 
-export MONGODB_CONFIG_PATH=/var/lib/mongodb/mongodb.conf
+export MONGODB_CONFIG_PATH=/etc/mongod.conf
 export MONGODB_PID_FILE=/var/lib/mongodb/mongodb.pid
 export MONGODB_KEYFILE_PATH=/var/lib/mongodb/keyfile
 export CONTAINER_PORT=27017
 
 # container_addr returns the current container external IP address
 function container_addr() {
-  echo -n $(cat /var/lib/mongodb/.address)
+  echo -n $(cat ${HOME}/.address)
 }
 
 # mongo_addr returns the IP:PORT of the currently running MongoDB instance
@@ -26,7 +26,7 @@ function cache_container_addr() {
   for i in $(seq $MAX_ATTEMPTS); do
     result=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
     if [ ! -z "${result}" ]; then
-      echo -n $result > /var/lib/mongodb/.address
+      echo -n $result > ${HOME}/.address
       echo " $(mongo_addr)"
       return 0
     fi
@@ -142,7 +142,7 @@ function run_mongod_supervisor() {
   local log_pipe_path=$(mktemp --suffix=log)
   rm -rf ${log_pipe_path}
   ( mkfifo ${log_pipe_path} && cat ${log_pipe_path} ) &
-  /var/lib/mongodb/replica_supervisor.sh ${log_pipe_path} &
+  ${CONTAINER_SCRIPTS_PATH}/replica_supervisor.sh ${log_pipe_path} &
 }
 
 # mongo_create_users creates the MongoDB admin user and the database user
@@ -152,7 +152,7 @@ function mongo_create_users() {
 
   mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
 
-  touch /var/lib/mongodb/data/.mongodb_datadir_initialized
+  touch ${MONGODB_DATADIR}/.mongodb_datadir_initialized
 }
 
 # mongo_reset_passwords sets the MongoDB passwords to match MONGODB_PASSWORD

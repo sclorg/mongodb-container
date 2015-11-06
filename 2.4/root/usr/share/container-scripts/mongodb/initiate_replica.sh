@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /var/lib/mongodb/common.sh
+source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 echo -n "=> Waiting for MongoDB endpoints ..."
 while true; do
@@ -25,7 +25,7 @@ echo "=> Initiating the replSet ${MONGODB_REPLICA_NAME} ..."
 # This MongoDB server is just temporary and will be removed later in this
 # script.
 export MONGODB_REPLICA_NAME
-MONGODB_NO_SUPERVISOR=1 MONGODB_NO_AUTH=1 /usr/local/bin/run-mongod.sh mongod &
+MONGODB_NO_SUPERVISOR=1 MONGODB_NO_AUTH=1 run-mongod mongod &
 wait_for_mongo_up
 
 # This will perform the 'rs.initiate()' command on the current MongoDB.

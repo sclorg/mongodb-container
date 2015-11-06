@@ -3,7 +3,7 @@
 # This script registers the current container into MongoDB replica set and
 # unregisters it when the container is terminated.
 
-source /var/lib/mongodb/common.sh
+source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 # Redirect all stdout && stderr into a FIFO pipe
 exec 1<&-
