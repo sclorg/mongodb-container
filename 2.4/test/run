@@ -14,6 +14,7 @@ IMAGE_NAME=${IMAGE_NAME-openshift/mongodb-24-centos7-candidate}
 CIDFILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 
 function cleanup() {
+    set +e
     for cidfile in $CIDFILE_DIR/* ; do
         CONTAINER=$(cat $cidfile)
 
@@ -22,8 +23,9 @@ function cleanup() {
         docker rm $CONTAINER
         rm $cidfile
         echo "Done."
-    done
+    done    
     rmdir $CIDFILE_DIR
+    set -e
 }
 trap cleanup EXIT SIGINT
 
