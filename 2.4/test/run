@@ -146,6 +146,19 @@ function run_configuration_tests() {
     echo "  Success!"
 }
 
+wait_for_cid() {
+  local max_attempts=10
+  local sleep_time=1
+  local attempt=1
+  local result=1
+  while [ $attempt -le $max_attempts ]; do
+    [ -f $cid_file ] && [ -s $cid_file ] && break
+    echo "Waiting for container start..."
+    attempt=$(( $attempt + 1 ))
+    sleep $sleep_time
+  done
+}
+
 function create_container() {
     local name=$1 ; shift
     local cargs=${CONTAINER_ARGS:-}
@@ -153,6 +166,7 @@ function create_container() {
     # create container with a cidfile in a directory for cleanup
     docker run --cidfile $cidfile -d $cargs "$@" $IMAGE_NAME
     echo "Created container $(cat $cidfile)"
+    wait_for_cid
 }
 
 function assert_login_access() {
