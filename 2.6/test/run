@@ -47,13 +47,13 @@ function mongo_admin_cmd() {
 
 function mongo_cmd_local() {
     local name="$1" ; shift
-    docker exec -i $(get_cid $name) bash -c mongo "$@"
+    docker exec $(get_cid $name) bash -c mongo "$@"
 }
 
 function test_connection() {
     local name=$1 ; shift
-    ip=$(get_container_ip $name)
-    echo "  Testing MongoDB connection to $ip..."
+    CONTAINER_IP=$(get_container_ip $name)
+    echo "  Testing MongoDB connection to $CONTAINER_IP..."
     local max_attempts=20
     local sleep_time=2
     for i in $(seq $max_attempts); do
@@ -131,6 +131,13 @@ function test_config_option() {
 -e $env_var=${value//\'/}
 "
     create_container ${name} ${DOCKER_ARGS}
+
+    # need to set these because `mongo_cmd` relies on global variables
+    USER=user
+    PASS=password
+    DB=db
+
+    test_connection ${name}
 
     # If nothing is found, grep returns 1 and test fails.
     docker exec $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "$setting = $value"
@@ -221,7 +228,7 @@ function run_change_password_test() {
 -e MONGODB_USER=${user}
 -e MONGODB_PASSWORD=${password}
 -e MONGODB_ADMIN_PASSWORD=${admin_password}
--v ${volume_dir}:/var/lib/mongodb/data
+-v ${volume_dir}:/var/lib/mongodb/data:Z
 "
     create_container ${name} ${DOCKER_ARGS}
 
@@ -247,7 +254,7 @@ function run_change_password_test() {
 -e MONGODB_USER=${user}
 -e MONGODB_PASSWORD=NEW_${password}
 -e MONGODB_ADMIN_PASSWORD=NEW_${admin_password}
--v ${volume_dir}:/var/lib/mongodb/data
+-v ${volume_dir}:/var/lib/mongodb/data:Z
 "
     create_container "${name}_NEW" ${DOCKER_ARGS}
 
