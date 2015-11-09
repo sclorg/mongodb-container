@@ -133,7 +133,7 @@ function test_config_option() {
     create_container ${name} ${DOCKER_ARGS}
 
     # If nothing is found, grep returns 1 and test fails.
-    docker exec -i $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "$setting = $value"
+    docker exec $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "$setting = $value"
 
     docker stop $(get_cid ${name})
 }
@@ -143,17 +143,30 @@ function run_configuration_tests() {
     test_config_option MONGODB_NOPREALLOC noprealloc true
     test_config_option MONGODB_SMALLFILES smallfiles true
     test_config_option MONGODB_QUIET quiet true
-
     echo "  Success!"
+}
+
+wait_for_cid() {
+  local max_attempts=10
+  local sleep_time=1
+  local attempt=1
+  local result=1
+  while [ $attempt -le $max_attempts ]; do
+    [ -f $cid_file ] && [ -s $cid_file ] && break
+    echo "Waiting for container start..."
+    attempt=$(( $attempt + 1 ))
+    sleep $sleep_time
+  done
 }
 
 function create_container() {
     local name=$1 ; shift
     local cargs=${CONTAINER_ARGS:-}
-    cidfile="$CIDFILE_DIR/$name"
+    cid_file="$CIDFILE_DIR/$name"
     # create container with a cidfile in a directory for cleanup
-    docker run --cidfile $cidfile -d $cargs "$@" $IMAGE_NAME
-    echo "Created container $(cat $cidfile)"
+    docker run --cidfile $cid_file -d $cargs "$@" $IMAGE_NAME
+    echo "Created container $(cat $cid_file)"
+    wait_for_cid
 }
 
 function assert_login_access() {

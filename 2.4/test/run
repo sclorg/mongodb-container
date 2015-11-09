@@ -14,7 +14,6 @@ IMAGE_NAME=${IMAGE_NAME-openshift/mongodb-24-centos7-candidate}
 CIDFILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 
 function cleanup() {
-    set +e
     for cidfile in $CIDFILE_DIR/* ; do
         CONTAINER=$(cat $cidfile)
 
@@ -23,9 +22,8 @@ function cleanup() {
         docker rm $CONTAINER
         rm $cidfile
         echo "Done."
-    done    
+    done
     rmdir $CIDFILE_DIR
-    set -e
 }
 trap cleanup EXIT SIGINT
 
@@ -135,7 +133,7 @@ function test_config_option() {
     create_container ${name} ${DOCKER_ARGS}
 
     # If nothing is found, grep returns 1 and test fails.
-    docker exec -i $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "$setting = $value"
+    docker exec $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "$setting = $value"
 
     docker stop $(get_cid ${name})
 }
