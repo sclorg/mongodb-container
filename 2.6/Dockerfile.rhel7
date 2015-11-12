@@ -37,12 +37,9 @@ RUN yum install -y yum-utils && \
     yum install -y --setopt=tsflags=nodocs bind-utils gettext iproute v8314 rh-mongodb26-mongodb rh-mongodb26 && \
     yum clean all && \
     mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ /var/opt/rh/rh-mongodb26/lib/mongodb && \
-    test "$(id mongodb)" = "uid=184(mongodb) gid=998(mongodb) groups=998(mongodb)" && \
     # Loosen permission bits to avoid problems running container with arbitrary UID
-    chmod g+w -R /var/opt/rh/rh-mongodb26/lib/mongodb
-
-# Loosen permission bits to avoid problems running container with arbitrary UID
-RUN chmod -R g+rwx /var/lib/mongodb
+    chmod g+w -R /var/opt/rh/rh-mongodb26/lib/mongodb && \
+    chmod -R g+rwx /var/lib/mongodb
 
 # Get prefix path and path to scripts rather than hard-code them in scripts
 ENV CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
