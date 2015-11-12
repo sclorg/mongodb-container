@@ -21,9 +21,6 @@ LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source N
 
 EXPOSE 27017
 
-# This image must forever use UID 184 for mongodb user and GID 998 for the
-# mongodb group, so our volumes are safe in the future. This should *never*
-# change, the last test is there to make sure of that.
 # Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
 # the whole /var/lib/mongodb/ dir has to be chown-ed.
 RUN yum install -y epel-release && \
@@ -34,7 +31,6 @@ RUN yum install -y epel-release && \
     yum install -y --setopt=tsflags=nodocs bind-utils gettext iproute v8314 mongodb24-mongodb mongodb24 && \
     yum clean all && \
     mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ && \
-    test "$(id mongodb)" = "uid=184(mongodb) gid=998(mongodb) groups=998(mongodb)" && \
     # Loosen permission bits to avoid problems running container with arbitrary UID
     chmod -R a+rwx /opt/rh/mongodb24/root/var/lib/mongodb
 
