@@ -1,0 +1,67 @@
+#!/bin/bash
+
+source ${CONTAINER_SCRIPTS_PATH}/base-functions.sh
+source ${CONTAINER_SCRIPTS_PATH}/replset-functions.sh
+
+# Shutdown mongod on SIGINT/SIGTERM
+function cleanup() {
+  set -x
+
+  if [ "$(mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD} --quiet --eval 'rs.isMaster().ismaster')" == "true" ]; then
+    echo "=> Giving up the PRIMARY role ..."
+    mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --eval "rs.stepDown(120);"
+    mongo_wait_replset "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
+  fi
+
+  # Remove from replset
+  mongo_remove
+
+  # Kill replset-supervisor
+  ps -o pid= -p ${supervisor_pid:-0} && kill -TERM ${supervisor_pid:-0}
+
+  echo "=> Shutting down MongoDB server ..."
+  if [ -s $dbpath/mongod.lock ]; then
+    mongod $mongod_common_args --shutdown
+  fi
+  wait_mongo "DOWN"
+
+  exit 0
+}
+
+set -x
+
+export mongod_config_file="/etc/mongod.conf"
+
+# Get options from config file
+export dbpath=$(get_option "dbpath" $mongod_config_file)
+
+# Get used port
+port=$(get_port $mongod_config_file)
+export port=${port:-27017}
+
+trap 'cleanup' SIGINT SIGTERM
+
+# Add default config file
+mongod_common_args+="-f $mongod_config_file "
+
+# Check mandatory environmental variables
+source ${CONTAINER_SCRIPTS_PATH}/pre-init.sh
+
+# Run scripts before mongod start
+source ${CONTAINER_SCRIPTS_PATH}/replset-pre-init.sh
+
+# Run replset-supervisor
+${CONTAINER_SCRIPTS_PATH}/replset-supervisor.sh "${1:-}" "$$" & supervisor_pid=$!
+
+# Run `unset_env_vars` and `mongod` in a subshell because
+# MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
+# `cleanup` references it.
+set -m
+(
+  # Run scripts before exec mongod 
+  source ${CONTAINER_SCRIPTS_PATH}/post-init.sh
+
+  exec mongod $mongod_common_args
+) &
+wait
+
