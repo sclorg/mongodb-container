@@ -12,16 +12,17 @@ FROM rhel7.2
 ENV MONGODB_VERSION=2.4 \
     HOME=/var/lib/mongodb
 
-LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
+LABEL summary="MongoDB is a scalable, high-performance, open source NoSQL database." \
+      io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
       io.k8s.display-name="MongoDB 2.4" \
       io.openshift.expose-services="27017:mongodb" \
       io.openshift.tags="database,mongodb,mongodb24"
 
 # Labels consumed by Red Hat build service
 LABEL Component="mongodb24" \
-      Name="openshift3/mongodb-24-rhel7" \
-      Version="2.4" \
-      Release="1"
+      name="openshift3/mongodb-24-rhel7" \
+      version="2.4" \
+      release="1"
 
 EXPOSE 27017
 
