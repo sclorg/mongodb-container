@@ -23,11 +23,7 @@ EXPOSE 27017
 
 # Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
 # the whole /var/lib/mongodb/ dir has to be chown-ed.
-RUN yum install -y epel-release && \
-    rpmkeys --import file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 && \
-    yum -y --setopt=tsflags=nodocs install \
-    https://www.softwarecollections.org/en/scls/rhscl/v8314/epel-7-x86_64/download/rhscl-v8314-epel-7-x86_64.noarch.rpm \
-    https://www.softwarecollections.org/en/scls/rhscl/mongodb24/epel-7-x86_64/download/rhscl-mongodb24-epel-7-x86_64.noarch.rpm && \
+RUN yum install -y centos-release-scl && \
     yum install -y --setopt=tsflags=nodocs bind-utils gettext iproute v8314 mongodb24-mongodb mongodb24 && \
     yum clean all && \
     mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ && \
