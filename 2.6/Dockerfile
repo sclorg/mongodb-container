@@ -26,12 +26,7 @@ EXPOSE 27017
 # change, the last test is there to make sure of that.
 # Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
 # the whole /var/lib/mongodb/ dir has to be chown-ed.
-RUN yum install -y epel-release && \
-    rpmkeys --import file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 && \
-    yum -y --setopt=tsflags=nodocs install \
-    https://www.softwarecollections.org/en/scls/rhscl/v8314/epel-7-x86_64/download/rhscl-v8314-epel-7-x86_64.noarch.rpm \
-    https://www.softwarecollections.org/en/scls/rhscl/rh-mongodb26/epel-7-x86_64/download/rhscl-rh-mongodb26-epel-7-x86_64.noarch.rpm \
-    https://www.softwarecollections.org/en/scls/rhscl/rh-java-common/epel-7-x86_64/download/rhscl-rh-java-common-epel-7-x86_64.noarch.rpm && \
+RUN yum install -y centos-release-scl && \
     yum install -y --setopt=tsflags=nodocs bind-utils gettext iproute v8314 rh-mongodb26-mongodb rh-mongodb26 && \
     yum clean all && \
     mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ /var/opt/rh/rh-mongodb26/lib/mongodb && \
