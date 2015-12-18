@@ -4,6 +4,9 @@ MongoDB Docker images
 This repository contains Dockerfiles for MongoDB images for OpenShift.
 Users can choose between RHEL and CentOS based images.
 
+For more information about using these images with OpenShift, please see the
+official [OpenShift Documentation](https://docs.openshift.org/latest/using_images/db_images/mongodb.html).
+
 Versions
 ---------------------------------
 MongoDB versions currently provided are:
