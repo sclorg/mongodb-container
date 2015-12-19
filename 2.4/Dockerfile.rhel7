@@ -39,7 +39,7 @@ RUN yum install -y yum-utils && \
 
 # Get prefix path and path to scripts rather than hard-code them in scripts
 ENV CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
-    MONGODB_PREFIX=/opt/rh/mongodb26/root/usr \
+    MONGODB_PREFIX=/opt/rh/mongodb24/root/usr \
     ENABLED_COLLECTIONS=mongodb24
 
 # When bash is started non-interactively, to run a shell script, for example it
