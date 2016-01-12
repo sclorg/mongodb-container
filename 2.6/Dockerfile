@@ -27,7 +27,9 @@ EXPOSE 27017
 # Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
 # the whole /var/lib/mongodb/ dir has to be chown-ed.
 RUN yum install -y centos-release-scl && \
-    yum install -y --setopt=tsflags=nodocs bind-utils gettext iproute v8314 rh-mongodb26-mongodb rh-mongodb26 && \
+    INSTALL_PKGS="bind-utils gettext iproute v8314 rh-mongodb26-mongodb rh-mongodb26" && \
+    yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
+    rpm -V $INSTALL_PKGS && \
     yum clean all && \
     mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ /var/opt/rh/rh-mongodb26/lib/mongodb && \
     # Loosen permission bits to avoid problems running container with arbitrary UID
