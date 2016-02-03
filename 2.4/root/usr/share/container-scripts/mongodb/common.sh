@@ -165,8 +165,8 @@ function mongo_reset_passwords() {
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
 # mounts the secret files with 'too open' permissions.
 function setup_keyfile() {
-  if [ -z "${MONGODB_KEYFILE_VALUE}" ]; then
-    echo "ERROR: You have to provide the 'keyfile' value in ${MONGODB_KEYFILE_VALUE}"
+  if [ -z "${MONGODB_KEYFILE_VALUE-}" ]; then
+    echo "ERROR: You have to provide the 'keyfile' value in $MONGODB_KEYFILE_VALUE"
     exit 1
   fi
   echo ${MONGODB_KEYFILE_VALUE} > ${MONGODB_KEYFILE_PATH}
