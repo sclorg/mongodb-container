@@ -5,7 +5,7 @@
     "name": "mongodb-replica-example",
     "annotations": {
       "description": "MongoDB Replication Example",
-      "icon": "icon-database",
+      "iconClass": "icon-mongodb",
       "tags": "database,mongodb,replication"
     }
   },
@@ -28,7 +28,7 @@
     {
       "name": "MONGODB_DATABASE",
       "description": "Name for the MongoDB database",
-      "value": "userdb"
+      "value": "sampledb"
     },
     {
       "name": "MONGODB_ADMIN_PASSWORD",
@@ -43,12 +43,12 @@
     },
     {
       "name": "MONGODB_SERVICE_NAME",
-      "description": "The name of the MongoDB Service (used to DNS lookup, default: 'mongodb')",
+      "description": "The name of the MongoDB Service (used to DNS lookup)",
       "value": "mongodb"
     },
     {
       "name": "MONGODB_KEYFILE_VALUE",
-      "description": "The value of the MongoDB Key",
+      "description": "The value of the MongoDB Key (see for details: https://docs.mongodb.org/v2.4/tutorial/generate-key-file/)",
       "generate": "expression",
       "from": "[a-zA-Z0-9]{255}"
     }
