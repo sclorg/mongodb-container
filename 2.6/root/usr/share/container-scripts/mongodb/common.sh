@@ -92,15 +92,18 @@ function endpoints() {
 }
 
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
-# initialization
+# initialization.
+# Takes a list of space-separated member IPs as the first argument.
 function build_mongo_config() {
+  local current_endpoints
+  current_endpoints="$1"
   local members
   members="{ _id: 0, host: \"$(mongo_addr)\"},"
   local member_id
   member_id=1
   local container_addr
   container_addr="$(container_addr)"
-  for node in $(endpoints); do
+  for node in ${current_endpoints}; do
     [ "$node" == container_addr ] && continue
     members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
     let member_id++
@@ -108,11 +111,12 @@ function build_mongo_config() {
   echo -n "var config={ _id: \"${MONGODB_REPLICA_NAME}\", members: [ ${members%,} ] }"
 }
 
-# mongo_initiate initiate the replica set
+# mongo_initiate initiates the replica set.
+# Takes a list of space-separated member IPs as the first argument.
 function mongo_initiate() {
   local mongo_wait
   mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
-  config=$(build_mongo_config)
+  config=$(build_mongo_config "$1")
   echo "=> Initiating MongoDB replica using: ${config}"
   mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
 }
@@ -153,9 +157,9 @@ function mongo_remove() {
   local mongo_addr
   mongo_addr="$(mongo_addr)"
 
-  echo "=> Removing $mongo_addr on $primary_addr ..."
+  echo "=> Removing ${mongo_addr} on ${primary_addr} ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "$primary_addr" --eval "rs.remove('$mongo_addr');" || true
+    --host "${primary_addr}" --eval "rs.remove('${mongo_addr}');" || true
 }
 
 # mongo_add advertise the current container to other mongo replicas
@@ -166,9 +170,9 @@ function mongo_add() {
   local mongo_addr
   mongo_addr="$(mongo_addr)"
 
-  echo "=> Adding $mongo_addr to $primary_addr ..."
+  echo "=> Adding ${mongo_addr} to ${primary_addr} ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "$primary_addr" --eval "rs.add('$mongo_addr');"
+    --host "${primary_addr}" --eval "rs.add('${mongo_addr}');"
 }
 
 # run_mongod_supervisor runs the MongoDB replica supervisor that manages

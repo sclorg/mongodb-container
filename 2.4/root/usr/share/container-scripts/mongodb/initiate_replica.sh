@@ -7,16 +7,15 @@ set -o pipefail
 source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 echo -n "=> Waiting for MongoDB endpoints ..."
-while true; do
-  if [ ! -z "$(endpoints)" ]; then
-    echo $(endpoints)
-    break
-  fi
+
+current_endpoints=$(endpoints)
+while [ -z "${current_endpoints}" ]; do
   sleep 2
+  current_endpoints=$(endpoints)
 done
+echo "${current_endpoints}"
 
 # Let initialize the first member of the cluster
-current_endpoints=$(endpoints)
 mongo_node="$(echo -n ${current_endpoints} | cut -d ' ' -f 1):${CONTAINER_PORT}"
 
 echo "=> Waiting for all endpoints to accept connections..."
@@ -33,7 +32,7 @@ MONGODB_NO_SUPERVISOR=1 MONGODB_NO_AUTH=1 run-mongod mongod &
 wait_for_mongo_up
 
 # This will perform the 'rs.initiate()' command on the current MongoDB.
-mongo_initiate
+mongo_initiate "${current_endpoints}"
 
 echo "=> Creating MongoDB users ..."
 mongo_create_users
