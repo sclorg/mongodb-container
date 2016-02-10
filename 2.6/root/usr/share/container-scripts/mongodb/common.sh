@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 # Used for wait_for_mongo_* functions
 MAX_ATTEMPTS=60
 SLEEP_TIME=1
@@ -23,10 +27,9 @@ function mongo_addr() {
 # cache it to disk
 function cache_container_addr() {
   echo -n "=> Waiting for container IP address ..."
-  for i in $(seq $MAX_ATTEMPTS); do
-    result=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
-    if [ ! -z "${result}" ]; then
-      echo -n $result > ${HOME}/.address
+  local i
+  for i in $(seq "$MAX_ATTEMPTS"); do
+    if ip -oneline -4 addr show up scope global | grep -Eo '[0-9]{,3}(\.[0-9]{,3}){3}' > "${HOME}"/.address; then
       echo " $(mongo_addr)"
       return 0
     fi
@@ -37,8 +40,10 @@ function cache_container_addr() {
 
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
 function wait_for_mongo_up() {
-  local mongo_host="${1-}"
-  local mongo_cmd="mongo admin "
+  local mongo_host
+  mongo_host="${1-}"
+  local mongo_cmd
+  mongo_cmd="mongo admin "
 
   if [ ! -z "${mongo_host}" ]; then
     mongo_cmd+="--host ${mongo_host}:${CONTAINER_PORT} "
@@ -86,19 +91,15 @@ function endpoints() {
   dig ${service_name} A +search +short 2>/dev/null
 }
 
-# no_endpoints returns true if the only endpoint is the current container itself
-# or there are no endpoints registered (running as standalone Docker container)
-function no_endpoints() {
-  [ -z "$(endpoints)" ] && return 0
-  [ "$(endpoints)" == "$(container_addr)" ]
-}
-
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
 # initialization
 function build_mongo_config() {
-  local members="{ _id: 0, host: \"$(mongo_addr)\"},"
-  local member_id=1
-  local container_addr="$(container_addr)"
+  local members
+  members="{ _id: 0, host: \"$(mongo_addr)\"},"
+  local member_id
+  member_id=1
+  local container_addr
+  container_addr="$(container_addr)"
   for node in $(endpoints); do
     [ "$node" == container_addr ] && continue
     members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
@@ -109,7 +110,8 @@ function build_mongo_config() {
 
 # mongo_initiate initiate the replica set
 function mongo_initiate() {
-  local mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
+  local mongo_wait
+  mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
   config=$(build_mongo_config)
   echo "=> Initiating MongoDB replica using: ${config}"
   mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
@@ -117,8 +119,10 @@ function mongo_initiate() {
 
 # get the address of the current primary member
 function mongo_primary_member_addr() {
-  local current_endpoints=$(endpoints)
-  local mongo_node="$(echo "${current_endpoints}" | grep -v "$(container_addr)" | head -1):${CONTAINER_PORT}"
+  local current_endpoints
+  current_endpoints=$(endpoints)
+  local mongo_node
+  mongo_node="$(echo "${current_endpoints}" | grep -v "$(container_addr)" | head -1):${CONTAINER_PORT}"
   echo -n $(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host ${mongo_node} --quiet --eval "print(rs.isMaster().primary);")
 }
 

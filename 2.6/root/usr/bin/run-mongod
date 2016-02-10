@@ -1,8 +1,10 @@
 #!/bin/bash
 
-source  ${CONTAINER_SCRIPTS_PATH}/common.sh
+set -o errexit
+set -o nounset
+set -o pipefail
 
-set -eu
+source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 # Data directory where MongoDB database files live. The data subdirectory is here
 # because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to

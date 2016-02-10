@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 echo -n "=> Waiting for MongoDB endpoints ..."
