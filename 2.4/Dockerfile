@@ -24,7 +24,7 @@ EXPOSE 27017
 # Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
 # the whole /var/lib/mongodb/ dir has to be chown-ed.
 RUN yum install -y centos-release-scl && \
-    INSTALL_PKGS="bind-utils gettext iproute v8314 mongodb24-mongodb mongodb24" && \
+    INSTALL_PKGS="bind-utils gettext iproute rsync tar v8314 mongodb24-mongodb mongodb24" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
