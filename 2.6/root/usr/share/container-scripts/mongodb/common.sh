@@ -118,7 +118,7 @@ function mongo_initiate() {
 # get the address of the current primary member
 function mongo_primary_member_addr() {
   local current_endpoints=$(endpoints)
-  local mongo_node="$(echo -n ${current_endpoints} | cut -d ' ' -f 1):${CONTAINER_PORT}"
+  local mongo_node="$(echo "${current_endpoints}" | grep -v "$(container_addr)" | head -1):${CONTAINER_PORT}"
   echo -n $(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host ${mongo_node} --quiet --eval "print(rs.isMaster().primary);")
 }
 
