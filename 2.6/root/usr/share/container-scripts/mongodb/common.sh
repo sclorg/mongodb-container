@@ -119,25 +119,56 @@ function mongo_initiate() {
 
 # get the address of the current primary member
 function mongo_primary_member_addr() {
-  local current_endpoints
-  current_endpoints=$(endpoints)
-  local mongo_node
-  mongo_node="$(echo "${current_endpoints}" | grep -v "$(container_addr)" | head -1):${CONTAINER_PORT}"
-  echo -n $(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host ${mongo_node} --quiet --eval "print(rs.isMaster().primary);")
+  local rc=0
+
+  endpoints | grep -v "$(container_addr)" |
+  (
+    while read mongo_node; do
+      cmd_output="$(mongo admin -u admin -p "$MONGODB_ADMIN_PASSWORD" --host "$mongo_node:$CONTAINER_PORT" --eval 'print(rs.isMaster().primary)' --quiet || true)"
+
+      # Trying to find IP:PORT in output and filter out error message because mongo prints it to stdout
+      ip_and_port_regexp='[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:[0-9]\+'
+      if addr="$(echo "$cmd_output" | grep -x "$ip_and_port_regexp")"; then
+        echo -n "$addr"
+        exit 0
+      fi
+
+      echo >&2 "Cannot get address of primary from $mongo_node node: $cmd_output"
+    done
+
+    exit 1
+  ) || rc=$?
+
+  if [ $rc -ne 0 ]; then
+    echo >&2 "Cannot get address of primary node: after checking all nodes we don't have the address"
+    return 1
+  fi
 }
 
 # mongo_remove removes the current MongoDB from the cluster
 function mongo_remove() {
-  echo "=> Removing $(mongo_addr) on $(mongo_primary_member_addr) ..."
+  local primary_addr
+  primary_addr="$(mongo_primary_member_addr)"
+
+  local mongo_addr
+  mongo_addr="$(mongo_addr)"
+
+  echo "=> Removing $mongo_addr on $primary_addr ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host $(mongo_primary_member_addr) --eval "rs.remove('$(mongo_addr)');" &>/dev/null || true
+    --host "$primary_addr" --eval "rs.remove('$mongo_addr');" || true
 }
 
 # mongo_add advertise the current container to other mongo replicas
 function mongo_add() {
-  echo "=> Adding $(mongo_addr) to $(mongo_primary_member_addr) ..."
+  local primary_addr
+  primary_addr="$(mongo_primary_member_addr)"
+
+  local mongo_addr
+  mongo_addr="$(mongo_addr)"
+
+  echo "=> Adding $mongo_addr to $primary_addr ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host $(mongo_primary_member_addr) --eval "rs.add('$(mongo_addr)');"
+    --host "$primary_addr" --eval "rs.add('$mongo_addr');"
 }
 
 # run_mongod_supervisor runs the MongoDB replica supervisor that manages
