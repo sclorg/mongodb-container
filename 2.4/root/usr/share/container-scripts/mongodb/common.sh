@@ -139,10 +139,7 @@ function mongo_add() {
 # run_mongod_supervisor runs the MongoDB replica supervisor that manages
 # registration of the new members to the MongoDB replica cluster
 function run_mongod_supervisor() {
-  local log_pipe_path=$(mktemp --suffix=log)
-  rm -rf ${log_pipe_path}
-  ( mkfifo ${log_pipe_path} && cat ${log_pipe_path} ) &
-  ${CONTAINER_SCRIPTS_PATH}/replica_supervisor.sh ${log_pipe_path} &
+  ${CONTAINER_SCRIPTS_PATH}/replica_supervisor.sh 2>&1 &
 }
 
 # mongo_create_users creates the MongoDB admin user and the database user
