@@ -5,12 +5,6 @@
 
 source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
-# Redirect all stdout && stderr into a FIFO pipe
-exec 1<&-
-exec 2<&-
-exec 1<>$1
-exec 2>&1
-
 echo "=> Waiting for local MongoDB to accept connections ..."
 wait_for_mongo_up
 set -x
