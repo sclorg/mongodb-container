@@ -93,6 +93,17 @@ function no_endpoints() {
   [ "$(endpoints)" == "$(container_addr)" ]
 }
 
+# wait_for_all_hosts waits until all hosts found using endpoints function are
+# ready.
+function wait_for_all_hosts() {
+    local current_endpoints=$(endpoints)
+
+    echo "=> Waiting for all endpoints to accept connections..."
+    for node in ${current_endpoints}; do
+        wait_for_mongo_up ${node} &>/dev/null
+    done
+}
+
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
 # initialization
 function build_mongo_config() {
@@ -112,6 +123,7 @@ function mongo_initiate() {
   local mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
   config=$(build_mongo_config)
   echo "=> Initiating MongoDB replica using: ${config}"
+  wait_for_all_hosts
   mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
 }
 
