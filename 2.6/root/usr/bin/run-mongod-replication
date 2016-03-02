@@ -7,7 +7,18 @@ source ${CONTAINER_SCRIPTS_PATH}/replset-functions.sh
 function cleanup() {
   set -x
 
+  # Wait for replSet to be able to check if local mongod is primary
+  mongo_wait_replset "-u admin -p $MONGODB_ADMIN_PASSWORD" $(mongo_addr)
   if [ "$(mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD} --quiet --eval 'rs.isMaster().ismaster')" == "true" ]; then
+    # Wait till all members finished inital sync
+    members=1
+    ok=0
+    while [ "$members" -ne "$ok" ]; do
+      echo "=> Wait sync finished ..."
+      ok=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr)" --eval "var members=rs.status().members; var ok=0; for(i in members) {if(members[i].state == 1 || members[i].state == 2 || members[i].state == 7) { ok++} }; print(ok)" | tail -n 1)
+      members=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr)" --eval "rs.status().members.length" | tail -n 1)
+    done
+
     echo "=> Giving up the PRIMARY role ..."
     mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --eval "rs.stepDown(120);"
     mongo_wait_replset "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
@@ -30,24 +41,12 @@ function cleanup() {
 
 set -x
 
-export mongod_config_file="/etc/mongod.conf"
-
-# Get options from config file
-export dbpath=$(get_option "dbpath" $mongod_config_file)
-
-# Get used port
-port=$(get_port $mongod_config_file)
-export port=${port:-27017}
-
 trap 'cleanup' SIGINT SIGTERM
 
-# Add default config file
-mongod_common_args+="-f $mongod_config_file "
-
-# Check mandatory environmental variables
+# Run scripts before mongod start
 source ${CONTAINER_SCRIPTS_PATH}/pre-init.sh
 
-# Run scripts before mongod start
+# Prepare things for replication
 source ${CONTAINER_SCRIPTS_PATH}/replset-pre-init.sh
 
 # Run replset-supervisor

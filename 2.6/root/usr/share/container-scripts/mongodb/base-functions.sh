@@ -1,7 +1,10 @@
+# Default constants
 export MAX_ATTEMPTS=90
 export SLEEP_TIME=2
 
 # Wait_mongo waits until the mongo server is up/down
+# $1 - "UP" or "DOWN" - to specify for what to wait
+# $2 - host where to connect (localhost by default)
 function wait_mongo() {
   operation=-eq
   if [ ${1:-} = "DOWN" -o ${1:-} = "down" ]; then
@@ -26,14 +29,17 @@ function wait_mongo() {
   return 1
 }
 
-# Get option for parametr $1 in $2 file
+# Get value for option in file
+# $1 - option name
+# $2 - path to config file
 function get_option() {
   [ -z "${1:-}" -o -z "${2:-}" -o ! -r "${2:-}" ] && return 1
 
   grep "^\s*${1}" ${2} | sed -r -e "s|^\s*${1}\s*=\s*||"
 }
 
-# Get port number from $1 file
+# Get port number from config file
+# $1 - path to config file
 function get_port() {
   [ -z "${1:-}" -o ! -r "${1:-}" ] && return 1
 
@@ -48,7 +54,10 @@ function get_port() {
   fi
 }
 
-# Change config option $1 in configuration file $3 to have value $2
+# Change value for config option in configuration file
+# $1 - option name
+# $2 - new value
+# $3 - path to config file
 function update_option() {
   [ -z "${1:-}" -o -z "${2:-}" -o -z "${3:-}" -o ! -r "${3:-}" ] && return 1
 

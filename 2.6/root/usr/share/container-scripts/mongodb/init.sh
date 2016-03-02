@@ -1,9 +1,7 @@
 # Source used functions
 source ${CONTAINER_SCRIPTS_PATH}/init-functions.sh
 
-dbpath=${dbpath:-$HOME/data}
-
-local mongo_local_args=""
+mongo_local_args=""
 
 if [ ! -f $dbpath/.mongodb_datadir_initialized  ]; then
   # Create admin user

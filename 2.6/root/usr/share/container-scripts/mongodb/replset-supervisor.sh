@@ -21,7 +21,12 @@ if [ "$1" == "initiate" ]; then
   mongo_create_admin
   mongo_create_user "-u admin -p $MONGODB_ADMIN_PASSWORD"
 
-  mongo_wait_replset "-u admin -p $MONGODB_ADMIN_PASSWORD"
+  # Add one pod to this replSet to be able to address it with mongodb service
+  echo "=> Adding first member to replSet ..."
+  member_addr=$(echo "$(endpoints)" | head -n 1)
+  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "rs.add('${member_addr}:27017');"
+
+  mongo_wait_replset "-u admin -p $MONGODB_ADMIN_PASSWORD" "$(mongo_addr)"
 
   echo "=> Successfully initialized replSet ..."
 
@@ -31,15 +36,7 @@ if [ "$1" == "initiate" ]; then
     echo "=> Waiting for other replSet members ..."
     sleep $SLEEP_TIME
     mongo_wait_replset "-u admin -p $MONGODB_ADMIN_PASSWORD"
-    members=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr_deploy)" --eval "rs.status().members.length" | tail -n 1)
-  done
-
-  # Wait till all members finished inital sync
-  ok=0
-  while [ "$members" -ne "$ok" ]; do
-    echo "=> Wait sync finished ..."
-    ok=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr_deploy)" --eval "var members=rs.status().members; var ok=0; for(i in members) {if(members[i].state == 1 || members[i].state == 2 || members[i].state == 7) { ok++} }; print(ok)" | tail -n 1)
-    members=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr_deploy)" --eval "rs.status().members.length" | tail -n 1)
+    members=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr)" --eval "rs.status().members.length" | tail -n 1)
   done
 
   # Exit this pod

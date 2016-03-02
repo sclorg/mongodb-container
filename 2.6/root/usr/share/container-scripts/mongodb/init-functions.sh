@@ -1,4 +1,6 @@
 # mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
+# $1 - login parameters for mongo (optional)
+# $2 - host where to connect (localhost by default)
 function mongo_create_admin() {
   if [ -z "${MONGODB_ADMIN_PASSWORD:-}" ]; then
     echo "=> MONGODB_ADMIN_PASSWORD is not set. Authentication can not be set up."
@@ -17,8 +19,10 @@ function mongo_create_admin() {
   fi
 }
 
-# mongo_create_user creates the MongoDB database user: MONGODB_USER, with password: MONGDOB_PASSWORD, inside database: MONGODB_DATABASE
-# $1 contains information for mongo shell where and how to connect
+# mongo_create_user creates the MongoDB database user: MONGODB_USER,
+# with password: MONGDOB_PASSWORD, inside database: MONGODB_DATABASE
+# $1 - login parameters for mongo (optional)
+# $2 - host where to connect (localhost by default)
 function mongo_create_user() {
   # Ensure input variables exists
   if [ -z "${MONGODB_USER:-}" ]; then
@@ -48,6 +52,8 @@ function mongo_create_user() {
 
 # mongo_reset_passwords sets the MongoDB passwords to match MONGODB_PASSWORD
 # and MONGODB_ADMIN_PASSWORD
+# $1 - login parameters for mongo (optional)
+# $2 - host where to connect (localhost by default)
 function mongo_reset_passwords() {
   # Reset password of MONGODB_USER
   if [ -n "${MONGODB_USER:-}" -a -n "${MONGODB_PASSWORD:-}" -a -n "${MONGODB_DATABASE:-}" ]; then

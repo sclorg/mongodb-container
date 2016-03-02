@@ -1,3 +1,19 @@
+# mongod config file
+export mongod_config_file="/etc/mongod.conf"
+
+# Get options from config file
+dbpath=$(get_option "dbpath" $mongod_config_file)
+export dbpath=${dbpath:-$HOME/data}
+
+# Get used port
+port=$(get_port $mongod_config_file)
+export port=${port:-27017}
+
+# Add default config file
+mongod_common_args+="-f $mongod_config_file "
+
+
+
 # Print container usage
 function usage() {
   echo "You must specify the following environment variables:"
@@ -5,8 +21,6 @@ function usage() {
   echo "  MONGODB_PASSWORD"
   echo "  MONGODB_DATABASE"
   echo "  MONGODB_ADMIN_PASSWORD"
-  echo "Optional variables:"
-  echo "  MONGODB_REPLICA_NAME"
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
   echo "  MONGODB_SMALLFILES (default: true)"
