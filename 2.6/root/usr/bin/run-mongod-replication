@@ -9,8 +9,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-set -x
-
 source ${CONTAINER_SCRIPTS_PATH}/base-functions.sh
 source ${CONTAINER_SCRIPTS_PATH}/replset-functions.sh
 
@@ -61,9 +59,8 @@ source ${CONTAINER_SCRIPTS_PATH}/replset-pre-init.sh
 # Run replset-supervisor
 ${CONTAINER_SCRIPTS_PATH}/replset-supervisor.sh "${1:-}" "$$" & supervisor_pid=$!
 
-# Run `unset_env_vars` and `mongod` in a subshell because
-# MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
-# `cleanup` references it.
+# Run `mongod` in a subshell because MONGODB_ADMIN_PASSWORD should still be defined
+# when the trapped call to `cleanup` references it.
 set -m
 (
   # Run scripts before exec mongod 

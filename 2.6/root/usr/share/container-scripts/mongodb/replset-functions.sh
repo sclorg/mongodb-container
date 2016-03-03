@@ -1,4 +1,4 @@
-# This file contains functions	 for replSet manipulation
+# This file contains functions for replSet manipulation
 
 # cache_container_addr waits till the container gets the external IP address and
 # cache it to disk
@@ -6,13 +6,14 @@ function cache_container_addr() {
   echo -n "=> Waiting for container IP address ..."
   local i
   for i in $(seq ${MAX_ATTEMPTS}); do
-    if ip -oneline -4 addr show up scope global | grep -Eo '[0-9]{,3}(\.[0-9]{,3}){3}' > "${HOME}"/.address; then
+    if ip -oneline -4 addr show up scope global | grep -Eo '[0-9]{,3}(\.[0-9]{,3}){3}' | head -n 1 > "${HOME}"/.address; then
       echo " $(mongo_addr)"
       return 0
     fi
     sleep ${SLEEP_TIME}
   done
-  echo "Failed to get Docker container IP address." && exit 1
+  echo "Failed to get Docker container IP address."
+  exit 1
 }
 
 # container_addr returns the current container external IP address
@@ -84,8 +85,7 @@ function mongo_add() {
     --host $(replset_addr) --eval "JSON.stringify(rs.add('$(mongo_addr)'));"
 }
 
-# setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
-# mounts the secret files with 'too open' permissions.
+# setup_keyfile prepare keyFile for mongod
 function setup_keyfile() {
   if [[ -z "${MONGODB_KEYFILE_VALUE-}" ]]; then
     echo "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"

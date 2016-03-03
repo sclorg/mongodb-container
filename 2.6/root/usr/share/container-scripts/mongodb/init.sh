@@ -29,7 +29,5 @@ else
   mongo_reset_passwords
 fi
 
-if [[ -f ${dbpath}/.mongodb_datadir_initialized ]]; then
-  # Enable auth
-  export mongod_common_args+="--auth "
-fi
+# Enable auth
+export mongod_common_args+="--auth "

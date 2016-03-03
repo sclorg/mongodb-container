@@ -38,7 +38,13 @@ function wait_mongo() {
 # $1 - option name
 # $2 - path to config file
 function get_option() {
-  [[ -z "${1:-}" || -z "${2:-}" || ! -r "${2:-}" ]] && return 1
+  if [[ -z "${1:-}" || -z "${2:-}" ]]; then
+    echo "FAIL. get_option - empty parameter"
+    return 1
+  elif [[ ! -r "${1:-}" ]]; then
+    echo "FAIL. get_option - config file not readable"
+    return 1
+  fi
 
   grep "^\s*${1}" ${2} | sed -r -e "s|^\s*${1}\s*=\s*||"
 }
@@ -46,7 +52,13 @@ function get_option() {
 # Get port number from config file
 # $1 - path to config file
 function get_port() {
-  [[ -z "${1:-}" || ! -r "${1:-}" ]] && return 1
+  if [[ -z "${1:-}"; then
+    echo "FAIL. get_port - empty config file path"
+    return 1
+  elif [[ ! -r "${1:-}" ]]; then
+    echo "FAIL. get_port - config file not readable"
+    return 1
+  fi
 
   if grep '^\s*port' $1 &>/dev/null; then
     grep '^\s*port' $1 | sed -r -e 's|^\s*port\s*=\s*(\d*)|\1|'
@@ -64,13 +76,16 @@ function get_port() {
 # $2 - new value
 # $3 - path to config file
 function update_option() {
-  [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" || ! -r "${3:-}" ]] && return 1
+  if [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" ]]; then
+    echo "FAIL. update_option - empty parameter"
+    return 1
+  elif [[ ! -r "${3:-}" ]]; then
+    echo "FAIL. update_option - config file not readable"
+    return 1
+  fi
 
-  # Delete old option from config file
-  sed -r -e "/^\s*$1/d" $3 > ${HOME}/.tmp.conf
+  # Update option in the config file
+  sed -r -e "s|^(\s*$1\s*=\s*).*|\1$2|" $3 > ${HOME}/.tmp.conf
   cat ${HOME}/.tmp.conf > $3
   rm ${HOME}/.tmp.conf
-
-  # Add new option into config file
-  echo "$1 = $2" >> $3
 }
