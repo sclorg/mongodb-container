@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# Run single mongod: auth enabled, two users created
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH}/base-functions.sh
+
+# Shutdown mongod on SIGINT/SIGTERM
+function cleanup() {
+  echo "=> Shutting down MongoDB server ..."
+  if [[ -s ${dbpath}/mongod.lock ]]; then
+    mongod ${mongod_common_args} --shutdown
+  fi
+  wait_mongo "DOWN"
+
+  exit 0
+}
+
+trap 'cleanup' SIGINT SIGTERM
+
+# Run scripts before mongod start
+source ${CONTAINER_SCRIPTS_PATH}/pre-init.sh
+
+# Start mongod only on localhost
+mongod_local_args+="--bind_ip localhost "
+
+# Start background MongoDB service with disabled authentication
+mongod ${mongod_common_args} ${mongod_local_args} &
+wait_mongo "UP"
+
+# Run scripts with started mongod
+source ${CONTAINER_SCRIPTS_PATH}/init.sh
+
+# Stop background MongoDB service to exec mongod
+mongod ${mongod_common_args} ${mongod_local_args} --shutdown
+wait_mongo "DOWN"
+
+# Run scripts before exec mongod
+source ${CONTAINER_SCRIPTS_PATH}/post-init.sh
+
+# Start MongoDB service with enabled authentication
+exec mongod ${mongod_common_args}

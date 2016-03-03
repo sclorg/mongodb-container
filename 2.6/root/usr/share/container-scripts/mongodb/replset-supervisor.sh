@@ -1,17 +1,20 @@
 #!/bin/bash
 #
-# This script registers the current container into MongoDB replica set and
-# unregisters it when the container is terminated.
+# This script registers the current container into MongoDB replica set or initiate replSet if $1 == "initiate"
 
 source ${CONTAINER_SCRIPTS_PATH}/base-functions.sh
 source ${CONTAINER_SCRIPTS_PATH}/init-functions.sh
 source ${CONTAINER_SCRIPTS_PATH}/replset-functions.sh
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 set -x
 
 wait_mongo "UP"
 
-if [ "$1" == "initiate" ]; then
+if [[ "$1" == "initiate" ]]; then
   # Prepare master
   echo "=> Initiating the replSet ${MONGODB_REPLICA_NAME} ..."
 
@@ -19,23 +22,23 @@ if [ "$1" == "initiate" ]; then
 
   echo "=> Creating MongoDB users ..."
   mongo_create_admin
-  mongo_create_user "-u admin -p $MONGODB_ADMIN_PASSWORD"
+  mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
   # Add one pod to this replSet to be able to address it with mongodb service
-  echo "=> Adding first member to replSet ..."
   member_addr=$(echo "$(endpoints)" | head -n 1)
+  echo "=> Adding first member ${member_addr} to replSet ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "rs.add('${member_addr}:27017');"
 
-  mongo_wait_replset "-u admin -p $MONGODB_ADMIN_PASSWORD" "$(mongo_addr)"
+  mongo_wait_replset "-u admin -p ${MONGODB_ADMIN_PASSWORD}" "$(mongo_addr)"
 
   echo "=> Successfully initialized replSet ..."
 
   # Wait for at least 3 members
   members=0
-  while [ "$members" -le 3 ] 2>/dev/null || [ $? -ne 1 ] ; do
+  while [ "${members}" -le 3 ] 2>/dev/null || [[ $? -ne 1 ]] ; do
     echo "=> Waiting for other replSet members ..."
-    sleep $SLEEP_TIME
-    mongo_wait_replset "-u admin -p $MONGODB_ADMIN_PASSWORD"
+    sleep ${SLEEP_TIME}
+    mongo_wait_replset "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
     members=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr)" --eval "rs.status().members.length" | tail -n 1)
   done
 
@@ -45,7 +48,7 @@ if [ "$1" == "initiate" ]; then
 else
   echo "=> Trying to add this mongod to the replSet ..."
   # Add to the replSet
-  mongo_wait_replset "-u admin -p $MONGODB_ADMIN_PASSWORD"
+  mongo_wait_replset "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
   # Add the current container to the replSet
   mongo_add

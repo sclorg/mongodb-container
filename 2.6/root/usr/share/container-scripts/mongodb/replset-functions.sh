@@ -1,15 +1,16 @@
+# This file contains functions	 for replSet manipulation
+
 # cache_container_addr waits till the container gets the external IP address and
 # cache it to disk
 function cache_container_addr() {
   echo -n "=> Waiting for container IP address ..."
-  for i in $(seq $MAX_ATTEMPTS); do
-    result=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
-    if [ ! -z "${result}" ]; then
-      echo -n $result > ${HOME}/.address
+  local i
+  for i in $(seq ${MAX_ATTEMPTS}); do
+    if ip -oneline -4 addr show up scope global | grep -Eo '[0-9]{,3}(\.[0-9]{,3}){3}' > "${HOME}"/.address; then
       echo " $(mongo_addr)"
       return 0
     fi
-    sleep $SLEEP_TIME
+    sleep ${SLEEP_TIME}
   done
   echo "Failed to get Docker container IP address." && exit 1
 }
@@ -33,7 +34,6 @@ function endpoints() {
 }
 
 # replset_addr return the address of the current replSet
-# NOTE: this function hopes that some replset member use standart port
 function replset_addr() {
   echo "${MONGODB_REPLICA_NAME}/$(echo $(endpoints) | sed -e 's| |:27017,|g' -e 's|$|:27017|')"
 }
@@ -44,20 +44,26 @@ function replset_addr() {
 # $2 - host where to connect (replset_addr by default)
 function mongo_wait_replset() {
   # If there is no PRIMARY yet, rs.isMaster().primary returns "undefined"
-  for i in $(seq 1$MAX_ATTEMPTS); do
+  local i
+  for i in $(seq ${MAX_ATTEMPTS}); do
     # Test connection to replica set
-    local set=$(mongo admin ${1:-} --host ${2:-$(replset_addr)} --quiet --eval "rs.isMaster().setName;" | tail -n 1)
+    set +e
+    local set_name
+    set_name=$(mongo admin ${1:-} --host ${2:-$(replset_addr)} --quiet --eval "rs.isMaster().setName;" | tail -n 1)
     # If there is no PRIMARY yet, rs.isMaster().primary returns "undefined"
-    local primary=$(mongo admin ${1:-} --host ${2:-$(replset_addr)} --quiet --eval "rs.isMaster().primary;" | tail -n 1)
-    if [ "${set}" == "$MONGODB_REPLICA_NAME" ] && [ "${primary}" != "undefined" -a -n "${primary}" ]; then
+    local primary
+    primary=$(mongo admin ${1:-} --host ${2:-$(replset_addr)} --quiet --eval "rs.isMaster().primary;" | tail -n 1)
+    set -e
+    if [[ "${set_name}" == "$MONGODB_REPLICA_NAME" && "${primary}" != "undefined" && -n "${primary}" ]]; then
       break
     fi
-    sleep $SLEEP_TIME
+    sleep ${SLEEP_TIME}
   done
 }
 
 # mongo_initiate initiates the replica set with one member on the current container
 function mongo_initiate() {
+  local config
   config="{ _id: \"${MONGODB_REPLICA_NAME}\", members: [ { _id: 0, host: \"$(mongo_addr)\"} ] }"
   echo "=> Initiating MongoDB replica using: ${config}"
   mongo admin --eval "rs.initiate(${config})"
@@ -68,20 +74,20 @@ function mongo_initiate() {
 function mongo_remove() {
   echo "=> Removing $(mongo_addr) from $(replset_addr) ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host $(replset_addr) --eval "rs.remove('$(mongo_addr)');" &>/dev/null || true
+    --host $(replset_addr) --eval "JSON.stringify(rs.remove('$(mongo_addr)'));" &>/dev/null || true
 }
 
 # mongo_add adds the current container to the cluster
 function mongo_add() {
   echo "=> Adding $(mongo_addr) to $(replset_addr) ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host $(replset_addr) --eval "rs.add('$(mongo_addr)');"
+    --host $(replset_addr) --eval "JSON.stringify(rs.add('$(mongo_addr)'));"
 }
 
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
 # mounts the secret files with 'too open' permissions.
 function setup_keyfile() {
-  if [ -z "${MONGODB_KEYFILE_VALUE-}" ]; then
+  if [[ -z "${MONGODB_KEYFILE_VALUE-}" ]]; then
     echo "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"
     exit 1
   fi
