@@ -6,19 +6,23 @@ set -o pipefail
 
 source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
+export MONGODB_CONFIG_PATH=/etc/mongod.conf
+
 # Data directory where MongoDB database files live. The data subdirectory is here
 # because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
 # override it.
-export MONGODB_DATADIR=/var/lib/mongodb/data
+export MONGODB_DATADIR=$(get_option "dbpath" ${MONGODB_CONFIG_PATH})
+export MONGODB_PID_FILE=$(get_option "pidfilepath" ${MONGODB_CONFIG_PATH})
+export CONTAINER_PORT=$(get_port ${MONGODB_CONFIG_PATH})
 
 # Configuration settings.
-export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
-export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
-export MONGODB_QUIET=${MONGODB_QUIET:-true}
-
+# Update config file
+[[ -n "${MONGODB_NOPREALLOC:-}" ]] && update_option noprealloc ${MONGODB_NOPREALLOC} ${MONGODB_CONFIG_PATH}
+[[ -n "${MONGODB_SMALLFILES:-}" ]] && update_option smallfiles ${MONGODB_SMALLFILES} ${MONGODB_CONFIG_PATH}
+[[ -n "${MONGODB_QUIET:-}" ]] && update_option quiet ${MONGODB_QUIET} ${MONGODB_CONFIG_PATH}
 
 export MONGODB_KEYFILE_SOURCE_PATH="/var/run/secrets/mongo/keyfile"
-export MONGODB_KEYFILE_PATH="${HOME}/keyfile"
+export MONGODB_KEYFILE_PATH=/var/lib/mongodb/keyfile
 
 function usage() {
   echo "You must specify the following environment variables:"
@@ -61,9 +65,6 @@ if [ $# -gt 0 ] && [ "$1" == "initiate" ]; then
   setup_keyfile
   exec ${CONTAINER_SCRIPTS_PATH}/initiate_replica.sh
 fi
-
-# Generate config file for MongoDB
-envsubst < ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template > $MONGODB_CONFIG_PATH
 
 # Need to cache the container address for the cleanup
 cache_container_addr

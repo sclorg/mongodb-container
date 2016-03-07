@@ -8,11 +8,6 @@ set -o pipefail
 MAX_ATTEMPTS=60
 SLEEP_TIME=1
 
-export MONGODB_CONFIG_PATH=/etc/mongod.conf
-export MONGODB_PID_FILE=/var/lib/mongodb/mongodb.pid
-export MONGODB_KEYFILE_PATH=/var/lib/mongodb/keyfile
-export CONTAINER_PORT=27017
-
 # container_addr returns the current container external IP address
 function container_addr() {
   echo -n $(cat ${HOME}/.address)
@@ -203,4 +198,60 @@ function setup_keyfile() {
   fi
   echo ${MONGODB_KEYFILE_VALUE} > ${MONGODB_KEYFILE_PATH}
   chmod 0600 ${MONGODB_KEYFILE_PATH}
+}
+
+# Get value for option in file
+# $1 - option name
+# $2 - path to config file
+function get_option() {
+  if [[ -z "${1:-}" || -z "${2:-}" ]]; then
+    echo "FAIL. get_option - empty parameter"
+    return 1
+  elif [[ ! -r "${2:-}" ]]; then
+    echo "FAIL. get_option - config file not readable"
+    return 1
+  fi
+
+  grep "^\s*${1}" ${2} | sed -r -e "s|^\s*${1}\s*=\s*||"
+}
+
+# Get port number from config file
+# $1 - path to config file
+function get_port() {
+  if [[ -z "${1:-}" ]]; then
+    echo "FAIL. get_port - empty config file path"
+    return 1
+  elif [[ ! -r "${1:-}" ]]; then
+    echo "FAIL. get_port - config file not readable"
+    return 1
+  fi
+
+  if grep '^\s*port' $1 &>/dev/null; then
+    grep '^\s*port' $1 | sed -r -e 's|^\s*port\s*=\s*(\d*)|\1|'
+  elif grep '^\s*configsvr' $1 &>/dev/null; then
+    echo 27019
+  elif grep '^\s*shardsvr' $1 &>/dev/null; then
+    echo 27018
+  else
+    echo ""
+  fi
+}
+
+# Change value for config option in configuration file
+# $1 - option name
+# $2 - new value
+# $3 - path to config file
+function update_option() {
+  if [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" ]]; then
+    echo "FAIL. update_option - empty parameter"
+    return 1
+  elif [[ ! -r "${3:-}" ]]; then
+    echo "FAIL. update_option - config file not readable"
+    return 1
+  fi
+
+  # Update option in the config file
+  sed -r -e "s|^(\s*$1\s*=\s*).*|\1$2|" $3 > ${HOME}/.tmp.conf
+  cat ${HOME}/.tmp.conf > $3
+  rm ${HOME}/.tmp.conf
 }
