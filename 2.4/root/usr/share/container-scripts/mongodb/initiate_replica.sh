@@ -36,7 +36,8 @@ wait_for_mongo_up
 mongo_initiate
 
 echo "=> Creating MongoDB users ..."
-mongo_create_users
+mongo_create_admin
+mongo_create_user
 
 echo "=> Waiting for replication to finish ..."
 # TODO: Replace this with polling or a Mongo script that will check if all
