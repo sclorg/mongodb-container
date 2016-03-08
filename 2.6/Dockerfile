@@ -51,7 +51,7 @@ ENV BASH_ENV=${CONTAINER_SCRIPTS_PATH}/scl_enable \
 ADD root /
 
 # Container setup
-RUN touch /etc/mongod.conf && chown mongodb:0 /etc/mongod.conf && /usr/libexec/fix-permissions /etc/mongod.conf
+RUN chown mongodb:0 /etc/mongod.conf && /usr/libexec/fix-permissions /etc/mongod.conf
 
 VOLUME ["/var/lib/mongodb/data"]
 

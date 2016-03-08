@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# Run mongod which connect to replSet
+# $1 - "initiate" (optional) -> this mongod will initiate a replSet
+#
+# If this script is terminated it removes mongod from replSet
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH}/base-functions.sh
+source ${CONTAINER_SCRIPTS_PATH}/replset-functions.sh
+
+# Shutdown mongod on SIGINT/SIGTERM and remove mongod from replSet
+function cleanup() {
+  # Wait for replSet to be able to check if local mongod is primary
+  mongo_wait_replset "-u admin -p $MONGODB_ADMIN_PASSWORD" $(mongo_addr)
+  if [[ "$(mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD} --quiet --eval 'rs.isMaster().ismaster')" == "true" ]]; then
+    # Wait till all members finished inital sync
+    members=1
+    ok=0
+    while [[ "${members}" -ne "${ok}" ]]; do
+      echo "=> Wait all members synchronized ..."
+      ok=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr)" --eval "var members=rs.status().members; var ok=0; for(i in members) {if(members[i].state == 1 || members[i].state == 2 || members[i].state == 7) { ok++} }; print(ok)" | tail -n 1)
+      members=$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host "$(replset_addr)" --eval "rs.status().members.length" | tail -n 1)
+    done
+
+    echo "=> Giving up the PRIMARY role ..."
+    set +e
+    mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --eval "rs.stepDown(120);"
+    set -e
+    mongo_wait_replset "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
+  fi
+
+  # Remove from replset
+  mongo_remove
+
+  # Kill replset-supervisor
+  ps -o pid= -p ${supervisor_pid:-0} && kill -TERM ${supervisor_pid:-0}
+
+  echo "=> Shutting down MongoDB server ..."
+  if [[ -s ${dbpath}/mongod.lock ]]; then
+    mongod ${mongod_common_args} --shutdown
+  fi
+  wait_mongo "DOWN"
+
+  exit 0
+}
+
+trap 'cleanup' SIGINT SIGTERM
+
+# Run scripts before mongod start
+source ${CONTAINER_SCRIPTS_PATH}/pre-init.sh
+
+# Prepare things for replication
+source ${CONTAINER_SCRIPTS_PATH}/replset-pre-init.sh
+
+# Run replset-supervisor
+${CONTAINER_SCRIPTS_PATH}/replset-supervisor.sh "${1:-}" "$$" & supervisor_pid=$!
+
+# Run `mongod` in a subshell because MONGODB_ADMIN_PASSWORD should still be defined
+# when the trapped call to `cleanup` references it.
+set -m
+(
+  # Run scripts before exec mongod 
+  source ${CONTAINER_SCRIPTS_PATH}/post-init.sh
+
+  exec mongod ${mongod_common_args}
+) &
+wait
+
