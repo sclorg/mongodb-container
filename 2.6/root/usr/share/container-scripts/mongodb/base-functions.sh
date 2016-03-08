@@ -41,7 +41,7 @@ function get_option() {
   if [[ -z "${1:-}" || -z "${2:-}" ]]; then
     echo "FAIL. get_option - empty parameter"
     return 1
-  elif [[ ! -r "${1:-}" ]]; then
+  elif [[ ! -r "${2:-}" ]]; then
     echo "FAIL. get_option - config file not readable"
     return 1
   fi
@@ -52,7 +52,7 @@ function get_option() {
 # Get port number from config file
 # $1 - path to config file
 function get_port() {
-  if [[ -z "${1:-}"; then
+  if [[ -z "${1:-}" ]]; then
     echo "FAIL. get_port - empty config file path"
     return 1
   elif [[ ! -r "${1:-}" ]]; then

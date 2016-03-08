@@ -49,14 +49,14 @@ function mongo_wait_replset() {
   for i in $(seq ${MAX_ATTEMPTS}); do
     # Test connection to replica set
     set +e
-    local set_name
-    set_name=$(mongo admin ${1:-} --host ${2:-$(replset_addr)} --quiet --eval "rs.isMaster().setName;" | tail -n 1)
     # If there is no PRIMARY yet, rs.isMaster().primary returns "undefined"
     local primary
     primary=$(mongo admin ${1:-} --host ${2:-$(replset_addr)} --quiet --eval "rs.isMaster().primary;" | tail -n 1)
     set -e
-    if [[ "${set_name}" == "$MONGODB_REPLICA_NAME" && "${primary}" != "undefined" && -n "${primary}" ]]; then
-      break
+    # Trying to find IP:PORT in output and filter out error message because mongo prints it to stdout
+    ip_and_port_regexp='[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:[0-9]\+'
+    if echo "${primary}" | grep -x "${ip_and_port_regexp}"; then
+        break
     fi
     sleep ${SLEEP_TIME}
   done
@@ -73,16 +73,26 @@ function mongo_initiate() {
 
 # mongo_remove removes the current container from the cluster
 function mongo_remove() {
-  echo "=> Removing $(mongo_addr) from $(replset_addr) ..."
+  local replset_addr
+  replset_addr="$(replset_addr)"
+  local mongo_addr
+  mongo_addr="$(mongo_addr)"
+
+  echo "=> Removing ${mongo_addr} from ${replset_addr} ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host $(replset_addr) --eval "JSON.stringify(rs.remove('$(mongo_addr)'));" &>/dev/null || true
+    --host ${replset_addr} --eval "JSON.stringify(rs.remove('${mongo_addr}'));" &>/dev/null || true
 }
 
 # mongo_add adds the current container to the cluster
 function mongo_add() {
-  echo "=> Adding $(mongo_addr) to $(replset_addr) ..."
+  local replset_addr
+  replset_addr="$(replset_addr)"
+  local mongo_addr
+  mongo_addr="$(mongo_addr)"
+
+  echo "=> Adding ${mongo_addr} to ${replset_addr} ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host $(replset_addr) --eval "JSON.stringify(rs.add('$(mongo_addr)'));"
+    --host ${replset_addr} --eval "JSON.stringify(rs.add('${mongo_addr}'));"
 }
 
 # setup_keyfile prepare keyFile for mongod

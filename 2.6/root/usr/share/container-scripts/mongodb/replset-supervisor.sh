@@ -25,7 +25,7 @@ if [[ "$1" == "initiate" ]]; then
   mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
   # Add one pod to this replSet to be able to address it with mongodb service
-  member_addr=$($(endpoints) | head -n 1)
+  member_addr=$(endpoints | head -n 1)
   echo "=> Adding first member ${member_addr} to replSet ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "rs.add('${member_addr}:27017');"
 
