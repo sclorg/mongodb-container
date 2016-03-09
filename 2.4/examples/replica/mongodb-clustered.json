@@ -119,6 +119,20 @@
               {
                 "name":  "mongodb",
                 "image": "openshift/mongodb-24-centos7",
+                "readinessProbe": {
+                  "timeoutSeconds": 1,
+                  "initialDelaySeconds": 3,
+                  "exec": {
+                    "command": [ "/bin/sh", "-i", "-c", "mongostat --host 127.0.0.1 -u admin -p $MONGODB_ADMIN_PASSWORD -n 1 --noheaders"]
+                  }
+                },
+                "livenessProbe": {
+                  "timeoutSeconds": 1,
+                  "initialDelaySeconds": 30,
+                  "tcpSocket": {
+                    "port": 27017
+                  }
+                },
                 "env": [
                   {
                     "name": "MONGODB_USER",
