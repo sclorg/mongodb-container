@@ -119,6 +119,13 @@
               {
                 "name":  "mongodb",
                 "image": "openshift/mongodb-24-centos7",
+                "readinessProbe": {
+                    "tcpSocket":{
+                        "port": 27017
+                    },
+                    "initialDelaySeconds": 15,
+                    "timeoutSeconds": 1
+                },
                 "env": [
                   {
                     "name": "MONGODB_USER",
