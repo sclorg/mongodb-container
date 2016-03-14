@@ -40,41 +40,37 @@ function cache_container_addr() {
 
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
 function wait_for_mongo_up() {
-  local mongo_host
-  mongo_host="${1-}"
-  local mongo_cmd
-  mongo_cmd="mongo admin "
-
-  if [ -n "${mongo_host}" ]; then
-    mongo_cmd+="--host ${mongo_host}:${CONTAINER_PORT} "
-  fi
-
-  local i
-  for i in $(seq $MAX_ATTEMPTS); do
-    echo "=> Waiting for MongoDB service startup ${mongo_host} ..."
-    if $mongo_cmd --eval 'help' &>/dev/null; then
-      echo "=> MongoDB service has started"
-      return 0
-    fi
-    sleep $SLEEP_TIME
-  done
-  echo "=> Giving up: Failed to start MongoDB service!"
-  exit 1
+  _wait_for_mongo 1
 }
 
 # wait_for_mongo_down waits until the mongo server is down
 function wait_for_mongo_down() {
+  _wait_for_mongo 0
+}
+
+# wait_for_mongo waits until the mongo server is up/down
+# $1 - 0 or 1 - to specify for what to wait (0 - down, 1 - up)
+# $2 - host where to connect (localhost by default)
+function _wait_for_mongo() {
+  local operation=${1:-1}
+  local message="up"
+  if [[ ${operation} -eq 0 ]]; then
+    message="down"
+  fi
+
+  local mongo_cmd="mongo admin --host ${2:-localhost} --port ${CONTAINER_PORT} "
+
   local i
   for i in $(seq $MAX_ATTEMPTS); do
-    echo "=> Waiting for MongoDB service shutdown ..."
-    if ! mongo admin --eval 'help' &>/dev/null; then
-      echo "=> MongoDB service has stopped"
+    echo "=> ${2:-} Waiting for MongoDB daemon ${message}"
+    if ([[ ${operation} -eq 1 ]] && ${mongo_cmd} --eval "quit()" &>/dev/null) || ([[ ${operation} -eq 0 ]] && ! ${mongo_cmd} --eval "quit()" &>/dev/null); then
+      echo "=> MongoDB daemon is ${message}"
       return 0
     fi
-    sleep $SLEEP_TIME
+    sleep ${SLEEP_TIME}
   done
-  echo "=> Giving up: Failed to stop MongoDB service"
-  exit 1
+  echo "=> Giving up: MongoDB daemon is not ${message}!"
+  return 1
 }
 
 # endpoints returns list of IP addresses with other instances of MongoDB
