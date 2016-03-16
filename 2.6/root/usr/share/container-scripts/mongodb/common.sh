@@ -45,14 +45,17 @@ function wait_for_mongo_up() {
   local mongo_cmd
   mongo_cmd="mongo admin "
 
-  if [ -n "${mongo_host}" ]; then
+  if [ ! -z "${mongo_host}" ]; then
     mongo_cmd+="--host ${mongo_host}:${CONTAINER_PORT} "
   fi
 
-  local i
   for i in $(seq $MAX_ATTEMPTS); do
     echo "=> Waiting for MongoDB service startup ${mongo_host} ..."
-    if ! $mongo_cmd --eval 'help' &>/dev/null; then
+    set +e
+    $mongo_cmd --eval "help" &>/dev/null
+    status=$?
+    set -e
+    if [ $status -eq 0 ]; then
       echo "=> MongoDB service has started"
       return 0
     fi
@@ -64,10 +67,13 @@ function wait_for_mongo_up() {
 
 # wait_for_mongo_down waits until the mongo server is down
 function wait_for_mongo_down() {
-  local i
   for i in $(seq $MAX_ATTEMPTS); do
     echo "=> Waiting for MongoDB service shutdown ..."
-    if ! mongo admin --eval 'help' &>/dev/null; then
+    set +e
+    mongo admin --eval "help" &>/dev/null
+    status=$?
+    set -e
+    if [ $status -ne 0 ]; then
       echo "=> MongoDB service has stopped"
       return 0
     fi
@@ -97,12 +103,10 @@ function build_mongo_config() {
   member_id=1
   local container_addr
   container_addr="$(container_addr)"
-  local node
   for node in ${current_endpoints}; do
-    if [ "$node" != "$container_addr" ]; then
-      members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
-      let member_id++
-    fi
+    [ "$node" == container_addr ] && continue
+    members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
+    let member_id++
   done
   echo -n "var config={ _id: \"${MONGODB_REPLICA_NAME}\", members: [ ${members%,} ] }"
 }
@@ -148,12 +152,7 @@ function mongo_primary_member_addr() {
 # mongo_remove removes the current MongoDB from the cluster
 function mongo_remove() {
   local primary_addr
-  # if we cannot determine the IP address of the primary, exit without an error
-  # to allow callers to proceed with their logic
-  primary_addr="$(mongo_primary_member_addr || true)"
-  if [ -z "$primary_addr" ]; then
-    return
-  fi
+  primary_addr="$(mongo_primary_member_addr)"
 
   local mongo_addr
   mongo_addr="$(mongo_addr)"
@@ -166,12 +165,7 @@ function mongo_remove() {
 # mongo_add advertise the current container to other mongo replicas
 function mongo_add() {
   local primary_addr
-  # if we cannot determine the IP address of the primary, exit without an error
-  # to allow callers to proceed with their logic
-  primary_addr="$(mongo_primary_member_addr || true)"
-  if [ -z "$primary_addr" ]; then
-    return
-  fi
+  primary_addr="$(mongo_primary_member_addr)"
 
   local mongo_addr
   mongo_addr="$(mongo_addr)"
