@@ -41,7 +41,7 @@ function unset_env_vars() {
 }
 
 function cleanup() {
-  if [ ! -z "${MONGODB_REPLICA_NAME-}" ]; then
+  if [ -n "${MONGODB_REPLICA_NAME-}" ]; then
     mongo_remove
   fi
   echo "=> Shutting down MongoDB server ..."
