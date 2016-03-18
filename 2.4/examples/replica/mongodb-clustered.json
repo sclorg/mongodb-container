@@ -94,7 +94,13 @@
                 "command": [
                   "run-mongod", "initiate"
                 ],
-                "containerName": "mongodb"
+                "containerName": "mongodb",
+                "env": [
+                  {
+                    "name": "MONGODB_INITIAL_REPLICA_COUNT",
+                    "value": "3"
+                  }
+                ]
               }
             }
           }

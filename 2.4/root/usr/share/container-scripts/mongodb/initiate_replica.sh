@@ -6,13 +6,24 @@ set -o pipefail
 
 source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
-echo -n "=> Waiting for MongoDB endpoints ..."
-
 current_endpoints=$(endpoints)
-while [ -z "${current_endpoints}" ]; do
-  sleep 2
-  current_endpoints=$(endpoints)
-done
+if [ -n "${MONGODB_INITIAL_REPLICA_COUNT:-}" ]; then
+  echo -n "=> Waiting for $MONGODB_INITIAL_REPLICA_COUNT MongoDB endpoints ..."
+  while [[ "$(echo "${current_endpoints}" | wc -l)" -lt ${MONGODB_INITIAL_REPLICA_COUNT} ]]; do
+    sleep 2
+    current_endpoints=$(endpoints)
+  done
+else
+  echo "Attention: MONGODB_INITIAL_REPLICA_COUNT is not set and it could lead to a improperly configured replica set."
+  echo "To fix this, set MONGODB_INITIAL_REPLICA_COUNT variable to the number of members in the replica set in"
+  echo "the configuration of post deployment hook."
+
+  echo -n "=> Waiting for MongoDB endpoints ..."
+  while [ -z "${current_endpoints}" ]; do
+    sleep 2
+    current_endpoints=$(endpoints)
+  done
+fi
 echo "${current_endpoints}"
 
 # Let initialize the first member of the cluster
