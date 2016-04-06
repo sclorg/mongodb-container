@@ -187,21 +187,72 @@ function run_mongod_supervisor() {
   ${CONTAINER_SCRIPTS_PATH}/replica_supervisor.sh 2>&1 &
 }
 
-# mongo_create_users creates the MongoDB admin user and the database user
-# configured by MONGODB_USER
-function mongo_create_users() {
-  mongo ${MONGODB_DATABASE} --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]})"
+# mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
+# $1 - login parameters for mongo (optional)
+# $2 - host where to connect (localhost by default)
+function mongo_create_admin() {
+  if [[ -z "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
+    echo "=> MONGODB_ADMIN_PASSWORD is not set. Authentication can not be set up."
+    exit 1
+  fi
 
-  mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
+  # Set admin password
+  local js_command="db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]});"
+  if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
+    echo "=> Failed to create MongoDB admin user."
+    exit 1
+  fi
+}
 
-  touch ${MONGODB_DATADIR}/.mongodb_datadir_initialized
+# mongo_create_user creates the MongoDB database user: MONGODB_USER,
+# with password: MONGDOB_PASSWORD, inside database: MONGODB_DATABASE
+# $1 - login parameters for mongo (optional)
+# $2 - host where to connect (localhost by default)
+function mongo_create_user() {
+  # Ensure input variables exists
+  if [[ -z "${MONGODB_USER:-}" ]]; then
+    echo "=> MONGODB_USER is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    exit 1
+  fi
+  if [[ -z "${MONGODB_PASSWORD:-}" ]]; then
+    echo "=> MONGODB_PASSWORD is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    exit 1
+  fi
+  if [[ -z "${MONGODB_DATABASE:-}" ]]; then
+    echo "=> MONGODB_DATABASE is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    exit 1
+  fi
+
+  # Create database user
+  local js_command="db.getSiblingDB('${MONGODB_DATABASE}').addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
+  if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
+    echo "=> Failed to create MongoDB user: ${MONGODB_USER}"
+    exit 1
+  fi
 }
 
 # mongo_reset_passwords sets the MongoDB passwords to match MONGODB_PASSWORD
 # and MONGODB_ADMIN_PASSWORD
+# $1 - login parameters for mongo (optional)
+# $2 - host where to connect (localhost by default)
 function mongo_reset_passwords() {
-  mongo ${MONGODB_DATABASE} --eval "db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
-  mongo admin --eval "db.changeUserPassword('admin', '${MONGODB_ADMIN_PASSWORD}')"
+  # Reset password of MONGODB_USER
+  if [[ -n "${MONGODB_USER:-}" && -n "${MONGODB_PASSWORD:-}" && -n "${MONGODB_DATABASE:-}" ]]; then
+    local js_command="db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
+    if ! mongo ${MONGODB_DATABASE} ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
+      echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
+      exit 1
+    fi
+  fi
+
+  # Reset password of admin
+  if [[ -n "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
+    local js_command="db.changeUserPassword('admin', '${MONGODB_ADMIN_PASSWORD}')"
+    if ! mongo admin --eval "${js_command}"; then
+      echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
+      exit 1
+    fi
+  fi
 }
 
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
