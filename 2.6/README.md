@@ -25,6 +25,7 @@ The following environment variables influence the MongoDB configuration file. Th
 |  `MONGODB_NOPREALLOC` | Disable data file preallocation.                                          |  true
 |  `MONGODB_SMALLFILES` | Set MongoDB to use a smaller default data file size.                      |  true
 |  `MONGODB_QUIET`      | Runs MongoDB in a quiet mode that attempts to limit the amount of output. |  true
+|  `MONGODB_TEXT_SEARCH_ENABLED` | Enables the [text search](https://docs.mongodb.org/v2.6/core/index-text/#text-search-text-command) feature.  |  false
 
 
 You can also set the following mount points by passing the `-v /host:/container` flag to Docker.
