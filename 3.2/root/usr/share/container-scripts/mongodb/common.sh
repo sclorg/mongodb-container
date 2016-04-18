@@ -4,14 +4,22 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Used for wait_for_mongo_* functions
-MAX_ATTEMPTS=60
-SLEEP_TIME=1
-
-export MONGODB_CONFIG_PATH=/etc/mongod.conf
-export MONGODB_PID_FILE=/var/lib/mongodb/mongodb.pid
-export MONGODB_KEYFILE_PATH=/var/lib/mongodb/keyfile
+# Data directory where MongoDB database files live. The data subdirectory is here
+# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
+# override it.
+export MONGODB_DATADIR=/var/lib/mongodb/data
 export CONTAINER_PORT=27017
+# Configuration settings.
+export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
+export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
+export MONGODB_QUIET=${MONGODB_QUIET:-true}
+
+MONGODB_CONFIG_PATH=/etc/mongod.conf
+MONGODB_KEYFILE_PATH="${HOME}/keyfile"
+
+# Constants used for waiting
+readonly MAX_ATTEMPTS=60
+readonly SLEEP_TIME=1
 
 # container_addr returns the current container external IP address
 function container_addr() {
@@ -261,11 +269,17 @@ function mongo_reset_admin() {
 
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
 # mounts the secret files with 'too open' permissions.
+# add --keyFile argument to mongo_common_args
 function setup_keyfile() {
+  # If user specify keyFile in config file do not use generated keyFile
+  if grep -q "^\s*keyFile" ${MONGODB_CONFIG_PATH}; then
+    exit 0
+  fi
   if [ -z "${MONGODB_KEYFILE_VALUE-}" ]; then
     echo "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"
     exit 1
   fi
   echo ${MONGODB_KEYFILE_VALUE} > ${MONGODB_KEYFILE_PATH}
   chmod 0600 ${MONGODB_KEYFILE_PATH}
+  mongo_common_args+=" --keyFile ${MONGODB_KEYFILE_PATH}"
 }
