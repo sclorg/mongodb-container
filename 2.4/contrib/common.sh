@@ -40,6 +40,8 @@ function wait_for_mongo_up() {
   local mongo_host="${1-}"
   local mongo_cmd="mongo admin "
 
+  echo "=> Connecting to mongo host ${mongo_host}"
+
   if [ ! -z "${mongo_host}" ]; then
     mongo_cmd+="--host ${mongo_host}:${CONTAINER_PORT} "
   fi
@@ -93,12 +95,27 @@ function no_endpoints() {
   [ "$(endpoints)" == "$(container_addr)" ]
 }
 
+# wait_for_all_hosts waits until all hosts found using endpoints function are
+# ready.
+function wait_for_all_hosts() {
+    local current_endpoints=($(endpoints))
+
+    echo "=> Waiting for all endpoints to accept connections..."
+    for node in ${current_endpoints[@]}; do
+        #wait_for_mongo_up ${node} &>/dev/null
+        wait_for_mongo_up ${node}
+    done
+}
+
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
 # initialization
 function build_mongo_config() {
   local members="{ _id: 0, host: \"$(mongo_addr)\"},"
   local member_id=1
-  for node in $(endpoints); do
+  local container_addr="$(container_addr)"
+  local endpoints_list=($(endpoints))
+  for node in ${endpoints_list[@]}; do
+    #[ "$node" == container_addr ] && continue
     members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
     let member_id++
   done
@@ -110,6 +127,7 @@ function mongo_initiate() {
   local mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
   config=$(build_mongo_config)
   echo "=> Initiating MongoDB replica using: ${config}"
+  #wait_for_all_hosts
   mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
 }
 
@@ -144,20 +162,20 @@ function run_mongod_supervisor() {
 }
 
 # mongo_create_users creates the MongoDB admin user and the database user
-# configured by MONGO_USER
+# configured by MONGODB_USER
 function mongo_create_users() {
-  mongo ${MONGODB_DATABASE} --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
-  
-}
+  mongo ${MONGODB_DATABASE} --eval "db.addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]})"
 
+  mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
 
-function mongo_create_admin(){
-    mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
-}
-
-
-function mongo_data_initialised(){
   touch /var/lib/mongodb/data/.mongodb_datadir_initialized
+}
+
+# mongo_reset_passwords sets the MongoDB passwords to match MONGODB_PASSWORD
+# and MONGODB_ADMIN_PASSWORD
+function mongo_reset_passwords() {
+  mongo ${MONGODB_DATABASE} --eval "db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
+  mongo admin --eval "db.changeUserPassword('admin', '${MONGODB_ADMIN_PASSWORD}')"
 }
 
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that

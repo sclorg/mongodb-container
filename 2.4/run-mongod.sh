@@ -1,14 +1,13 @@
 #!/bin/bash
 
-# For SCL enablement
 source /var/lib/mongodb/common.sh
 source /var/lib/mongodb/setup_rhmap.sh
 
 set -eu
 
 # Data directory where MongoDB database files live. The data subdirectory is here
-# because .bashrc and mongodb.conf both live in /var/lib/mongodb/ and we don't want a
-# volume to override it.
+# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
+# override it.
 export MONGODB_DATADIR=/var/lib/mongodb/data
 
 # Configuration settings.
@@ -21,7 +20,7 @@ export MONGODB_KEYFILE_SOURCE_PATH="/var/run/secrets/mongo/keyfile"
 export MONGODB_KEYFILE_PATH="/var/lib/mongodb/keyfile"
 
 function usage() {
-  echo "You must specify following environment variables:"
+  echo "You must specify the following environment variables:"
   echo "  MONGODB_USER"
   echo "  MONGODB_PASSWORD"
   echo "  MONGODB_DATABASE"
@@ -55,7 +54,7 @@ function cleanup() {
   exit 0
 }
 
-if [ "$1" == "initiate" ]; then  
+if [ "$1" == "initiate" ]; then
   if ! [[ -v MONGODB_ADMIN_PASSWORD ]]; then
     usage
   fi
@@ -81,13 +80,17 @@ if [ "$1" = "mongod" ]; then
       mongod $mongo_common_args & #--bind_ip 127.0.0.1 --quiet >/dev/null &
       wait_for_mongo_up
       setUpDatabases
-      mongo_create_admin
-      mongo_data_initialised
       # Restart the MongoDB daemon to bind on all interfaces
       mongod $mongo_common_args --shutdown
       wait_for_mongo_down
     else
       echo "=> Database directory is already initialized. Skipping creation of users ..."
+      # Ensure passwords match environment variables
+      mongod $mongo_common_args &
+      wait_for_mongo_up
+      mongo_reset_passwords
+      mongod $mongo_common_args --shutdown
+      wait_for_mongo_down
     fi
     unset_env_vars
     exec mongod $mongo_common_args --auth
@@ -104,10 +107,15 @@ if [ "$1" = "mongod" ]; then
     if [ ! -v MONGODB_NO_AUTH ]; then
       auth_args=""
     fi
-    unset_env_vars
-    mongod $mongo_common_args --replSet ${MONGODB_REPLICA_NAME} \
-      --keyFile ${MONGODB_KEYFILE_PATH} ${auth_args} & mongo_pid=$!
-    wait $mongo_pid
+    # Run `unset_env_vars` and `mongod` in a subshell because
+    # MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
+    # `cleanup` references it.
+    (
+      unset_env_vars
+      mongod $mongo_common_args --replSet ${MONGODB_REPLICA_NAME} \
+        --keyFile ${MONGODB_KEYFILE_PATH} ${auth_args}
+    ) &
+    wait
   fi
 else
   exec "$@"

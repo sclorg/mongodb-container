@@ -2,10 +2,20 @@
 
 source /var/lib/mongodb/common.sh
 source /var/lib/mongodb/setup_rhmap.sh
-echo -n "=> Waiting for MongoDB endpoints ..."
+echo "=> Waiting for MongoDB endpoints ..."
+
+if [ -z "${ENDPOINT_COUNT}" ]
+then
+  ENDPOINT_COUNT=1
+fi
+
+echo "=> Endpoint count (envar) : ${ENDPOINT_COUNT}"
+
 while true; do
-  if [ ! -z "$(endpoints)" ]; then
-    echo $(endpoints)
+  count=($(endpoints))
+  if [ ${#count[@]} = ${ENDPOINT_COUNT} ]
+  then
+    echo "=> Endpoints found : $(endpoints)"
     break
   fi
   sleep 2
@@ -15,10 +25,9 @@ done
 current_endpoints=$(endpoints)
 mongo_node="$(echo -n ${current_endpoints} | cut -d ' ' -f 1):${CONTAINER_PORT}"
 
-echo "=> Waiting for all endpoints to accept connections..."
-for node in ${current_endpoints}; do
-  wait_for_mongo_up ${node} &>/dev/null
-done
+echo "=> Mongo current node ${mongo_node}"
+
+wait_for_all_hosts
 
 echo "=> Initiating the replSet ${MONGODB_REPLICA_NAME} ..."
 # Start the MongoDB without authentication to initialize and kick-off the cluster:
@@ -33,8 +42,6 @@ mongo_initiate
 
 echo "=> Creating MongoDB users and databases ..."
 setUpDatabases
-mongo_create_admin
-mongo_data_initialised
 
 echo "=> Waiting for replication to finish ..."
 # TODO: Replace this with polling or a Mongo script that will check if all

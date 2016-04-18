@@ -1,44 +1,42 @@
 #!/usr/bin/env bash
-source /var/lib/mongodb/common.sh
-
-
 
 function setUpMbaasDB(){
   echo "=> setting up fh-mbaas db .. ";
-  export MONGODB_DATABASE=${MONGODB_FHMBAAS_DATABASE};
-  export MONGODB_USER=${MONGODB_FHMBAAS_USER} #todo bring in from env FH_MBAAS_DB_USER
-  export MONGODB_PASSWORD=${MONGODB_FHMBAAS_PASSWORD} #todo bring in from env FH_MBAAS_DB_PASS
-  mongo_create_users
+  mongo ${MONGODB_FHMBAAS_DATABASE} --eval \
+        "db.addUser({user: '${MONGODB_FHMBAAS_USER}', pwd: '${MONGODB_FHMBAAS_PASSWORD}', roles: [ 'readWrite' ]})"
 }
 
 
 function setUpReporting(){
   echo "=> setting up fh-reporting db.. ";
-  export MONGODB_DATABASE=${MONGODB_FHREPORTING_DATABASE};
-  export MONGODB_USER=${MONGODB_FHREPORTING_USER} #todo bring in from env
-  export MONGODB_PASSWORD=${MONGODB_FHREPORTING_PASSWORD} #todo bring in from env
-  mongo_create_users
+  mongo ${MONGODB_FHREPORTING_DATABASE} --eval \
+        "db.addUser({user: '${MONGODB_FHREPORTING_USER}', pwd: '${MONGODB_FHREPORTING_PASSWORD}', roles: [ 'readWrite' ]})"
 }
 
 function setUpMetrics(){
   echo "=> setting up fh-metrics db.. ";
-  export MONGODB_DATABASE=${MONGODB_FHMETRICS_DATABASE};
-  export MONGODB_USER=${MONGODB_FHMETRICS_USER} #todo bring in from env
-  export MONGODB_PASSWORD=${MONGODB_FHMETRICS_PASSWORD} #todo bring in from env
-  mongo_create_users
+  mongo ${MONGODB_FHMETRICS_DATABASE} --eval \
+        "db.addUser({user: '${MONGODB_FHMETRICS_USER}', pwd: '${MONGODB_FHMETRICS_PASSWORD}', roles: [ 'readWrite' ]})"
 }
 
 function setUpDatabases(){
   echo "=> setting up RHMAP databases";
-  if [[ -v MONGODB_FHMBAAS_DATABASE ]]; then
+  if [[ -v MONGODB_FHMBAAS_DATABASE && -v MONGODB_FHMBAAS_USER && -v MONGODB_FHMBAAS_PASSWORD ]]
+  then
       setUpMbaasDB
   fi
-  
-  if [[ -v MONGODB_FHREPORTING_DATABASE  ]]; then
+
+  if [[ -v MONGODB_FHREPORTING_DATABASE  && -v MONGODB_FHREPORTING_USER && -v MONGODB_FHREPORTING_PASSWORD ]]
+  then
       setUpReporting
   fi
-  
-  if [[ -v MONGODB_FHMETRICS_DATABASE ]]; then
+
+  if [[ -v MONGODB_FHMETRICS_DATABASE  && -v MONGODB_FHMETRICS_USER && -v MONGODB_FHMETRICS_PASSWORD ]]
+  then
       setUpMetrics
   fi
+
+  mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
+
+  touch /var/lib/mongodb/data/.mongodb_datadir_initialized
 }
