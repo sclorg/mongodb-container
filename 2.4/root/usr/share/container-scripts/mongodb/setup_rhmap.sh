@@ -35,8 +35,4 @@ function setUpDatabases(){
   then
       setUpMetrics
   fi
-
-  mongo admin --eval "db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]})"
-
-  touch /var/lib/mongodb/data/.mongodb_datadir_initialized
 }

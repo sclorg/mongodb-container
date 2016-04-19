@@ -1,47 +1,54 @@
 #!/bin/bash
 
-source /var/lib/mongodb/common.sh
-source /var/lib/mongodb/setup_rhmap.sh
-echo "=> Waiting for MongoDB endpoints ..."
+set -o errexit
+set -o nounset
+set -o pipefail
 
-if [ -z "${ENDPOINT_COUNT}" ]
-then
-  ENDPOINT_COUNT=1
+source  ${CONTAINER_SCRIPTS_PATH}/common.sh
+source ${CONTAINER_SCRIPTS_PATH}/setup_rhmap.sh
+
+current_endpoints=$(endpoints)
+if [ -n "${MONGODB_INITIAL_REPLICA_COUNT:-}" ]; then
+  echo -n "=> Waiting for $MONGODB_INITIAL_REPLICA_COUNT MongoDB endpoints ..."
+  while [[ "$(echo "${current_endpoints}" | wc -l)" -lt ${MONGODB_INITIAL_REPLICA_COUNT} ]]; do
+    sleep 2
+    current_endpoints=$(endpoints)
+  done
+else
+  echo "Attention: MONGODB_INITIAL_REPLICA_COUNT is not set and it could lead to a improperly configured replica set."
+  echo "To fix this, set MONGODB_INITIAL_REPLICA_COUNT variable to the number of members in the replica set in"
+  echo "the configuration of post deployment hook."
+
+  echo -n "=> Waiting for MongoDB endpoints ..."
+  while [ -z "${current_endpoints}" ]; do
+    sleep 2
+    current_endpoints=$(endpoints)
+  done
 fi
-
-echo "=> Endpoint count (envar) : ${ENDPOINT_COUNT}"
-
-while true; do
-  count=($(endpoints))
-  if [ ${#count[@]} = ${ENDPOINT_COUNT} ]
-  then
-    echo "=> Endpoints found : $(endpoints)"
-    break
-  fi
-  sleep 2
-done
+echo "${current_endpoints}"
 
 # Let initialize the first member of the cluster
-current_endpoints=$(endpoints)
 mongo_node="$(echo -n ${current_endpoints} | cut -d ' ' -f 1):${CONTAINER_PORT}"
 
-echo "=> Mongo current node ${mongo_node}"
-
-wait_for_all_hosts
+echo "=> Waiting for all endpoints to accept connections..."
+for node in ${current_endpoints}; do
+  wait_for_mongo_up ${node} &>/dev/null
+done
 
 echo "=> Initiating the replSet ${MONGODB_REPLICA_NAME} ..."
 # Start the MongoDB without authentication to initialize and kick-off the cluster:
 # This MongoDB server is just temporary and will be removed later in this
 # script.
 export MONGODB_REPLICA_NAME
-MONGODB_NO_SUPERVISOR=1 MONGODB_NO_AUTH=1 /usr/local/bin/run-mongod.sh mongod &
+MONGODB_NO_SUPERVISOR=1 MONGODB_NO_AUTH=1 run-mongod mongod &
 wait_for_mongo_up
 
 # This will perform the 'rs.initiate()' command on the current MongoDB.
-mongo_initiate
+mongo_initiate "${current_endpoints}"
 
 echo "=> Creating MongoDB users and databases ..."
 setUpDatabases
+mongo_create_admin
 
 echo "=> Waiting for replication to finish ..."
 # TODO: Replace this with polling or a Mongo script that will check if all
