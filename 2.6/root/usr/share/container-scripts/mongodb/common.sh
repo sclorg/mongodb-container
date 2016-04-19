@@ -229,13 +229,11 @@ function mongo_create_user() {
 
 # mongo_reset_passwords sets the MongoDB passwords to match MONGODB_PASSWORD
 # and MONGODB_ADMIN_PASSWORD
-# $1 - login parameters for mongo (optional)
-# $2 - host where to connect (localhost by default)
 function mongo_reset_passwords() {
   # Reset password of MONGODB_USER
   if [[ -n "${MONGODB_USER:-}" && -n "${MONGODB_PASSWORD:-}" && -n "${MONGODB_DATABASE:-}" ]]; then
     local js_command="db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
-    if ! mongo ${MONGODB_DATABASE} ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
+    if ! mongo ${MONGODB_DATABASE} --eval "${js_command}"; then
       echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
