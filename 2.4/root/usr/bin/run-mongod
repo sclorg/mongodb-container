@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source  ${CONTAINER_SCRIPTS_PATH}/common.sh
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 # Data directory where MongoDB database files live. The data subdirectory is here
 # because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to

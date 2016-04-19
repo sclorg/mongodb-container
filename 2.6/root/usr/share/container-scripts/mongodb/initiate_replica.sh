@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source  ${CONTAINER_SCRIPTS_PATH}/common.sh
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 current_endpoints=$(endpoints)
 if [ -n "${MONGODB_INITIAL_REPLICA_COUNT:-}" ]; then
