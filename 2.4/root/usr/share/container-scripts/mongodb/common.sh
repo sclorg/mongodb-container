@@ -73,12 +73,17 @@ function _wait_for_mongo() {
   return 1
 }
 
-# endpoints returns list of IP addresses with other instances of MongoDB
-# To get list of endpoints, you need to have headless Service named 'mongodb'.
-# NOTE: This won't work with standalone Docker container.
+# endpoints returns a list of hosts to be part of a replica set. Host names are
+# generated from MONGODB_SERVICE_NAME, appending a suffix based on the number of
+# replicas defined in MONGODB_INITIAL_REPLICA_COUNT. For each host name, there
+# should be a service with the same name, so that the name points to a valid DNS
+# entry. Example output, where MONGODB_SERVICE_NAME=mongodb and
+# MONGODB_INITIAL_REPLICA_COUNT=3:
+# mongodb-1
+# mongodb-2
+# mongodb-3
 function endpoints() {
-  service_name=${MONGODB_SERVICE_NAME:-mongodb}
-  dig ${service_name} A +search +short 2>/dev/null
+  printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
 }
 
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
