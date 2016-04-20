@@ -1,5 +1,4 @@
 FROM centos:centos7
-MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
 # MongoDB image for OpenShift.
 #
