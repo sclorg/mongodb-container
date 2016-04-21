@@ -3,13 +3,11 @@
 # This script registers the current container into MongoDB replica set and
 # unregisters it when the container is terminated.
 
-source /var/lib/mongodb/common.sh
+set -o errexit
+set -o nounset
+set -o pipefail
 
-# Redirect all stdout && stderr into a FIFO pipe
-exec 1<&-
-exec 2<&-
-exec 1<>$1
-exec 2>&1
+source  ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 echo "=> Waiting for local MongoDB to accept connections ..."
 wait_for_mongo_up
