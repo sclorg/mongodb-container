@@ -40,12 +40,12 @@ function cache_container_addr() {
 
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
 function wait_for_mongo_up() {
-  _wait_for_mongo 1
+  _wait_for_mongo 1 "$@"
 }
 
 # wait_for_mongo_down waits until the mongo server is down
 function wait_for_mongo_down() {
-  _wait_for_mongo 0
+  _wait_for_mongo 0 "$@"
 }
 
 # wait_for_mongo waits until the mongo server is up/down
