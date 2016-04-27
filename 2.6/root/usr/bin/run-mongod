@@ -41,9 +41,16 @@ function unset_env_vars() {
 }
 
 function cleanup() {
-  if [ -n "${MONGODB_REPLICA_NAME-}" ]; then
-    mongo_remove
-  fi
+  # NOTE: The `endpoints` function in `common.sh` used to return ephemeral pod
+  # IPs, but now we have it return a fixed list of host names. Since the list of
+  # host names is static, we do not need nor want to add/remove new members to the
+  # replica set configuration as part of a pod lifecycle, therefore we comment out
+  # the code below.
+
+  # if [ -n "${MONGODB_REPLICA_NAME-}" ]; then
+  #   mongo_remove
+  # fi
+
   echo "=> Shutting down MongoDB server ..."
   if [ -f "${MONGODB_PID_FILE}" ]; then
     kill -2 $(cat ${MONGODB_PID_FILE})
