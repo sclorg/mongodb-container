@@ -127,9 +127,9 @@ function mongo_primary_member_addr() {
     while read mongo_node; do
       cmd_output="$(mongo admin -u admin -p "$MONGODB_ADMIN_PASSWORD" --host "$mongo_node:$CONTAINER_PORT" --eval 'print(rs.isMaster().primary)' --quiet || true)"
 
-      # Trying to find IP:PORT in output and filter out error message because mongo prints it to stdout
-      ip_and_port_regexp='[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:[0-9]\+'
-      if addr="$(echo "$cmd_output" | grep -x "$ip_and_port_regexp")"; then
+      # Trying to find HOST:PORT in output and filter out error message because mongo prints it to stdout
+      host_and_port_regexp='[^:]\+:[0-9]\+'
+      if addr="$(echo "$cmd_output" | grep -x "$host_and_port_regexp")"; then
         echo -n "$addr"
         exit 0
       fi
