@@ -28,6 +28,7 @@ function usage() {
   echo "  MONGODB_ADMIN_PASSWORD"
   echo "Optional variables:"
   echo "  MONGODB_REPLICA_NAME"
+  echo "  MONGODB_INITIAL_REPLICA_COUNT"
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
   echo "  MONGODB_SMALLFILES (default: true)"

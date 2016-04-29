@@ -21,9 +21,6 @@ LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source N
 
 EXPOSE 27017
 
-# This image must forever use UID 184 for mongodb user and GID 998 for the
-# mongodb group, so our volumes are safe in the future. This should *never*
-# change, the last test is there to make sure of that.
 # Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
 # the whole /var/lib/mongodb/ dir has to be chown-ed.
 RUN yum install -y centos-release-scl && \
