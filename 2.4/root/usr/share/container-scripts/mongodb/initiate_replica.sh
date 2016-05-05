@@ -47,7 +47,7 @@ mongo_initiate "${current_endpoints}"
 
 echo "=> Creating MongoDB users ..."
 mongo_create_admin
-mongo_create_user
+mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
 echo "=> Waiting for replication to finish ..."
 # TODO: Replace this with polling or a Mongo script that will check if all
