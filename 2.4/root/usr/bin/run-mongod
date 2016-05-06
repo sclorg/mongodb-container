@@ -46,9 +46,7 @@ function cleanup() {
     mongo_remove
   fi
   echo "=> Shutting down MongoDB server ..."
-  if [ -f "${MONGODB_PID_FILE}" ]; then
-    kill -2 $(cat ${MONGODB_PID_FILE})
-  else
+  if pgrep mongod; then
     pkill -2 mongod
   fi
   wait_for_mongo_down
