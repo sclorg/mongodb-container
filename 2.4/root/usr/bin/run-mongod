@@ -103,19 +103,18 @@ else
     run_mongod_supervisor
     trap 'cleanup' SIGINT SIGTERM
   fi
-  auth_args=" --auth"
-  # When initializing the MongoDB cluster, we have to run without
-  # authentication
-  if [ ! -v MONGODB_NO_AUTH ]; then
-    auth_args=""
+  # In MongoDB 2.4 --keyFile does not imply authentication, so enabling it explicitly
+  # When not initializing the MongoDB cluster, we have to run with authentication
+  if [ -v MONGODB_NO_AUTH ]; then
+    mongo_common_args+=" --auth"
   fi
   # Run `unset_env_vars` and `mongod` in a subshell because
   # MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
   # `cleanup` references it.
   (
     unset_env_vars
-    mongod $mongo_common_args --replSet ${MONGODB_REPLICA_NAME} \
-      --keyFile ${MONGODB_KEYFILE_PATH} ${auth_args}
+    mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}" \
+      --keyFile "${MONGODB_KEYFILE_PATH}"
   ) &
   wait
 fi
