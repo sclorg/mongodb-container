@@ -170,9 +170,7 @@
               }
             ]
           }
-        },
-        "restartPolicy": "Never",
-        "dnsPolicy": "ClusterFirst"
+        }
       }
     }
   ]
