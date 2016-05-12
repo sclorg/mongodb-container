@@ -81,8 +81,7 @@
       "kind": "DeploymentConfig",
       "apiVersion": "v1",
       "metadata": {
-        "name": "${MONGODB_SERVICE_NAME}",
-        "creationTimestamp": null
+        "name": "${MONGODB_SERVICE_NAME}"
       },
       "spec": {
         "strategy": {
