@@ -72,26 +72,25 @@ if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
     usage
   fi
   # Run the MongoDB in 'standalone' mode
-  if [ ! -f ${MONGODB_DATADIR}/.mongodb_datadir_initialized ]; then
-    # Create MongoDB users and restart MongoDB with authentication enabled
-    # At this time the MongoDB does not accept the incoming connections.
-    mongod $mongo_common_args & #--bind_ip 127.0.0.1 --quiet >/dev/null &
-    wait_for_mongo_up
-    mongo_create_admin
-    mongo_create_user
-    touch ${MONGODB_DATADIR}/.mongodb_datadir_initialized
-    # Restart the MongoDB daemon to bind on all interfaces
-    mongod $mongo_common_args --shutdown
-    wait_for_mongo_down
+  mongod $mongo_common_args &
+  wait_for_mongo_up
+  js_command="db.system.users.count({'user':'admin', 'db':'admin'})"
+  if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+    echo "=> Admin user is already created. Resetting password ..."
+    mongo_reset_admin
   else
-    echo "=> Database directory is already initialized. Skipping creation of users ..."
-    # Ensure passwords match environment variables
-    mongod $mongo_common_args &
-    wait_for_mongo_up
-    mongo_reset_passwords
-    mongod $mongo_common_args --shutdown
-    wait_for_mongo_down
+    mongo_create_admin
   fi
+  js_command="db.system.users.count({'user':'${MONGODB_USER}', 'db':'${MONGODB_DATABASE}'})"
+  if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+    echo "=> MONGODB_USER user is already created. Resetting password ..."
+    mongo_reset_user
+  else
+    mongo_create_user
+  fi
+  # Restart the MongoDB daemon to bind on all interfaces
+  mongod $mongo_common_args --shutdown
+  wait_for_mongo_down
   unset_env_vars
   exec mongod $mongo_common_args --auth
 else

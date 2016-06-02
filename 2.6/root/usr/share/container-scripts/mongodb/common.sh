@@ -227,10 +227,8 @@ function mongo_create_user() {
   fi
 }
 
-# mongo_reset_passwords sets the MongoDB passwords to match MONGODB_PASSWORD
-# and MONGODB_ADMIN_PASSWORD
-function mongo_reset_passwords() {
-  # Reset password of MONGODB_USER
+# mongo_reset_user sets the MongoDB MONGODB_USER's password to match MONGODB_PASSWORD
+function mongo_reset_user() {
   if [[ -n "${MONGODB_USER:-}" && -n "${MONGODB_PASSWORD:-}" && -n "${MONGODB_DATABASE:-}" ]]; then
     local js_command="db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
     if ! mongo ${MONGODB_DATABASE} --eval "${js_command}"; then
@@ -238,8 +236,10 @@ function mongo_reset_passwords() {
       exit 1
     fi
   fi
+}
 
-  # Reset password of admin
+# mongo_reset_admin sets the MongoDB admin password to match MONGODB_ADMIN_PASSWORD
+function mongo_reset_admin() {
   if [[ -n "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
     local js_command="db.changeUserPassword('admin', '${MONGODB_ADMIN_PASSWORD}')"
     if ! mongo admin --eval "${js_command}"; then
