@@ -19,3 +19,7 @@ quiet = ${MONGODB_QUIET}
 
 # Disable the HTTP interface (Defaults to localhost:28017).
 nohttpinterface = true
+
+# If the flag is not enabled, you cannot create new text indexes, and you cannot perform text searches. 
+# Since it is not recommended to have this on in production, the default is "false".
+setParameter = textSearchEnabled=${MONGODB_TEXT_SEARCH_ENABLED}
