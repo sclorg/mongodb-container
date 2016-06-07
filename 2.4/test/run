@@ -145,11 +145,26 @@ function test_config_option() {
     docker stop $(get_cid ${name})
 }
 
+function test_text_search_enabled() {
+  DOCKER_ARGS="
+  -e MONGODB_DATABASE=db
+  -e MONGODB_USER=user
+  -e MONGODB_PASSWORD=password
+  -e MONGODB_ADMIN_PASSWORD=adminPassword
+  -e MONGODB_TEXT_SEARCH_ENABLED=true
+  "
+  local name=test_text_search
+  create_container ${name} ${DOCKER_ARGS}
+  test_connection ${name}
+  docker stop $(get_cid ${name})
+}
+
 function run_configuration_tests() {
     echo "  Testing image configuration settings"
     test_config_option MONGODB_NOPREALLOC noprealloc true
     test_config_option MONGODB_SMALLFILES smallfiles true
     test_config_option MONGODB_QUIET quiet true
+    test_text_search_enabled
     echo "  Success!"
 }
 
