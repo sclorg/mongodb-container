@@ -73,17 +73,12 @@ function _wait_for_mongo() {
   return 1
 }
 
-# endpoints returns a list of hosts to be part of a replica set. Host names are
-# generated from MONGODB_SERVICE_NAME, appending a suffix based on the number of
-# replicas defined in MONGODB_INITIAL_REPLICA_COUNT. For each host name, there
-# should be a service with the same name, so that the name points to a valid DNS
-# entry. Example output, where MONGODB_SERVICE_NAME=mongodb and
-# MONGODB_INITIAL_REPLICA_COUNT=3:
-# mongodb-1
-# mongodb-2
-# mongodb-3
+# endpoints returns list of IP addresses with other instances of MongoDB
+# To get list of endpoints, you need to have headless Service named 'mongodb'.
+# NOTE: This won't work with standalone Docker container.
 function endpoints() {
-  printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
+  service_name=${MONGODB_SERVICE_NAME:-mongodb}
+  dig ${service_name} A +search +short 2>/dev/null
 }
 
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
@@ -127,9 +122,9 @@ function mongo_primary_member_addr() {
     while read mongo_node; do
       cmd_output="$(mongo admin -u admin -p "$MONGODB_ADMIN_PASSWORD" --host "$mongo_node:$CONTAINER_PORT" --eval 'print(rs.isMaster().primary)' --quiet || true)"
 
-      # Trying to find HOST:PORT in output and filter out error message because mongo prints it to stdout
-      host_and_port_regexp='[^:]\+:[0-9]\+'
-      if addr="$(echo "$cmd_output" | grep -x "$host_and_port_regexp")"; then
+      # Trying to find IP:PORT in output and filter out error message because mongo prints it to stdout
+      ip_and_port_regexp='[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:[0-9]\+'
+      if addr="$(echo "$cmd_output" | grep -x "$ip_and_port_regexp")"; then
         echo -n "$addr"
         exit 0
       fi

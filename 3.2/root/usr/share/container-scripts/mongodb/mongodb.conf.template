@@ -8,9 +8,11 @@ pidfilepath = ${MONGODB_PID_FILE}
 dbpath = ${MONGODB_DATADIR}
 
 # Disable data file preallocation. Default: true
+# only for mounted data directory from older MongoDB server
 noprealloc = ${MONGODB_NOPREALLOC}
 
 # Set MongoDB to use a smaller default data file size. Default: true
+# only for mounted data directory from older MongoDB server
 smallfiles = ${MONGODB_SMALLFILES}
 
 # Runs MongoDB in a quiet mode that attempts to limit the amount of output.
@@ -19,7 +21,3 @@ quiet = ${MONGODB_QUIET}
 
 # Disable the HTTP interface (Defaults to localhost:28017).
 nohttpinterface = true
-
-# If the flag is not enabled, you cannot create new text indexes, and you cannot perform text searches. 
-# Since it is not recommended to have this on in production, the default is "false".
-setParameter = textSearchEnabled=${MONGODB_TEXT_SEARCH_ENABLED}
