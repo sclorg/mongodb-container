@@ -7,7 +7,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source  ${CONTAINER_SCRIPTS_PATH}/common.sh
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 echo "=> Waiting for local MongoDB to accept connections ..."
 wait_for_mongo_up

@@ -53,7 +53,7 @@
       "from": "[a-zA-Z0-9]{255}"
     }
   ],
-  "objects":[
+  "objects": [
     {
       "kind": "Service",
       "apiVersion": "v1",
@@ -81,8 +81,7 @@
       "kind": "DeploymentConfig",
       "apiVersion": "v1",
       "metadata": {
-        "name": "${MONGODB_SERVICE_NAME}",
-        "creationTimestamp": null
+        "name": "${MONGODB_SERVICE_NAME}"
       },
       "spec": {
         "strategy": {
@@ -92,7 +91,8 @@
               "failurePolicy": "Retry",
               "execNewPod": {
                 "command": [
-                  "run-mongod", "initiate"
+                  "run-mongod",
+                  "initiate"
                 ],
                 "containerName": "mongodb",
                 "env": [
@@ -107,7 +107,7 @@
         },
         "triggers": [
           {
-            "type":"ConfigChange"
+            "type": "ConfigChange"
           }
         ],
         "replicas": 3,
@@ -123,14 +123,14 @@
           "spec": {
             "containers": [
               {
-                "name":  "mongodb",
+                "name": "mongodb",
                 "image": "openshift/mongodb-24-centos7",
                 "readinessProbe": {
-                    "tcpSocket":{
-                        "port": 27017
-                    },
-                    "initialDelaySeconds": 15,
-                    "timeoutSeconds": 1
+                  "tcpSocket": {
+                    "port": 27017
+                  },
+                  "initialDelaySeconds": 15,
+                  "timeoutSeconds": 1
                 },
                 "env": [
                   {
@@ -162,7 +162,7 @@
                     "value": "${MONGODB_KEYFILE_VALUE}"
                   }
                 ],
-                "ports":[
+                "ports": [
                   {
                     "containerPort": 27017
                   }
@@ -170,9 +170,7 @@
               }
             ]
           }
-        },
-        "restartPolicy": "Never",
-        "dnsPolicy": "ClusterFirst"
+        }
       }
     }
   ]

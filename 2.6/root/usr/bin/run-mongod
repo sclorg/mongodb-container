@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source  ${CONTAINER_SCRIPTS_PATH}/common.sh
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 # Data directory where MongoDB database files live. The data subdirectory is here
 # because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
@@ -28,6 +28,7 @@ function usage() {
   echo "  MONGODB_ADMIN_PASSWORD"
   echo "Optional variables:"
   echo "  MONGODB_REPLICA_NAME"
+  echo "  MONGODB_INITIAL_REPLICA_COUNT"
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
   echo "  MONGODB_SMALLFILES (default: true)"
@@ -52,9 +53,7 @@ function cleanup() {
   # fi
 
   echo "=> Shutting down MongoDB server ..."
-  if [ -f "${MONGODB_PID_FILE}" ]; then
-    kill -2 $(cat ${MONGODB_PID_FILE})
-  else
+  if pgrep mongod; then
     pkill -2 mongod
   fi
   wait_for_mongo_down
@@ -80,26 +79,25 @@ if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
     usage
   fi
   # Run the MongoDB in 'standalone' mode
-  if [ ! -f ${MONGODB_DATADIR}/.mongodb_datadir_initialized ]; then
-    # Create MongoDB users and restart MongoDB with authentication enabled
-    # At this time the MongoDB does not accept the incoming connections.
-    mongod $mongo_common_args & #--bind_ip 127.0.0.1 --quiet >/dev/null &
-    wait_for_mongo_up
-    mongo_create_admin
-    mongo_create_user
-    touch ${MONGODB_DATADIR}/.mongodb_datadir_initialized
-    # Restart the MongoDB daemon to bind on all interfaces
-    mongod $mongo_common_args --shutdown
-    wait_for_mongo_down
+  mongod $mongo_common_args &
+  wait_for_mongo_up
+  js_command="db.system.users.count({'user':'admin', 'db':'admin'})"
+  if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+    echo "=> Admin user is already created. Resetting password ..."
+    mongo_reset_admin
   else
-    echo "=> Database directory is already initialized. Skipping creation of users ..."
-    # Ensure passwords match environment variables
-    mongod $mongo_common_args &
-    wait_for_mongo_up
-    mongo_reset_passwords
-    mongod $mongo_common_args --shutdown
-    wait_for_mongo_down
+    mongo_create_admin
   fi
+  js_command="db.system.users.count({'user':'${MONGODB_USER}', 'db':'${MONGODB_DATABASE}'})"
+  if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+    echo "=> MONGODB_USER user is already created. Resetting password ..."
+    mongo_reset_user
+  else
+    mongo_create_user
+  fi
+  # Restart the MongoDB daemon to bind on all interfaces
+  mongod $mongo_common_args --shutdown
+  wait_for_mongo_down
   unset_env_vars
   exec mongod $mongo_common_args --auth
 else
@@ -109,19 +107,13 @@ else
     run_mongod_supervisor
     trap 'cleanup' SIGINT SIGTERM
   fi
-  auth_args=" --auth"
-  # When initializing the MongoDB cluster, we have to run without
-  # authentication
-  if [ ! -v MONGODB_NO_AUTH ]; then
-    auth_args=""
-  fi
   # Run `unset_env_vars` and `mongod` in a subshell because
   # MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
   # `cleanup` references it.
   (
     unset_env_vars
-    mongod $mongo_common_args --replSet ${MONGODB_REPLICA_NAME} \
-      --keyFile ${MONGODB_KEYFILE_PATH} ${auth_args}
+    mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}" \
+      --keyFile "${MONGODB_KEYFILE_PATH}"
   ) &
   wait
 fi

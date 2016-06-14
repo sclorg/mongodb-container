@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source  ${CONTAINER_SCRIPTS_PATH}/common.sh
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
 source ${CONTAINER_SCRIPTS_PATH}/setup_rhmap.sh
 
 current_endpoints=$(endpoints)
@@ -49,6 +49,7 @@ mongo_initiate "${current_endpoints}"
 echo "=> Creating MongoDB users and databases ..."
 setUpDatabases
 mongo_create_admin
+mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
 echo "=> Waiting for replication to finish ..."
 # TODO: Replace this with polling or a Mongo script that will check if all

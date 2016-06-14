@@ -22,12 +22,9 @@ The following environment variables influence the MongoDB configuration file. Th
 
 |    Variable name      |    Description                                                            |    Default
 | :-------------------- | ------------------------------------------------------------------------- | ----------------
-|  `MONGODB_NOPREALLOC` | Disable data file preallocation.                                          |  true
-|  `MONGODB_SMALLFILES` | Set MongoDB to use a smaller default data file size.                      |  true
+|  `MONGODB_NOPREALLOC` | Disable data file preallocation (only for mounted data directory from older MongoDB server).  |  true
+|  `MONGODB_SMALLFILES` | Set MongoDB to use a smaller default data file size (only for mounted data directory from older MongoDB server).  |  true
 |  `MONGODB_QUIET`      | Runs MongoDB in a quiet mode that attempts to limit the amount of output. |  true
-|  `MONGODB_TEXT_SEARCH_ENABLED` | Enables the [text search](https://docs.mongodb.org/v2.4/core/index-text/#text-search-text-command) feature.  |  false
-
-**Notice:  Do not enable or use the MONGODB_TEXT_SEARCH_ENABLED on production systems.**
 
 
 You can also set the following mount points by passing the `-v /host:/container` flag to Docker.
@@ -44,12 +41,12 @@ matches the user UID or name which is running inside the container.**
 Usage
 ---------------------------------
 
-For this, we will assume that you are using the `openshift/mongodb-24-centos7` image.
+For this, we will assume that you are using the `centos/mongodb-32-centos7` image.
 If you want to set only the mandatory environment variables and store the database
 in the `/home/user/database` directory on the host filesystem, execute the following command:
 
 ```
-$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -e MONGODB_ADMIN_PASSWORD=<admin_password> -v /home/user/database:/var/lib/mongodb/data openshift/mongodb-24-centos7
+$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -e MONGODB_ADMIN_PASSWORD=<admin_password> -v /home/user/database:/var/lib/mongodb/data centos/mongodb-32-centos7
 ```
 
 If you are initializing the database and it's the first time you are using the

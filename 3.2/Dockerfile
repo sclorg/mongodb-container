@@ -1,4 +1,5 @@
 FROM centos:centos7
+MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
 # MongoDB image for OpenShift.
 #
@@ -10,32 +11,33 @@ FROM centos:centos7
 #  * $MONGODB_DATABASE - Name of the database to create
 #  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin
 
-ENV MONGODB_VERSION=2.6 \
+ENV MONGODB_VERSION=3.2 \
     HOME=/var/lib/mongodb
 
 LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
-      io.k8s.display-name="MongoDB 2.6" \
+      io.k8s.display-name="MongoDB 3.2" \
       io.openshift.expose-services="27017:mongodb" \
-      io.openshift.tags="database,mongodb,rh-mongodb26"
+      io.openshift.tags="database,mongodb,rh-mongodb32"
 
 EXPOSE 27017
 
 # Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
 # the whole /var/lib/mongodb/ dir has to be chown-ed.
-RUN yum install -y centos-release-scl && \
-    INSTALL_PKGS="bind-utils gettext iproute rsync tar v8314 rh-mongodb26-mongodb rh-mongodb26" && \
+RUN yum install -y centos-release-scl-rh && \
+    yum-config-manager --enable centos-sclo-rh-testing && \
+    INSTALL_PKGS="bind-utils gettext iproute rsync tar rh-mongodb32-mongodb rh-mongodb32" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
-    mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ /var/opt/rh/rh-mongodb26/lib/mongodb && \
+    mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ /var/opt/rh/rh-mongodb32/lib/mongodb && \
     # Loosen permission bits to avoid problems running container with arbitrary UID
-    chmod g+w -R /var/opt/rh/rh-mongodb26/lib/mongodb && \
+    chmod g+w -R /var/opt/rh/rh-mongodb32/lib/mongodb && \
     chmod -R g+rwx /var/lib/mongodb
 
 # Get prefix path and path to scripts rather than hard-code them in scripts
 ENV CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
-    MONGODB_PREFIX=/opt/rh/rh-mongodb26/root/usr \
-    ENABLED_COLLECTIONS=rh-mongodb26
+    MONGODB_PREFIX=/opt/rh/rh-mongodb32/root/usr \
+    ENABLED_COLLECTIONS=rh-mongodb32
 
 # When bash is started non-interactively, to run a shell script, for example it
 # looks for this variable and source the content of this file. This will enable
