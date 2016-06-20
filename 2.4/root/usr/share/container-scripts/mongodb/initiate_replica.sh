@@ -47,9 +47,8 @@ wait_for_mongo_up
 mongo_initiate "${current_endpoints}"
 
 echo "=> Creating MongoDB users and databases ..."
-setUpDatabases
 mongo_create_admin
-mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
+setUpDatabases "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
 echo "=> Waiting for replication to finish ..."
 # TODO: Replace this with polling or a Mongo script that will check if all
