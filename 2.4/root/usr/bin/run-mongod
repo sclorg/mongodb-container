@@ -91,14 +91,10 @@ if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
   else
     mongo_create_admin
   fi
-  js_command="db.system.users.count({'user':'${MONGODB_USER}'})"
-  if [ "$(mongo ${MONGODB_DATABASE} --quiet --eval "$js_command")" == "1" ]; then
-    echo "=> MONGODB_USER user is already created. Resetting password ..."
-    mongo_reset_user
 
-  else
-    mongo_create_user
-  fi
+  # Set up users and databases for RHMAP
+  setUpDatabases
+
   # Restart the MongoDB daemon to bind on all interfaces
   mongod $mongo_common_args --shutdown
   wait_for_mongo_down
