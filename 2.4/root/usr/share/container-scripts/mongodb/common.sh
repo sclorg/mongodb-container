@@ -77,13 +77,16 @@ function _wait_for_mongo() {
 # generated from MONGODB_SERVICE_NAME, appending a suffix based on the number of
 # replicas defined in MONGODB_INITIAL_REPLICA_COUNT. For each host name, there
 # should be a service with the same name, so that the name points to a valid DNS
-# entry. Example output, where MONGODB_SERVICE_NAME=mongodb and
-# MONGODB_INITIAL_REPLICA_COUNT=3:
-# mongodb-1
-# mongodb-2
-# mongodb-3
+# entry. Example output, where:
+# MONGODB_SERVICE_NAME=mongodb
+# MONGODB_INITIAL_REPLICA_COUNT=3
+# MBAAS_NAMESPACE=3node-mbaas:
+#
+# mongodb-1.3node-mbaas
+# mongodb-2.3node-mbaas
+# mongodb-3.3node-mbaas
 function endpoints() {
-  printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
+  printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d.${MBAAS_NAMESPACE}\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
 }
 
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
