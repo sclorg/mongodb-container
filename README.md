@@ -12,6 +12,7 @@ Versions
 MongoDB versions currently provided are:
 * mongodb-2.4
 * mongodb-2.6
+* mongodb-3.2
 
 RHEL versions currently supported are:
 * RHEL7

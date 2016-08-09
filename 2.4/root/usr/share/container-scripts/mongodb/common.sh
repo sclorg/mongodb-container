@@ -80,13 +80,13 @@ function _wait_for_mongo() {
 # entry. Example output, where:
 # MONGODB_SERVICE_NAME=mongodb
 # MONGODB_INITIAL_REPLICA_COUNT=3
-# MBAAS_NAMESPACE=3node-mbaas:
+# METADATA_NAMESPACE=3node-mbaas:
 #
 # mongodb-1.3node-mbaas
 # mongodb-2.3node-mbaas
 # mongodb-3.3node-mbaas
 function endpoints() {
-  printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d.${MBAAS_NAMESPACE}\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
+  printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d.${METADATA_NAMESPACE}\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
 }
 
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
