@@ -1,6 +1,5 @@
 MongoDB Docker images
 =====================
-[![Build Status](https://ci.openshift.redhat.com/jenkins/job/mongodb/badge/icon)](https://ci.openshift.redhat.com/jenkins/job/mongodb/)
 
 This repository contains Dockerfiles for MongoDB images for OpenShift.
 Users can choose between RHEL and CentOS based images.
