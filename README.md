@@ -12,6 +12,7 @@ Versions
 MongoDB versions currently provided are:
 * mongodb-2.4
 * mongodb-2.6
+* mongodb-3.0-upg
 * mongodb-3.2
 
 RHEL versions currently supported are:
@@ -65,6 +66,11 @@ see [usage documentation](2.4/README.md).
 For information about usage of Dockerfile for MongoDB 2.6,
 see [usage documentation](2.6/README.md).
 
+For information about usage of Dockerfile for MongoDB 3.0-upg,
+see [usage documentation](3.0-upg/README.md).
+
+For information about usage of Dockerfile for MongoDB 3.2,
+see [usage documentation](3.2/README.md).
 
 Test
 ---------------------------------
