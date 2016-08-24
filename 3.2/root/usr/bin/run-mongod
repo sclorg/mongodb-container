@@ -6,20 +6,6 @@ set -o pipefail
 
 source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
-# Data directory where MongoDB database files live. The data subdirectory is here
-# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
-# override it.
-export MONGODB_DATADIR=/var/lib/mongodb/data
-
-# Configuration settings.
-export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
-export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
-export MONGODB_QUIET=${MONGODB_QUIET:-true}
-
-
-export MONGODB_KEYFILE_SOURCE_PATH="/var/run/secrets/mongo/keyfile"
-export MONGODB_KEYFILE_PATH="${HOME}/keyfile"
-
 function usage() {
   echo "You must specify the following environment variables:"
   echo "  MONGODB_USER"
@@ -61,12 +47,15 @@ if [ $# -gt 0 ] && [ "$1" == "initiate" ]; then
   exec ${CONTAINER_SCRIPTS_PATH}/initiate_replica.sh
 fi
 
-# Generate config file for MongoDB
-envsubst < ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template > $MONGODB_CONFIG_PATH
+# If user provides own config file use it and do not generate new one
+if [ ! -s $MONGODB_CONFIG_PATH ]; then
+  # Generate config file for MongoDB
+  envsubst < ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template > $MONGODB_CONFIG_PATH
+fi
 
 # Need to cache the container address for the cleanup
 cache_container_addr
-mongo_common_args="-f $MONGODB_CONFIG_PATH --oplogSize 64"
+mongo_common_args="-f $MONGODB_CONFIG_PATH"
 if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
   if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
     usage
@@ -105,8 +94,7 @@ else
   # `cleanup` references it.
   (
     unset_env_vars
-    mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}" \
-      --keyFile "${MONGODB_KEYFILE_PATH}"
+    mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}"
   ) &
   wait
 fi
