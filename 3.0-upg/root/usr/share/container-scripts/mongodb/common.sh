@@ -121,68 +121,51 @@ function mongo_initiate() {
   mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
 }
 
-# get the address of the current primary member
-function mongo_primary_member_addr() {
-  local rc=0
-
-  endpoints | grep -v "$(container_addr)" |
-  (
-    while read mongo_node; do
-      cmd_output="$(mongo admin -u admin -p "$MONGODB_ADMIN_PASSWORD" --host "$mongo_node:$CONTAINER_PORT" --eval 'print(rs.isMaster().primary)' --quiet || true)"
-
-      # Trying to find IP:PORT in output and filter out error message because mongo prints it to stdout
-      ip_and_port_regexp='[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:[0-9]\+'
-      if addr="$(echo "$cmd_output" | grep -x "$ip_and_port_regexp")"; then
-        echo -n "$addr"
-        exit 0
-      fi
-
-      echo >&2 "Cannot get address of primary from $mongo_node node: $cmd_output"
-    done
-
-    exit 1
-  ) || rc=$?
-
-  if [ $rc -ne 0 ]; then
-    echo >&2 "Cannot get address of primary node: after checking all nodes we don't have the address"
+# replset_addr return the address of the current replSet
+function replset_addr() {
+  local current_endpoints
+  current_endpoints="$(endpoints)"
+  if [ -z "${current_endpoints}" ]; then
+    echo >&2 "Cannot get address of replica set: no nodes are listed in service"
     return 1
   fi
+  echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}"
 }
 
 # mongo_remove removes the current MongoDB from the cluster
 function mongo_remove() {
-  local primary_addr
+  local host
   # if we cannot determine the IP address of the primary, exit without an error
   # to allow callers to proceed with their logic
-  primary_addr="$(mongo_primary_member_addr || true)"
-  if [ -z "$primary_addr" ]; then
+  host="$(replset_addr || true)"
+  if [ -z "$host" ]; then
     return
   fi
 
   local mongo_addr
   mongo_addr="$(mongo_addr)"
 
-  echo "=> Removing ${mongo_addr} on ${primary_addr} ..."
+  echo "=> Removing ${mongo_addr} from replica set ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${primary_addr}" --eval "rs.remove('${mongo_addr}');" || true
+    --host "${host}" --eval "rs.remove('${mongo_addr}');" || true
 }
 
 # mongo_add advertise the current container to other mongo replicas
 function mongo_add() {
-  local primary_addr
+  local host
   # if we cannot determine the IP address of the primary, exit without an error
   # to allow callers to proceed with their logic
-  primary_addr="$(mongo_primary_member_addr || true)"
-  if [ -z "$primary_addr" ]; then
+  host="$(replset_addr || true)"
+  if [ -z "$host" ]; then
     return
   fi
 
   local mongo_addr
   mongo_addr="$(mongo_addr)"
 
-  echo "=> Adding ${mongo_addr} to ${primary_addr} ..."
+  echo "=> Adding ${mongo_addr} to replica set ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${primary_addr}" --eval "rs.add('${mongo_addr}');"
+    --host "${host}" --eval "rs.add('${mongo_addr}');"
 }
 
 # mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
