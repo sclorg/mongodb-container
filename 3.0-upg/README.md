@@ -4,7 +4,7 @@ MongoDB Docker image
 This repository contains Dockerfiles for MongoDB images for general usage and OpenShift.
 Users can choose between RHEL and CentOS based images.
 
-**Notice: This image is supported only for upgrade from centos/mongodb-26-centos7 to centos/mongodb-32-centos7.**
+**Notice: This image is supported only for upgrade from MongoDB 2.6 to 3.2.**
 
 Environment variables
 ---------------------------------
