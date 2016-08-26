@@ -39,13 +39,7 @@ function cleanup() {
   exit 0
 }
 
-if [ $# -gt 0 ] && [ "$1" == "initiate" ]; then
-  if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
-    usage
-  fi
-  setup_keyfile
-  exec ${CONTAINER_SCRIPTS_PATH}/initiate_replica.sh
-fi
+trap 'cleanup' SIGINT SIGTERM
 
 # If user provides own config file use it and do not generate new one
 if [ ! -s $MONGODB_CONFIG_PATH ]; then
@@ -56,50 +50,29 @@ fi
 # Need to cache the container address for the cleanup
 cache_container_addr
 mongo_common_args="-f $MONGODB_CONFIG_PATH"
-if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
-  if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
-    usage
-  fi
-  # Run the MongoDB in 'standalone' mode
-  mongod $mongo_common_args &
-  wait_for_mongo_up
-  js_command="db.system.users.count({'user':'admin'})"
-  if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
-    echo "=> Admin user is already created. Resetting password ..."
-    mongo_reset_admin
-  else
-    mongo_create_admin
-  fi
-  js_command="db.system.users.count({'user':'${MONGODB_USER}'})"
-  if [ "$(mongo ${MONGODB_DATABASE} --quiet --eval "$js_command")" == "1" ]; then
-    echo "=> MONGODB_USER user is already created. Resetting password ..."
-    mongo_reset_user
-  else
-    mongo_create_user
-  fi
-  # Restart the MongoDB daemon to bind on all interfaces
-  mongod $mongo_common_args --shutdown
-  wait_for_mongo_down
-  unset_env_vars
-  exec mongod $mongo_common_args --auth
-else
-  setup_keyfile
-  # Run the MongoDB in 'clustered' mode with --replSet
-  if [ ! -v MONGODB_NO_SUPERVISOR ]; then
-    run_mongod_supervisor
-    trap 'cleanup' SIGINT SIGTERM
-  fi
-  # In MongoDB 2.4 --keyFile does not imply authentication, so enabling it explicitly
-  # When not initializing the MongoDB cluster, we have to run with authentication
-  if [ -v MONGODB_NO_AUTH ]; then
-    mongo_common_args+=" --auth"
-  fi
-  # Run `unset_env_vars` and `mongod` in a subshell because
-  # MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
-  # `cleanup` references it.
-  (
-    unset_env_vars
-    mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}"
-  ) &
-  wait
+if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
+  usage
 fi
+
+# Run the MongoDB in 'standalone' mode
+mongod $mongo_common_args &
+wait_for_mongo_up
+js_command="db.system.users.count({'user':'admin'})"
+if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+  echo "=> Admin user is already created. Resetting password ..."
+  mongo_reset_admin
+else
+  mongo_create_admin
+fi
+js_command="db.system.users.count({'user':'${MONGODB_USER}'})"
+if [ "$(mongo ${MONGODB_DATABASE} --quiet --eval "$js_command")" == "1" ]; then
+  echo "=> MONGODB_USER user is already created. Resetting password ..."
+  mongo_reset_user
+else
+  mongo_create_user
+fi
+# Restart the MongoDB daemon to bind on all interfaces
+mongod $mongo_common_args --shutdown
+wait_for_mongo_down
+unset_env_vars
+exec mongod $mongo_common_args --auth
