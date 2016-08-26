@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# Run mongod which connect to replSet
+# $1 - "initiate" (optional) -> this mongod will initiate a replSet
+#
+# If this script is terminated it removes mongod from replSet
 
 set -o errexit
 set -o nounset
@@ -12,8 +17,8 @@ function usage() {
   echo "  MONGODB_PASSWORD"
   echo "  MONGODB_DATABASE"
   echo "  MONGODB_ADMIN_PASSWORD"
-  echo "Optional variables:"
   echo "  MONGODB_REPLICA_NAME"
+  echo "Optional variables:"
   echo "  MONGODB_INITIAL_REPLICA_COUNT"
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
@@ -39,14 +44,6 @@ function cleanup() {
   exit 0
 }
 
-echo "
-
-
-Notice: This image is supported only for upgrade from MongoDB 2.6 to 3.2.
-
-
-"
-
 trap 'cleanup' SIGINT SIGTERM
 
 # If user provides own config file use it and do not generate new one
@@ -58,29 +55,21 @@ fi
 # Need to cache the container address for the cleanup
 cache_container_addr
 mongo_common_args="-f $MONGODB_CONFIG_PATH"
-if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
-  usage
+if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD && -v MONGODB_REPLICA_NAME ]]; then
+    usage
 fi
 
-# Run the MongoDB in 'standalone' mode
-mongod $mongo_common_args &
-wait_for_mongo_up
-js_command="db.system.users.count({'user':'admin', 'db':'admin'})"
-if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
-  echo "=> Admin user is already created. Resetting password ..."
-  mongo_reset_admin
-else
-  mongo_create_admin
-fi
-js_command="db.system.users.count({'user':'${MONGODB_USER}', 'db':'${MONGODB_DATABASE}'})"
-if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
-  echo "=> MONGODB_USER user is already created. Resetting password ..."
-  mongo_reset_user
-else
-  mongo_create_user
-fi
-# Restart the MongoDB daemon to bind on all interfaces
-mongod $mongo_common_args --shutdown
-wait_for_mongo_down
-unset_env_vars
-exec mongod $mongo_common_args --auth
+# Run the MongoDB in 'replicated' mode
+setup_keyfile
+
+# Run the supervisor in background to manage replset
+${CONTAINER_SCRIPTS_PATH}/replset_supervisor.sh "${1:-}" "$$" &
+
+# Run `unset_env_vars` and `mongod` in a subshell because
+# MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
+# `cleanup` references it.
+(
+  unset_env_vars
+  mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}"
+) &
+wait
