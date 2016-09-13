@@ -62,7 +62,7 @@ if [[ "$1" == "initiate" ]]; then
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host ${mongo_node} --eval "var done=false;while(done==false){var members=rs.status().members;for(i=0;i<members.length;i++){if(members[i].stateStr=='PRIMARY' && members[i].name!='$(mongo_addr)'){done=true}};sleep(500)};" &>/dev/null
 
   # Remove the initialization container MongoDB from cluster and shutdown
-  echo "=> The new PRIMARY member elected, shutting down current member ..."
+  echo "=> A new PRIMARY member was elected, shutting down local mongod ..."
   mongo_remove
 
   mongod -f ${MONGODB_CONFIG_PATH} --shutdown &>/dev/null
