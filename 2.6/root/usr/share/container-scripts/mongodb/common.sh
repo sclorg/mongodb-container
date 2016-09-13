@@ -185,12 +185,6 @@ function mongo_add() {
     --host "${primary_addr}" --eval "rs.add('${mongo_addr}');"
 }
 
-# run_mongod_supervisor runs the MongoDB replica supervisor that manages
-# registration of the new members to the MongoDB replica cluster
-function run_mongod_supervisor() {
-  ${CONTAINER_SCRIPTS_PATH}/replica_supervisor.sh 2>&1 &
-}
-
 # mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
 # $1 - login parameters for mongo (optional)
 # $2 - host where to connect (localhost by default)

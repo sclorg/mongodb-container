@@ -91,7 +91,7 @@
               "failurePolicy": "Retry",
               "execNewPod": {
                 "command": [
-                  "run-mongod",
+                  "run-mongod-replication",
                   "initiate"
                 ],
                 "containerName": "mongodb",
@@ -125,6 +125,9 @@
               {
                 "name": "mongodb",
                 "image": "openshift/mongodb-24-centos7",
+                "args": [
+                  "run-mongod-replication"
+                ],
                 "readinessProbe": {
                   "tcpSocket": {
                     "port": 27017
