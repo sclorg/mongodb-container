@@ -65,6 +65,7 @@ ${CONTAINER_SCRIPTS_PATH}/init-replset.sh "${1:-}" &
 
 # Run `mongod` in a subshell because MONGODB_ADMIN_PASSWORD should still be
 # defined when the trapped call to `cleanup` references it.
+set -m
 (
   # Make sure env variables don't propagate to mongod process.
   unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD

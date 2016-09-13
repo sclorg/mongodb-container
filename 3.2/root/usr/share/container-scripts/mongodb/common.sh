@@ -83,8 +83,12 @@ function _wait_for_mongo() {
 # To get list of endpoints, you need to have headless Service named 'mongodb'.
 # NOTE: This won't work with standalone Docker container.
 function endpoints() {
-  service_name=${MONGODB_SERVICE_NAME:-mongodb}
-  dig ${service_name} A +search +short 2>/dev/null
+  if [ -n "${MONGODB_REPLICA_MEMBERS+x}" ]; then
+    echo "${MONGODB_REPLICA_MEMBERS} $(container_addr)"
+  else
+    service_name=${MONGODB_SERVICE_NAME:-mongodb}
+    dig ${service_name} A +search +short 2>/dev/null
+  fi
 }
 
 # build_mongo_config builds the MongoDB replicaSet config used for the cluster
