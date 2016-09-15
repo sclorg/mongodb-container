@@ -8,7 +8,6 @@ source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 # Initiate replicaset and exit
 if [[ "$1" == "initiate" ]]; then
-  main_process_id=$2
   current_endpoints=$(endpoints)
   if [ -n "${MONGODB_INITIAL_REPLICA_COUNT:-}" ]; then
     echo -n "=> Waiting for $MONGODB_INITIAL_REPLICA_COUNT MongoDB endpoints ..."
@@ -36,6 +35,9 @@ if [[ "$1" == "initiate" ]]; then
   for node in ${current_endpoints}; do
     wait_for_mongo_up ${node} &>/dev/null
   done
+
+  echo "=> Waiting for local MongoDB to accept connections ..."
+  wait_for_mongo_up &>/dev/null
 
   echo "=> Initiating the replSet ${MONGODB_REPLICA_NAME} ..."
   # This will perform the 'rs.initiate()' command on the current MongoDB.
@@ -69,9 +71,6 @@ if [[ "$1" == "initiate" ]]; then
   wait_for_mongo_down
 
   echo "=> Successfully initialized replSet"
-
-  # Exit this pod
-  kill ${main_process_id}
 
 # Try to add node into replicaset
 else

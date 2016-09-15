@@ -63,7 +63,7 @@ fi
 setup_keyfile
 
 # Run the supervisor in background to manage replset
-${CONTAINER_SCRIPTS_PATH}/replset_supervisor.sh "${1:-}" "$$" &
+${CONTAINER_SCRIPTS_PATH}/replset_supervisor.sh "${1:-}" &
 
 # Run `unset_env_vars` and `mongod` in a subshell because
 # MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
