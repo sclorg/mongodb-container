@@ -345,7 +345,8 @@ function insert_and_wait_for_replication() {
     # Storing document into replset and wait replication to finish
     CONTAINER_IP="${host}" ADMIN_PASS="adminPassword" \
     mongo_admin_cmd "db.getSiblingDB('test_db').data.insert(${data});
-        while(true) {
+        var i = 60;
+        while(i > 0) {
           var status=rs.status();
           var optime=status.members[0].optime;
           var ok=true;
@@ -358,6 +359,7 @@ function insert_and_wait_for_replication() {
             print('REPLICATED')
             break;
           }
+          i--;
         }"
 }
 
@@ -366,7 +368,8 @@ function wait_for_secondary() {
     host=$1
 
     CONTAINER_IP="${host}" ADMIN_PASS="adminPassword" \
-    mongo_admin_cmd "while(true) {
+    mongo_admin_cmd "var i = 60;
+        while(i > 0) {
           var status=rs.status();
           var ok=true;
           for(var i=1; i < status.members.length; i++) {
@@ -378,6 +381,7 @@ function wait_for_secondary() {
             print('ALL MEMBERS ARE PRIMARY OR SECONDARY')
             break;
           }
+          i--;
         }
         printjson(rs.status())"
 }
