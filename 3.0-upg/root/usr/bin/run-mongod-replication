@@ -17,6 +17,7 @@ function usage() {
   echo "  MONGODB_PASSWORD"
   echo "  MONGODB_DATABASE"
   echo "  MONGODB_ADMIN_PASSWORD"
+  echo "  MONGODB_KEYFILE_VALUE"
   echo "  MONGODB_REPLICA_NAME"
   echo "Optional variables:"
   echo "  MONGODB_INITIAL_REPLICA_COUNT"

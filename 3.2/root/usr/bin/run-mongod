@@ -13,9 +13,6 @@ function usage() {
   echo "  MONGODB_PASSWORD"
   echo "  MONGODB_DATABASE"
   echo "  MONGODB_ADMIN_PASSWORD"
-  echo "Optional variables:"
-  echo "  MONGODB_REPLICA_NAME"
-  echo "  MONGODB_INITIAL_REPLICA_COUNT"
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
   echo "  MONGODB_SMALLFILES (default: true)"
@@ -31,16 +28,6 @@ function unset_env_vars() {
 }
 
 function cleanup() {
-    # NOTE: The `endpoints` function in `common.sh` used to return ephemeral pod
-    # IPs, but now we have it return a fixed list of host names. Since the list of
-    # host names is static, we do not need nor want to add/remove new members to the
-    # replica set configuration as part of a pod lifecycle, therefore we comment out
-    # the code below.
-
-    # if [ -n "${MONGODB_REPLICA_NAME-}" ]; then
-    #   mongo_remove
-    # fi
-
   echo "=> Shutting down MongoDB server ..."
   if pgrep mongod; then
     pkill -2 mongod
@@ -57,8 +44,6 @@ if [ ! -s $MONGODB_CONFIG_PATH ]; then
   envsubst < ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template > $MONGODB_CONFIG_PATH
 fi
 
-# Need to cache the container address for the cleanup
-cache_container_addr
 mongo_common_args="-f $MONGODB_CONFIG_PATH"
 if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
   usage
