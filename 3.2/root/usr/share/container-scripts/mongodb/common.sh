@@ -259,3 +259,8 @@ function setup_keyfile() {
   chmod 0600 ${MONGODB_KEYFILE_PATH}
   mongo_common_args+=" --keyFile ${MONGODB_KEYFILE_PATH}"
 }
+
+# info prints a message prefixed by date and time.
+function info() {
+  printf "=> [%s] %s\n" "$(date +'%a %b %d %T')" "$*"
+}
