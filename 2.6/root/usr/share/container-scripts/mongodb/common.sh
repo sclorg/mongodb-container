@@ -192,7 +192,7 @@ function mongo_create_admin() {
 function mongo_create_user() {
   # Ensure input variables exists
   if [[ -z "${MONGODB_USER:-}" ]]; then
-    echo "=> MONGODB_USER is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    echo "=> MONGODB_USER is not set. Failed to create MongoDB user"
     exit 1
   fi
   if [[ -z "${MONGODB_PASSWORD:-}" ]]; then
