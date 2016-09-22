@@ -84,27 +84,6 @@
         "name": "${MONGODB_SERVICE_NAME}"
       },
       "spec": {
-        "strategy": {
-          "type": "Recreate",
-          "recreateParams": {
-            "post": {
-              "failurePolicy": "Retry",
-              "execNewPod": {
-                "command": [
-                  "run-mongod-replication",
-                  "initiate"
-                ],
-                "containerName": "mongodb",
-                "env": [
-                  {
-                    "name": "MONGODB_INITIAL_REPLICA_COUNT",
-                    "value": "3"
-                  }
-                ]
-              }
-            }
-          }
-        },
         "triggers": [
           {
             "type": "ConfigChange"

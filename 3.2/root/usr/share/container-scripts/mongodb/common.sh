@@ -89,36 +89,13 @@ function endpoints() {
   dig ${service_name} A +search +short 2>/dev/null
 }
 
-# build_mongo_config builds the MongoDB replicaSet config used for the cluster
-# initialization.
-# Takes a list of space-separated member IPs as the first argument.
-function build_mongo_config() {
-  local current_endpoints
-  current_endpoints="$1"
-  local members
-  members="{ _id: 0, host: \"$(mongo_addr)\"},"
-  local member_id
-  member_id=1
-  local container_addr
-  container_addr="$(container_addr)"
-  local node
-  for node in ${current_endpoints}; do
-    if [ "$node" != "$container_addr" ]; then
-      members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
-      let member_id++
-    fi
-  done
-  echo -n "var config={ _id: \"${MONGODB_REPLICA_NAME}\", members: [ ${members%,} ] }"
-}
-
 # mongo_initiate initiates the replica set.
 # Takes a list of space-separated member IPs as the first argument.
 function mongo_initiate() {
   local mongo_wait
   mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
-  config=$(build_mongo_config "$1")
-  echo "=> Initiating MongoDB replica using: ${config}"
-  mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
+  echo "=> Initiating MongoDB replica"
+  mongo admin --eval "var config={ _id: \"${MONGODB_REPLICA_NAME}\", members: [ { _id: 0, host: \"$(mongo_addr)\"} ] };rs.initiate(config);${mongo_wait}"
 }
 
 # replset_addr return the address of the current replSet
