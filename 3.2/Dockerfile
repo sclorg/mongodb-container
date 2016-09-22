@@ -25,7 +25,7 @@ EXPOSE 27017
 # the whole /var/lib/mongodb/ dir has to be chown-ed.
 RUN yum install -y centos-release-scl-rh && \
     yum-config-manager --enable centos-sclo-rh-testing && \
-    INSTALL_PKGS="bind-utils gettext iproute rsync tar rh-mongodb32-mongodb rh-mongodb32" && \
+    INSTALL_PKGS="bind-utils gettext iproute rsync tar rh-mongodb32-mongodb rh-mongodb32 rh-mongodb32-mongo-tools" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
