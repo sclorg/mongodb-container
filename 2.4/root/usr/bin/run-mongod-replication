@@ -51,7 +51,7 @@ fi
 # Need to cache the container address for the cleanup
 cache_container_addr
 mongo_common_args="-f $MONGODB_CONFIG_PATH"
-if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD && -v MONGODB_REPLICA_NAME ]]; then
+if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD && -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]]; then
     usage
 fi
 
