@@ -28,6 +28,33 @@ function usage() {
 }
 
 function cleanup() {
+  if [ "$(mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD} --quiet --eval 'rs.isMaster().ismaster')" == "true" ]; then
+
+    # Wait that some SECONDARY is synced with PRIMARY 
+    echo "=> Waiting for syncing SECONDARY ..."
+    replset_wait_sync
+
+    # Some commands will force MongoDB client to re-connect. This is not working
+    # well in combination with '--eval'. In that case the 'mongo' command will fail
+    # with return code 254.
+    echo "=> Giving up the PRIMARY role ..."
+    mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --eval "rs.stepDown(120);" &>/dev/null || true
+
+    # Wait till the new PRIMARY member is elected
+    echo "=> Waiting for the new PRIMARY to be elected ..."
+    mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet \
+     --eval "var i = ${MAX_ATTEMPTS};
+      while(i > 0) {
+        var members=rs.status().members;
+        for(i=0;i<members.length;i++){
+          if(members[i].stateStr=='PRIMARY' && members[i].name!='$(mongo_addr)'){
+            quit(0)
+          }
+        };
+        sleep(${SLEEP_TIME}*1000)
+      };" &>/dev/null
+    echo "=> A new PRIMARY member was elected, removing from replset ..."
+  fi
   if [ -n "${MONGODB_REPLICA_NAME-}" ]; then
     mongo_remove
   fi
@@ -56,13 +83,15 @@ fi
 setup_keyfile
 
 # Initialize the replica set or add member in the background.
-${CONTAINER_SCRIPTS_PATH}/init-replset.sh "${1:-}" &
+${CONTAINER_SCRIPTS_PATH}/init-replset.sh "${1:-}" "$$" &
 
 # TODO: capture exit code of `init-replset.sh` and exit with an error if the
 # initialization failed, so that the container will be restarted and the user
 # can gain more visibility that there is a problem in a way other than just
 # inspecting log messages.
 
+# Don't pass signals to background processes. Background processes are killed in `cleanup`.
+set -m
 # Run `mongod` in a subshell because MONGODB_ADMIN_PASSWORD should still be
 # defined when the trapped call to `cleanup` references it.
 (

@@ -46,29 +46,6 @@ function initiate() {
   mongo_create_admin
   mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
-  echo "=> Waiting for replication to finish ..."
-  # TODO: Replace this with polling or a Mongo script that will check if all
-  #       members of the cluster are now properly replicated (user accounts are
-  #       created on all members).
-  sleep 10
-
-  # Some commands will force MongoDB client to re-connect. This is not working
-  # well in combination with '--eval'. In that case the 'mongo' command will fail
-  # with return code 254.
-  echo "=> Initiate Pod giving up the PRIMARY role ..."
-  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --eval "rs.stepDown(120);" &>/dev/null || true
-
-  # Wait till the new PRIMARY member is elected
-  echo "=> Waiting for the new PRIMARY to be elected ..."
-  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --host ${mongo_node} --eval "var done=false;while(done==false){var members=rs.status().members;for(i=0;i<members.length;i++){if(members[i].stateStr=='PRIMARY' && members[i].name!='$(mongo_addr)'){done=true}};sleep(500)};" &>/dev/null
-
-  # Remove the initialization container MongoDB from cluster and shutdown
-  echo "=> A new PRIMARY member was elected, shutting down local mongod ..."
-  mongo_remove
-
-  mongod -f ${MONGODB_CONFIG_PATH} --shutdown &>/dev/null
-  wait_for_mongo_down
-
   echo "=> Successfully initialized replica set"
 }
 
@@ -81,8 +58,12 @@ function add_member() {
 }
 
 if [[ "$1" == "initiate" ]]; then
+  main_process_id=$2
   # Initiate replica set
   initiate
+
+  # Exit this pod
+  kill ${main_process_id}
 else
   # Try to add the current host into the replica set
   add_member
