@@ -44,7 +44,7 @@ function cache_container_addr() {
     fi
     sleep $SLEEP_TIME
   done
-  echo "Failed to get Docker container IP address." && exit 1
+  echo >&2 "Failed to get Docker container IP address." && exit 1
 }
 
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
@@ -174,14 +174,14 @@ function mongo_add() {
 # $2 - host where to connect (localhost by default)
 function mongo_create_admin() {
   if [[ -z "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
-    echo "=> MONGODB_ADMIN_PASSWORD is not set. Authentication can not be set up."
+    echo >&2 "=> MONGODB_ADMIN_PASSWORD is not set. Authentication can not be set up."
     exit 1
   fi
 
   # Set admin password
   local js_command="db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]});"
   if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
-    echo "=> Failed to create MongoDB admin user."
+    echo >&2 "=> Failed to create MongoDB admin user."
     exit 1
   fi
 }
@@ -193,22 +193,22 @@ function mongo_create_admin() {
 function mongo_create_user() {
   # Ensure input variables exists
   if [[ -z "${MONGODB_USER:-}" ]]; then
-    echo "=> MONGODB_USER is not set. Failed to create MongoDB user"
+    echo >&2 "=> MONGODB_USER is not set. Failed to create MongoDB user"
     exit 1
   fi
   if [[ -z "${MONGODB_PASSWORD:-}" ]]; then
-    echo "=> MONGODB_PASSWORD is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> MONGODB_PASSWORD is not set. Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
   if [[ -z "${MONGODB_DATABASE:-}" ]]; then
-    echo "=> MONGODB_DATABASE is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> MONGODB_DATABASE is not set. Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
 
   # Create database user
   local js_command="db.getSiblingDB('${MONGODB_DATABASE}').addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
   if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
-    echo "=> Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
 }
@@ -218,7 +218,7 @@ function mongo_reset_user() {
   if [[ -n "${MONGODB_USER:-}" && -n "${MONGODB_PASSWORD:-}" && -n "${MONGODB_DATABASE:-}" ]]; then
     local js_command="db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
     if ! mongo ${MONGODB_DATABASE} --eval "${js_command}"; then
-      echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
+      echo >&2 "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
   fi
@@ -229,7 +229,7 @@ function mongo_reset_admin() {
   if [[ -n "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
     local js_command="db.changeUserPassword('admin', '${MONGODB_ADMIN_PASSWORD}')"
     if ! mongo admin --eval "${js_command}"; then
-      echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
+      echo >&2 "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
   fi
@@ -244,7 +244,7 @@ function setup_keyfile() {
     exit 0
   fi
   if [ -z "${MONGODB_KEYFILE_VALUE-}" ]; then
-    echo "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"
+    echo >&2 "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"
     exit 1
   fi
   local keyfile_dir
