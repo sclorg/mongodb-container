@@ -21,9 +21,7 @@ function usage() {
 
 function cleanup() {
   echo "=> Shutting down MongoDB server ..."
-  if pgrep mongod; then
-    pkill -2 mongod
-  fi
+  pkill -INT mongod || :
   wait_for_mongo_down
   exit 0
 }
