@@ -20,7 +20,6 @@ function usage() {
   exit 1
 }
 
-<<<<<<< 5807c2b37c5905fe2c12f88e327413155c4351ea
 # Make sure env variables don't propagate to mongod process.
 function unset_env_vars() {
   unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
@@ -28,11 +27,11 @@ function unset_env_vars() {
         MONGODB_FHREPORTING_USER MONGODB_FHREPORTING_PASSWORD MONGODB_FHREPORTING_DATABASE
 }
 
-=======
->>>>>>> Minor improvements (#188)
 function cleanup() {
   echo "=> Shutting down MongoDB server ..."
-  pkill -INT mongod || :
+  if pgrep mongod; then
+    pkill -2 mongod
+  fi
   wait_for_mongo_down
   exit 0
 }
