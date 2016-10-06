@@ -101,5 +101,10 @@ for dir in ${dirs}; do
     fi
   fi
 
+  if [[ ! -z "${REGISTRY}" ]]; then
+    echo "-> Tagging image as" ${REGISTRY}/${IMAGE_NAME%"-candidate"}
+    docker tag -f $IMAGE_NAME ${REGISTRY}/${IMAGE_NAME%"-candidate"}
+  fi
+
   popd > /dev/null
 done
