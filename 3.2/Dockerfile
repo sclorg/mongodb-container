@@ -1,16 +1,6 @@
 FROM centos:centos7
 MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
-# MongoDB image for OpenShift.
-#
-# Volumes:
-#  * /var/lib/mongodb/data - Datastore for MongoDB
-# Environment:
-#  * $MONGODB_USER - Database user name
-#  * $MONGODB_PASSWORD - User's password
-#  * $MONGODB_DATABASE - Name of the database to create
-#  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin
-
 LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
       io.k8s.display-name="MongoDB 3.2" \
       io.openshift.expose-services="27017:mongodb" \
@@ -20,7 +10,6 @@ ENV MONGODB_VERSION=3.2 \
     # Set paths to avoid hard-coding them in scripts.
     HOME=/var/lib/mongodb \
     CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
-    MONGODB_PREFIX=/opt/rh/rh-mongodb32/root/usr \
     # Incantations to enable Software Collections on `bash` and `sh -i`.
     ENABLED_COLLECTIONS=rh-mongodb32 \
     BASH_ENV="\${CONTAINER_SCRIPTS_PATH}/scl_enable" \
@@ -33,10 +22,7 @@ EXPOSE 27017
 ENTRYPOINT ["container-entrypoint"]
 CMD ["run-mongod"]
 
-# Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
-# the whole /var/lib/mongodb/ dir has to be chown-ed.
-RUN yum install -y centos-release-scl-rh && \
-    yum-config-manager --enable centos-sclo-rh-testing && \
+RUN yum install -y centos-release-scl && \
     INSTALL_PKGS="bind-utils gettext iproute rsync tar rh-mongodb32-mongodb rh-mongodb32 rh-mongodb32-mongo-tools" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \

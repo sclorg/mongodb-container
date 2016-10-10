@@ -1,27 +1,26 @@
 FROM centos:centos7
 
-# MongoDB image for OpenShift.
-#
-# Volumes:
-#  * /var/lib/mongodb/data - Datastore for MongoDB
-# Environment:
-#  * $MONGODB_USER - Database user name
-#  * $MONGODB_PASSWORD - User's password
-#  * $MONGODB_DATABASE - Name of the database to create
-#  * $MONGODB_ADMIN_PASSWORD - Password of the MongoDB Admin
-
-ENV MONGODB_VERSION=2.4 \
-    HOME=/var/lib/mongodb
-
 LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
       io.k8s.display-name="MongoDB 2.4" \
       io.openshift.expose-services="27017:mongodb" \
       io.openshift.tags="database,mongodb,mongodb24"
 
+ENV MONGODB_VERSION=2.4 \
+    # Set paths to avoid hard-coding them in scripts.
+    HOME=/var/lib/mongodb \
+    CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
+    # Incantations to enable Software Collections on `bash` and `sh -i`.
+    ENABLED_COLLECTIONS=mongodb24 \
+    BASH_ENV="\${CONTAINER_SCRIPTS_PATH}/scl_enable" \
+    ENV="\${CONTAINER_SCRIPTS_PATH}/scl_enable" \
+    PROMPT_COMMAND=". \${CONTAINER_SCRIPTS_PATH}/scl_enable"
+
 EXPOSE 27017
 
-# Due to the https://bugzilla.redhat.com/show_bug.cgi?id=1206151,
-# the whole /var/lib/mongodb/ dir has to be chown-ed.
+
+ENTRYPOINT ["container-entrypoint"]
+CMD ["run-mongod"]
+
 RUN yum install -y centos-release-scl && \
     INSTALL_PKGS="bind-utils gettext iproute rsync tar v8314 mongodb24-mongodb mongodb24" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
@@ -32,26 +31,11 @@ RUN yum install -y centos-release-scl && \
     chmod -R a+rwx /opt/rh/mongodb24/root/var/lib/mongodb && \
     chmod -R g+rwx /var/lib/mongodb
 
-# Get prefix path and path to scripts rather than hard-code them in scripts
-ENV CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
-    MONGODB_PREFIX=/opt/rh/mongodb24/root/usr \
-    ENABLED_COLLECTIONS=mongodb24
-
-# When bash is started non-interactively, to run a shell script, for example it
-# looks for this variable and source the content of this file. This will enable
-# the SCL for all scripts without need to do 'scl enable'.
-ENV BASH_ENV=${CONTAINER_SCRIPTS_PATH}/scl_enable \
-    ENV=${CONTAINER_SCRIPTS_PATH}/scl_enable \
-    PROMPT_COMMAND=". ${CONTAINER_SCRIPTS_PATH}/scl_enable"
+VOLUME ["/var/lib/mongodb/data"]
 
 ADD root /
 
 # Container setup
 RUN touch /etc/mongod.conf && chown mongodb:0 /etc/mongod.conf && /usr/libexec/fix-permissions /etc/mongod.conf
 
-VOLUME ["/var/lib/mongodb/data"]
-
 USER 184
-
-ENTRYPOINT ["container-entrypoint"]
-CMD ["run-mongod"]
