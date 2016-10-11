@@ -10,9 +10,9 @@ dbpath = ${MONGODB_DATADIR}
 # only for mounted data directory from older MongoDB server
 noprealloc = true
 
-# Set MongoDB to use a smaller default data file size. Default: true
+# Set MongoDB to use a smaller default data file size.
 # only for mounted data directory from older MongoDB server
-smallfiles = ${MONGODB_SMALLFILES}
+smallfiles = true
 
 # Runs MongoDB in a quiet mode that attempts to limit the amount of output.
 # Default: true

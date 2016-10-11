@@ -10,7 +10,6 @@ set -o pipefail
 export MONGODB_DATADIR=/var/lib/mongodb/data
 export CONTAINER_PORT=27017
 # Configuration settings.
-export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
 export MONGODB_QUIET=${MONGODB_QUIET:-true}
 
 MONGODB_CONFIG_PATH=/etc/mongod.conf
