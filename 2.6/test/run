@@ -45,11 +45,6 @@ function mongo_admin_cmd() {
     docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
 }
 
-function mongo_cmd_local() {
-    local name="$1" ; shift
-    docker exec $(get_cid $name) bash -c "mongo $@"
-}
-
 function test_connection() {
     local name=$1 ; shift
     CONTAINER_IP=$(get_container_ip $name)
@@ -208,7 +203,6 @@ function run_tests() {
     echo "  Testing scl usage"
     test_scl_usage $name 'mongo --version' '2.6'
     test_mongo $name
-    mongo_cmd_local $name <<< ""
 }
 
 function run_change_password_test() {
