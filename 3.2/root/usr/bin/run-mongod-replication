@@ -20,6 +20,7 @@ function usage() {
   echo "  MONGODB_KEYFILE_VALUE"
   echo "  MONGODB_REPLICA_NAME"
   echo "Optional variables:"
+  echo "  MONGODB_SERVICE_NAME (default: mongodb)"
   echo "  MONGODB_INITIAL_REPLICA_COUNT"
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
@@ -50,14 +51,19 @@ fi
 cache_container_addr
 mongo_common_args="-f $MONGODB_CONFIG_PATH"
 if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD && -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]]; then
-    usage
+  usage
 fi
 
 # Run the MongoDB in 'replicated' mode
 setup_keyfile
 
-# Run the supervisor in background to manage replset
-${CONTAINER_SCRIPTS_PATH}/replset_supervisor.sh "${1:-}" &
+# Initialize the replica set or add member in the background.
+${CONTAINER_SCRIPTS_PATH}/init-replset.sh "${1:-}" &
+
+# TODO: capture exit code of `init-replset.sh` and exit with an error if the
+# initialization failed, so that the container will be restarted and the user
+# can gain more visibility that there is a problem in a way other than just
+# inspecting log messages.
 
 # Run `mongod` in a subshell because MONGODB_ADMIN_PASSWORD should still be
 # defined when the trapped call to `cleanup` references it.
