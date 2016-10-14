@@ -4,10 +4,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source ${CONTAINER_SCRIPTS_PATH}/common.sh
+source "${CONTAINER_SCRIPTS_PATH}/common.sh"
 
-# Initiate replicaset and exit
-if [[ "$1" == "initiate" ]]; then
+function initiate() {
   current_endpoints=$(endpoints)
   if [ -n "${MONGODB_INITIAL_REPLICA_COUNT:-}" ]; then
     echo -n "=> Waiting for $MONGODB_INITIAL_REPLICA_COUNT MongoDB endpoints ..."
@@ -70,14 +69,21 @@ if [[ "$1" == "initiate" ]]; then
   mongod -f ${MONGODB_CONFIG_PATH} --shutdown &>/dev/null
   wait_for_mongo_down
 
-  echo "=> Successfully initialized replSet"
+  echo "=> Successfully initialized replica set"
+}
 
-# Try to add node into replicaset
-else
+function add_member() {
   echo "=> Waiting for local MongoDB to accept connections ..."
   wait_for_mongo_up
   set -x
-  # Add the current container to the replSet
+  # Add the current container to the replica set.
   mongo_add
+}
 
+if [[ "$1" == "initiate" ]]; then
+  # Initiate replica set
+  initiate
+else
+  # Try to add the current host into the replica set
+  add_member
 fi
