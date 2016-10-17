@@ -6,14 +6,6 @@ port = ${CONTAINER_PORT}
 # Default: /var/lib/mongodb/data
 dbpath = ${MONGODB_DATADIR}
 
-# Disable data file preallocation.
-# only for mounted data directory from older MongoDB server
-noprealloc = true
-
-# Set MongoDB to use a smaller default data file size.
-# only for mounted data directory from older MongoDB server
-smallfiles = true
-
 # Runs MongoDB in a quiet mode that attempts to limit the amount of output.
 # Default: true
 quiet = ${MONGODB_QUIET}
