@@ -142,8 +142,6 @@ function test_config_option() {
 
 function run_configuration_tests() {
     echo "  Testing image configuration settings"
-    test_config_option MONGODB_NOPREALLOC noprealloc true
-    test_config_option MONGODB_SMALLFILES smallfiles true
     test_config_option MONGODB_QUIET quiet true
     echo "  Success!"
 }
@@ -287,9 +285,7 @@ function run_mount_config_test() {
     chmod a+rwx ${volume_dir}
     config_file=$volume_dir/mongod.conf
     echo "dbpath=/var/lib/mongodb/dbpath
-unixSocketPrefix = /var/lib/mongodb
-smallfiles = true
-noprealloc = true" > $config_file
+unixSocketPrefix = /var/lib/mongodb" > $config_file
     chmod a+r ${config_file}
 
     DOCKER_ARGS="
