@@ -387,12 +387,13 @@ function wait_for_secondary() {
 }
 
 function wait_for_connection() {
-    local name
-    name=$1
     local host
-    host=$2
+    host=$1
 
-    while ! mongo_cmd_local ${name} "admin --host ${host} --eval 'quit()'"; do
+    DB=admin
+    CONTAINER_IP=${host}
+
+    while ! docker run --rm $IMAGE_NAME mongo "$DB" --host ${host} --eval 'quit()'; do
       sleep 5
     done
 }
@@ -410,6 +411,11 @@ function run_local_replication_test() {
 -e MONGODB_KEYFILE_VALUE=xxxxxxxxxxxx
 -e MONGODB_SMALLFILES=true"
 
+    # need to set these because `mongo_cmd` relies on global variables
+    USER=admin
+    PASS=adminPassword
+    DB=admin
+
     docker run -d --cidfile $CIDFILE_DIR/replset0 ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="" $IMAGE_NAME run-mongod-replication
     docker run -d --cidfile $CIDFILE_DIR/replset1 ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="$(get_container_ip replset0)" $IMAGE_NAME run-mongod-replication
     docker run -d --cidfile $CIDFILE_DIR/replset2 ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="$(get_container_ip replset0) $(get_container_ip replset1)" $IMAGE_NAME run-mongod-replication
@@ -420,9 +426,9 @@ function run_local_replication_test() {
     insert_and_wait_for_replication "rs0/$(get_container_ip replset1),$(get_container_ip replset2)" "{a:5, b:10}"
 
     # Testing stored documents in each node
-    [ "$(mongo_cmd_local replset0 '-u admin -p adminPassword admin --eval "rs.slaveOk(); printjson(db.getSiblingDB(\"test_db\").data.count())"' | tail -n 1)" == "1" ]
-    [ "$(mongo_cmd_local replset1 '-u admin -p adminPassword admin --eval "rs.slaveOk(); printjson(db.getSiblingDB(\"test_db\").data.count())"' | tail -n 1)" == "1" ]
-    [ "$(mongo_cmd_local replset2 '-u admin -p adminPassword admin --eval "rs.slaveOk(); printjson(db.getSiblingDB(\"test_db\").data.count())"' | tail -n 1)" == "1" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset0) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "1" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset1) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "1" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset2) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "1" ]
 
     # Stopping and removing second container
     docker stop $(get_cid replset1)
@@ -430,21 +436,21 @@ function run_local_replication_test() {
     # Adding new container
     docker run -d --cidfile $CIDFILE_DIR/replset3 ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="$(get_container_ip replset0) $(get_container_ip replset2)" $IMAGE_NAME run-mongod-replication
     # Wait for new member and whole replset to accept connections
-    wait_for_connection "replset3" "localhost"
-    wait_for_connection "replset0" "rs0/$(get_container_ip replset0),$(get_container_ip replset2)"
+    wait_for_connection "$(get_container_ip replset3)"
+    wait_for_connection "rs0/$(get_container_ip replset0),$(get_container_ip replset2)"
 
     # Testing that replset still have 3 members
-    [ $(mongo_cmd_local replset0 "--host rs0/$(get_container_ip replset0),$(get_container_ip replset2) -u admin -p adminPassword admin --eval 'print(rs.status().members.length)'" | tail -n 1) == "3" ]
+    [ "$(CONTAINER_IP=rs0/$(get_container_ip replset0),$(get_container_ip replset2) mongo_cmd 'print(rs.status().members.length)' | tail -n 1)" == "3" ]
 
     # Storing document into replset and wait replication to finish ..."
     insert_and_wait_for_replication "rs0/$(get_container_ip replset0),$(get_container_ip replset2)" "{a:10, c:1}"
 
-    wait_for_connection "replset0" "rs0/$(get_container_ip replset0),$(get_container_ip replset2)"
+    wait_for_connection "rs0/$(get_container_ip replset0),$(get_container_ip replset2)"
 
     # Testing stored documents in each node
-    [ "$(mongo_cmd_local replset0 '-u admin -p adminPassword admin --eval "rs.slaveOk(); printjson(db.getSiblingDB(\"test_db\").data.count())"' | tail -n 1)" == "2" ]
-    [ "$(mongo_cmd_local replset2 '-u admin -p adminPassword admin --eval "rs.slaveOk(); printjson(db.getSiblingDB(\"test_db\").data.count())"' | tail -n 1)" == "2" ]
-    [ "$(mongo_cmd_local replset3 '-u admin -p adminPassword admin --eval "rs.slaveOk(); printjson(db.getSiblingDB(\"test_db\").data.count())"' | tail -n 1)" == "2" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset0) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "2" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset2) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "2" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset3) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "2" ]
 
     echo "  Success!"
 }
