@@ -6,11 +6,11 @@ LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source N
       io.openshift.tags="database,mongodb,rh-mongodb32"
 
 # Labels consumed by Red Hat build service
-LABEL BZComponent="rh-mongodb32-docker" \
-      Name="rhscl/mongodb-32-rhel7" \
-      Version="3.2" \
-      Release="1" \
-      Architecture="x86_64"
+LABEL com.redhat.component="rh-mongodb32-docker" \
+      name="rhscl/mongodb-32-rhel7" \
+      version="3.2" \
+      release="1" \
+      architecture="x86_64"
 
 ENV MONGODB_VERSION=3.2 \
     # Set paths to avoid hard-coding them in scripts.
