@@ -133,40 +133,42 @@ function replset_addr() {
   echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}"
 }
 
-# mongo_remove removes the current MongoDB from the cluster
+# mongo_remove by default removes the local mongod server from the replset
+# optionally takes identifier of replset to connect and address of server to remove
 function mongo_remove() {
   local host
   # if we cannot determine the IP address of the primary, exit without an error
   # to allow callers to proceed with their logic
-  host="$(replset_addr || true)"
+  host="${1:-$(replset_addr || true)}"
+  local mongo_addr
+  mongo_addr="${2:-$(mongo_addr)}"
+
   if [ -z "$host" ]; then
     return
   fi
 
-  local mongo_addr
-  mongo_addr="$(mongo_addr)"
-
   echo "=> Removing ${mongo_addr} from replica set ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${host}" --eval "rs.remove('${mongo_addr}');" || true
+    --host "${host}" --quiet --eval "printjson(rs.remove('${mongo_addr}'));" || true
 }
 
-# mongo_add advertise the current container to other mongo replicas
+# mongo_add by default add the local mongod server to the replset
+# optionally takes identifier of replset to connect and address of server to add
 function mongo_add() {
   local host
   # if we cannot determine the IP address of the primary, exit without an error
   # to allow callers to proceed with their logic
-  host="$(replset_addr || true)"
+  host="${1:-$(replset_addr || true)}"
+  local mongo_addr
+  mongo_addr="${2:-$(mongo_addr)}"
+
   if [ -z "$host" ]; then
     return
   fi
 
-  local mongo_addr
-  mongo_addr="$(mongo_addr)"
-
   echo "=> Adding ${mongo_addr} to replica set ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${host}" --eval "rs.add('${mongo_addr}');"
+    --host "${host}" --quiet --eval "printjson(rs.add('${mongo_addr}'));"
 }
 
 # mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
