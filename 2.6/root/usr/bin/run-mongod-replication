@@ -36,6 +36,8 @@ function cleanup() {
   echo "=> Shutting down MongoDB server ..."
   pkill -INT mongod || :
   wait_for_mongo_down
+
+  ps -p ${supervisor_pid:-} && kill ${supervisor_pid}
   exit 0
 }
 
@@ -58,13 +60,17 @@ fi
 setup_keyfile
 
 # Initialize the replica set or add member in the background.
-${CONTAINER_SCRIPTS_PATH}/init-replset.sh "${1:-}" &
+${CONTAINER_SCRIPTS_PATH}/init-replset.sh "${1:-}" & supervisor_pid=$!
 
 # TODO: capture exit code of `init-replset.sh` and exit with an error if the
 # initialization failed, so that the container will be restarted and the user
 # can gain more visibility that there is a problem in a way other than just
 # inspecting log messages.
 
+# Don't pass signals to background processes - to succesfully remove local `mongod`
+# from replset in `cleanup()` mongod has to be running (to get addresses of other members).
+# Background processes are killed in `cleanup`.
+set -m
 # Run `mongod` in a subshell because MONGODB_ADMIN_PASSWORD should still be
 # defined when the trapped call to `cleanup` references it.
 (

@@ -321,6 +321,125 @@ noprealloc = true" > $config_file
     echo "  Success!"
 }
 
+function insert_and_wait_for_replication() {
+    local host
+    host=$1
+    local data
+    data=$2
+
+    # Storing document into replset and wait replication to finish
+    CONTAINER_IP="${host}" ADMIN_PASS="adminPassword" \
+    mongo_admin_cmd "db.getSiblingDB('test_db').data.insert(${data});
+        var i = 60;
+        while(i > 0) {
+          var status=rs.status();
+          var optime=status.members[0].optime;
+          var ok=true;
+          for(var i=1; i < status.members.length; i++) {
+            if(optime.tojson() != status.members[i].optime.tojson()) {
+              ok=false
+            }
+          };
+          if(ok == true) {
+            print('REPLICATED')
+            break;
+          }
+          i--;
+        }"
+}
+
+function wait_for_secondary() {
+    local host
+    host=$1
+
+    CONTAINER_IP="${host}" ADMIN_PASS="adminPassword" \
+    mongo_admin_cmd "var i = 60;
+        while(i > 0) {
+          var status=rs.status();
+          var ok=true;
+          for(var i=1; i < status.members.length; i++) {
+            if(status.state == 1 || status.state == 2) {
+              ok=false
+            }
+          };
+          if(ok == true) {
+            print('ALL MEMBERS ARE PRIMARY OR SECONDARY')
+            break;
+          }
+          i--;
+        }
+        printjson(rs.status())"
+}
+
+function wait_for_connection() {
+    local host
+    host=$1
+
+    DB=admin
+    CONTAINER_IP=${host}
+
+    while ! docker run --rm $IMAGE_NAME mongo "$DB" --host ${host} --eval 'quit()'; do
+      sleep 5
+    done
+}
+
+
+function run_local_replication_test() {
+    echo "Testing replication on local docker"
+    #Initializing replicaset
+    BASE_ARGS="
+-e MONGODB_DATABASE=db
+-e MONGODB_USER=user
+-e MONGODB_PASSWORD=password
+-e MONGODB_ADMIN_PASSWORD=adminPassword
+-e MONGODB_REPLICA_NAME=rs0
+-e MONGODB_KEYFILE_VALUE=xxxxxxxxxxxx
+-e MONGODB_SMALLFILES=true"
+
+    # need to set these because `mongo_cmd` relies on global variables
+    USER=admin
+    PASS=adminPassword
+    DB=admin
+
+    docker run -d --cidfile $CIDFILE_DIR/replset0 ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="" $IMAGE_NAME run-mongod-replication
+    docker run -d --cidfile $CIDFILE_DIR/replset1 ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="$(get_container_ip replset0)" $IMAGE_NAME run-mongod-replication
+    docker run -d --cidfile $CIDFILE_DIR/replset2 ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="$(get_container_ip replset0) $(get_container_ip replset1)" $IMAGE_NAME run-mongod-replication
+    sleep 15
+    docker run --cidfile $CIDFILE_DIR/initiate ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="$(get_container_ip replset0) $(get_container_ip replset1) $(get_container_ip replset2)" $IMAGE_NAME run-mongod-replication initiate
+
+    # Storing document into replset and wait replication to finish ...
+    insert_and_wait_for_replication "rs0/$(get_container_ip replset1),$(get_container_ip replset2)" "{a:5, b:10}"
+
+    # Testing stored documents in each node
+    [ "$(CONTAINER_IP=$(get_container_ip replset0) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "1" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset1) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "1" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset2) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "1" ]
+
+    # Stopping and removing second container
+    docker stop $(get_cid replset1)
+
+    # Adding new container
+    docker run -d --cidfile $CIDFILE_DIR/replset3 ${BASE_ARGS} -e MONGODB_REPLICA_MEMBERS="$(get_container_ip replset0) $(get_container_ip replset2)" $IMAGE_NAME run-mongod-replication
+    # Wait for new member and whole replset to accept connections
+    wait_for_connection "$(get_container_ip replset3)"
+    wait_for_connection "rs0/$(get_container_ip replset0),$(get_container_ip replset2)"
+
+    # Testing that replset still have 3 members
+    [ "$(CONTAINER_IP=rs0/$(get_container_ip replset0),$(get_container_ip replset2) mongo_cmd 'print(rs.status().members.length)' | tail -n 1)" == "3" ]
+
+    # Storing document into replset and wait replication to finish ..."
+    insert_and_wait_for_replication "rs0/$(get_container_ip replset0),$(get_container_ip replset2)" "{a:10, c:1}"
+
+    wait_for_connection "rs0/$(get_container_ip replset0),$(get_container_ip replset2)"
+
+    # Testing stored documents in each node
+    [ "$(CONTAINER_IP=$(get_container_ip replset0) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "2" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset2) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "2" ]
+    [ "$(CONTAINER_IP=$(get_container_ip replset3) mongo_cmd 'rs.slaveOk(); printjson(db.getSiblingDB("test_db").data.count())' | tail -n 1)" == "2" ]
+
+    echo "  Success!"
+}
+
 # Tests.
 run_configuration_tests
 USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin
@@ -328,3 +447,5 @@ USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin
 CONTAINER_ARGS="-u 12345" USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin_altuid
 run_change_password_test
 run_mount_config_test
+
+run_local_replication_test
