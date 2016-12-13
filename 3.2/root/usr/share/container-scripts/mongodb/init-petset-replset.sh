@@ -42,7 +42,6 @@ function find_endpoints() {
   dig "${service_name}" SRV +search +short | cut -d' ' -f4 | rev | cut -c2- | rev
 }
 
-# TODO: unify this and `mongo_initiate` from common.sh
 # Initializes the replica set configuration. It is safe to call this function if
 # a replica set is already configured.
 #

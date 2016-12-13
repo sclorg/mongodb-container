@@ -64,7 +64,7 @@ function _wait_for_mongo() {
     message="down"
   fi
 
-  local mongo_cmd="mongo admin --host ${2:-localhost} --port ${CONTAINER_PORT} "
+  local mongo_cmd="mongo admin --host ${2:-localhost} "
 
   local i
   # Wait indefinitely for MongoDB daemon
@@ -97,10 +97,10 @@ function endpoints() {
   printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d.${METADATA_NAMESPACE}\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
 }
 
-# build_mongo_config builds the MongoDB replicaSet config used for the cluster
-# initialization.
+# replset_config_members builds part of the MongoDB replicaSet config: "members: [...]"
+# used for the cluster initialization.
 # Takes a list of space-separated member IPs as the first argument.
-function build_mongo_config() {
+function replset_config_members() {
   local current_endpoints
   current_endpoints="$1"
   local members
@@ -116,17 +116,7 @@ function build_mongo_config() {
       let member_id++
     fi
   done
-  echo -n "var config={ _id: \"${MONGODB_REPLICA_NAME}\", members: [ ${members%,} ] }"
-}
-
-# mongo_initiate initiates the replica set.
-# Takes a list of space-separated member IPs as the first argument.
-function mongo_initiate() {
-  local mongo_wait
-  mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
-  config=$(build_mongo_config "$1")
-  echo "=> Initiating MongoDB replica using: ${config}"
-  mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
+  echo -n "members: [ ${members%,} ]"
 }
 
 # replset_addr return the address of the current replSet
@@ -156,7 +146,7 @@ function replset_wait_sync() {
       var status=rs.status();
       var primary_optime=status.members.filter(function(el) {return el.state ==1})[0].optime;
       // Check that at least one member has same optime as PRIMARY (PRIMARY and one SECONDARY ~ >= 2)
-      if(status.members.filter(function(el) {return el.optime.ts.tojson() == primary_optime.ts.tojson()}).length >= 2)
+      if(status.members.filter(function(el) {return tojson(el.optime) == tojson(primary_optime)}).length >= 2)
         quit(0);
       else
         sleep(${SLEEP_TIME}*1000);
@@ -181,24 +171,6 @@ function mongo_remove() {
   echo "=> Removing ${mongo_addr} from replica set ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
     --host "${host}" --eval "rs.remove('${mongo_addr}');" || true
-}
-
-# mongo_add advertise the current container to other mongo replicas
-function mongo_add() {
-  local host
-  # if we cannot determine the IP address of the primary, exit without an error
-  # to allow callers to proceed with their logic
-  host="$(replset_addr || true)"
-  if [ -z "$host" ]; then
-    return
-  fi
-
-  local mongo_addr
-  mongo_addr="$(mongo_addr)"
-
-  echo "=> Adding ${mongo_addr} to replica set ..."
-  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${host}" --eval "rs.add('${mongo_addr}');"
 }
 
 # mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
