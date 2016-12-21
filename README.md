@@ -10,7 +10,6 @@ official [OpenShift Documentation](https://docs.openshift.org/latest/using_image
 Versions
 ---------------------------------
 MongoDB versions currently provided are:
-* mongodb-2.4
 * mongodb-2.6
 * mongodb-3.0-upg
 * mongodb-3.2
@@ -34,7 +33,7 @@ Choose either the CentOS7 or RHEL7 based image:
 	```
 	$ git clone https://github.com/openshift/mongodb.git
 	$ cd mongodb
-	$ make build TARGET=rhel7 VERSION=2.4
+	$ make build TARGET=rhel7 VERSION=3.2
 	```
 
 *  **CentOS7 based image**
@@ -42,7 +41,7 @@ Choose either the CentOS7 or RHEL7 based image:
 	This image is available on DockerHub. To download it run:
 
 	```
-	$ docker pull openshift/mongodb-24-centos7
+	$ docker pull centos/mongodb-32-centos7
 	```
 
 	To build a MongoDB image from scratch run:
@@ -50,7 +49,7 @@ Choose either the CentOS7 or RHEL7 based image:
 	```
 	$ git clone https://github.com/openshift/mongodb.git
 	$ cd mongodb
-	$ make build VERSION=2.4
+	$ make build TARGET=centos7 VERSION=3.2
 	```
 
 **Notice: By omitting the `VERSION` parameter, the build/test action will be performed
@@ -59,9 +58,6 @@ on all provided versions of MongoDB.**
 
 Usage
 ---------------------------------
-
-For information about usage of Dockerfile for MongoDB 2.4,
-see [usage documentation](2.4/README.md).
 
 For information about usage of Dockerfile for MongoDB 2.6,
 see [usage documentation](2.6/README.md).
@@ -87,14 +83,14 @@ Users can choose between testing MongoDB based on a RHEL or CentOS image.
 
     ```
     $ cd mongodb
-    $ make test TARGET=rhel7 VERSION=2.4
+    $ make test TARGET=rhel7 VERSION=3.2
     ```
 
 *  **CentOS based image**
 
     ```
     $ cd mongodb
-    $ make test VERSION=2.4
+    $ make test TARGET=centos7 VERSION=3.2
     ```
 
 **Notice: By omitting the `VERSION` parameter, the build/test action will be performed
