@@ -140,8 +140,10 @@ function add_member() {
   info "Successfully joined replica set"
 }
 
-info "Waiting for local MongoDB to accept connections ..."
-wait_for_mongo_up &>/dev/null
+info "Waiting for local MongoDB to accept connections on ${MEMBER_HOST} ..."
+# connect using the host to ensure networking is working, otherwise
+# the add_member call will fail.
+wait_for_mongo_up ${MEMBER_HOST} &>/dev/null
 
 # PetSet pods are named with a predictable name, following the pattern:
 #   $(petset name)-$(zero-based index)
