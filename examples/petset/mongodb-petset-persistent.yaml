@@ -3,7 +3,7 @@ apiVersion: v1
 metadata:
   name: mongodb-petset-replication
   annotations:
-    description: "MongoDB Replication Example (based on PetSet). You must have persistent volumes available in your cluster to use this template."
+    description: "MongoDB Replication Example (based on StatefulSet). You must have persistent volumes available in your cluster to use this template."
     iconClass: "icon-mongodb"
     tags: "database,mongodb,replication"
 parameters:
@@ -86,8 +86,8 @@ objects:
       selector:
         name: "${MONGODB_SERVICE_NAME}"
 
-  - kind: PetSet
-    apiVersion: apps/v1alpha1
+  - kind: StatefulSet
+    apiVersion: apps/v1beta1
     metadata:
       name: "${MONGODB_SERVICE_NAME}"
     spec:
