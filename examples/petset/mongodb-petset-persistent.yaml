@@ -100,9 +100,6 @@ objects:
           # this label will be used for count running pods
           labels:
             name: "${MONGODB_SERVICE_NAME}"
-          annotations:
-            # 'false' pauses a petset after creation of each pet, to avoid it we set it to 'true'
-            pod.alpha.kubernetes.io/initialized: "true"
         spec:
           containers:
             - name: mongo-container

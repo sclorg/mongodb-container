@@ -145,8 +145,8 @@ info "Waiting for local MongoDB to accept connections on ${MEMBER_HOST} ..."
 # the add_member call will fail.
 wait_for_mongo_up ${MEMBER_HOST} &>/dev/null
 
-# PetSet pods are named with a predictable name, following the pattern:
-#   $(petset name)-$(zero-based index)
+# StatefulSet pods are named with a predictable name, following the pattern:
+#   $(statefulset name)-$(zero-based index)
 # MEMBER_ID is computed by removing the prefix matching "*-", i.e.:
 #  "mongodb-0" -> "0"
 #  "mongodb-1" -> "1"
