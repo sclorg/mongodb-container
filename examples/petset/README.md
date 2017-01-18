@@ -1,8 +1,8 @@
-# MongoDB Replication Example Using a PetSet
+# MongoDB Replication Example Using a StatefulSet (ex-PetSet)
 
 This [MongoDB replication](https://docs.mongodb.com/manual/replication/) example
-uses a [PetSet](http://kubernetes.io/docs/user-guide/petset/) to manage replica
-set members.
+uses a [StatefulSet](https://kubernetes.io/docs/concepts/abstractions/controllers/statefulsets/)
+to manage replica set members.
 
 It is supported by an example [OpenShift
 template](https://docs.openshift.org/latest/dev_guide/templates.html) and
@@ -110,7 +110,7 @@ these scenarios:
 **Note**: for production usage, you should maintain as much separation between
 members as possible. It is recommended to use one or more of the
 [node selection features](http://kubernetes.io/docs/user-guide/node-selection/)
-to schedule PetSet pods into different nodes, and to provide them storage backed
+to schedule StatefulSet pods into different nodes, and to provide them storage backed
 by independent volumes.
 
 ### Scaling Up
@@ -166,10 +166,10 @@ The next step is to update the replica set configuration to
 that no longer exist. This may be improved in the future, a possible
 implementation being setting a PreStop pod hook that inspects the number of
 replicas (exposed via the downward API) and determines that the pod is being
-removed from the PetSet, and not being restarted for some other reason.
+removed from the StatefulSet, and not being restarted for some other reason.
 
 Finally, the volumes used by the decommissioned pods may be manually purged.
-Follow the [PetSet documentation](http://kubernetes.io/docs/user-guide/petset/#deleting-a-pet-set)
+Follow the [StatefulSet documentation](https://kubernetes.io/docs/tasks/manage-stateful-set/deleting-a-statefulset/)
 for more details on how to clean up after scaling down.
 
 ### Known Limitations
@@ -177,7 +177,7 @@ for more details on how to clean up after scaling down.
 * Only MongoDB 3.2 is supported.
 * You have to manually update replica set configuration in case of scaling down.
 * Changing a user's and admin's password is a manual process: it requires
-  updating values of environment variables in the PetSet configuration,
+  updating values of environment variables in the StatefulSet configuration,
   changing password in the database and restarting all the pods one by one.
 
-See also [PetSet limitations](http://kubernetes.io/docs/user-guide/petset/#alpha-limitations).
+See also [StatefulSet limitations](https://kubernetes.io/docs/concepts/abstractions/controllers/statefulsets/#limitations).

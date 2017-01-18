@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# Run mongod in a PetSet-based replica set. See
+# Run mongod in a StatefulSet-based replica set. See
 # https://github.com/sclorg/mongodb-container/blob/master/examples/petset/README.md
 # for a description of how this is intended to work.
 #
 # Note that this differs from the `run-mongodb-replication` script in at least
 # these aspects:
 # - It does not attempt to remove the host from the replica set configuration
-#   when it is terminating. That is by design, because, in a PetSet, when a
+#   when it is terminating. That is by design, because, in a StatefulSet, when a
 #   pod/container terminates and is restarted by OpenShift, it will always have
 #   the same hostname. Removing hosts from the configuration affects replica set
 #   elections and can impact the replica set stability.
