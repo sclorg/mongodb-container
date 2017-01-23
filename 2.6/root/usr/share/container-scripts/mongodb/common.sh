@@ -132,6 +132,31 @@ function replset_addr() {
   echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}"
 }
 
+# replse_wait_sync wait for at least two members to be up to date (PRIMARY and one SECONDARY)
+function replset_wait_sync() {
+  local host
+  # if we cannot determine the IP address of the primary, exit without an error
+  # to allow callers to proceed with their logic
+  host="$(replset_addr || true)"
+  if [ -z "$host" ]; then
+    return 1
+  fi
+
+  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host ${host} \
+    --eval "var i = ${MAX_ATTEMPTS};
+    while(i > 0) {
+      var status=rs.status();
+      var primary_optime=status.members.filter(function(el) {return el.state ==1})[0].optime;
+      // Check that at least one member has same optime as PRIMARY (PRIMARY and one SECONDARY ~ >= 2)
+      if(status.members.filter(function(el) {return el.optime.ts.tojson() == primary_optime.ts.tojson()}).length >= 2)
+        quit(0);
+      else
+        sleep(${SLEEP_TIME}*1000);
+      i--;
+    };
+    quit(1);"
+}
+
 # mongo_remove removes the current MongoDB from the cluster
 function mongo_remove() {
   local host
