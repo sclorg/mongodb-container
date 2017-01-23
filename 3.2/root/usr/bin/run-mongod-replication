@@ -30,7 +30,7 @@ function usage() {
 function cleanup() {
   if [ "$(mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD} --quiet --eval 'rs.isMaster().ismaster')" == "true" ]; then
 
-    # Wait that some SECONDARY is synced with PRIMARY 
+    # Wait that some SECONDARY is synced with PRIMARY
     echo "=> Waiting for syncing SECONDARY ..."
     replset_wait_sync
 
