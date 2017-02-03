@@ -24,6 +24,9 @@ function cleanup() {
         echo "Done."
     done
     rmdir $CIDFILE_DIR
+
+    local network_name="mongodb-replset-$$"
+    docker network ls | grep -q ${network_name} && docker network rm ${network_name}
 }
 trap cleanup EXIT SIGINT
 
@@ -410,6 +413,52 @@ run_WT_cache_test() {
     echo
 }
 
+function run_local_replication_test() {
+    echo "Testing replication on local docker"
+    #Initializing replicaset
+    ADMIN_PASS=adminPassword
+    BASE_ARGS="
+-e MONGODB_DATABASE=db
+-e MONGODB_USER=user
+-e MONGODB_PASSWORD=password
+-e MONGODB_ADMIN_PASSWORD=${ADMIN_PASS}
+-e MONGODB_REPLICA_NAME=rs0
+-e MONGODB_KEYFILE_VALUE=xxxxxxxxxxxx
+-e MONGODB_SMALLFILES=true
+-e MONGODB_SERVICE_NAME=mongodb"
+
+    local network_name="mongodb-replset-$$"
+    docker network create ${network_name}
+
+    docker run -d --cidfile $CIDFILE_DIR/replset0 --name=replset-0 --hostname=replset-0 --network ${network_name} --network-alias mongodb ${BASE_ARGS} $IMAGE_NAME run-mongod-replication
+    docker run -d --cidfile $CIDFILE_DIR/replset1 --name=replset-1 --hostname=replset-1 --network ${network_name} --network-alias mongodb ${BASE_ARGS} $IMAGE_NAME run-mongod-replication
+    docker run -d --cidfile $CIDFILE_DIR/replset2 --name=replset-2 --hostname=replset-2 --network ${network_name} --network-alias mongodb ${BASE_ARGS} $IMAGE_NAME run-mongod-replication
+
+
+    local host="$(docker run --rm -e MONGODB_REPLICA_NAME=rs0 --network ${network_name} ${IMAGE_NAME} bash -c '. /usr/share/container-scripts/mongodb/common.sh && echo $(replset_addr)')"
+
+    # Storing document into replset and wait replication to finish ...
+    docker run --rm -e MONGODB_REPLICA_NAME=rs0 -e MONGODB_ADMIN_PASSWORD=${ADMIN_PASS} --network ${network_name} ${IMAGE_NAME} bash -c "set -e
+      . /usr/share/container-scripts/mongodb/common.sh
+      . /usr/share/container-scripts/mongodb/test-functions.sh
+      wait_for_mongo_up '${host}'
+      wait_replicaset_members '${host}' 3
+      insert_and_wait_for_replication '${host}' '{a:5, b:10}'"
+
+    # Adding new container
+    docker run -d --cidfile $CIDFILE_DIR/replset3 --name=replset-3 --hostname=replset-3 --network ${network_name} --network-alias mongodb ${BASE_ARGS} $IMAGE_NAME run-mongod-replication
+
+    # Storing document into replset and wait replication to finish ...
+    docker run --rm -e MONGODB_REPLICA_NAME=rs0 -e MONGODB_ADMIN_PASSWORD=${ADMIN_PASS} --network ${network_name} ${IMAGE_NAME} bash -c "set -e
+      . /usr/share/container-scripts/mongodb/common.sh
+      . /usr/share/container-scripts/mongodb/test-functions.sh
+      wait_for_mongo_up '${host}'
+      wait_replicaset_members '${host}' 4
+      insert_and_wait_for_replication '${host}' '{a:5, b:10}'"
+
+    echo "  Success!"
+}
+
 
 # Tests.
 run_container_creation_tests
@@ -421,3 +470,4 @@ run_change_password_test
 run_mount_config_test
 run_doc_test
 run_WT_cache_test
+run_local_replication_test
