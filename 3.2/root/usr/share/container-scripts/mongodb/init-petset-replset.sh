@@ -99,7 +99,7 @@ function add_member() {
       if (ret.code == 103) {
         quit(0);
       }
-      sleep(${SLEEP_TIME});
+      sleep(${SLEEP_TIME}*1000);
     }
     printjson(ret);
     quit(1);
