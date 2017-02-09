@@ -22,8 +22,7 @@ function find_endpoints() {
   dig "${service_name}" SRV +search +short | cut -d' ' -f4 | rev | cut -c2- | rev
 }
 
-# Initializes the replica set configuration. It is safe to call this function if
-# a replica set is already configured.
+# Initializes the replica set configuration.
 #
 # Arguments:
 # - $1: host address[:port]
@@ -33,11 +32,6 @@ function find_endpoints() {
 # - MONGODB_ADMIN_PASSWORD
 function initiate() {
   local host="$1"
-
-  if mongo --eval "quit(db.isMaster().setName == '${MONGODB_REPLICA_NAME}' ? 0 : 1)" --quiet; then
-    info "Replica set '${MONGODB_REPLICA_NAME}' already exists, skipping initialization"
-    return
-  fi
 
   local config="{_id: '${MONGODB_REPLICA_NAME}', members: [{_id: 0, host: '${host}'}]}"
 
@@ -54,37 +48,17 @@ function initiate() {
   info "Successfully initialized replica set"
 }
 
-# Adds a host to the replica set configuration. It is safe to call this function
-# if the host is already in the configuration.
+# Adds a host to the replica set configuration.
 #
 # Arguments:
 # - $1: host address[:port]
 #
 # Global variables:
-# - MAX_ATTEMPTS
-# - SLEEP_TIME
 # - MONGODB_REPLICA_NAME
 # - MONGODB_ADMIN_PASSWORD
 function add_member() {
   local host="$1"
   info "Adding ${host} to replica set ..."
-
-  local script
-  script="
-    for (var i = 0; i < ${MAX_ATTEMPTS}; i++) {
-      var ret = rs.add('${host}');
-      if (ret.ok) {
-        quit(0);
-      }
-      // ignore error if host is already in the configuration
-      if (ret.code == 103) {
-        quit(0);
-      }
-      sleep(${SLEEP_TIME}*1000);
-    }
-    printjson(ret);
-    quit(1);
-  "
 
   # TODO: replace this with a call to `replset_addr` from common.sh, once it returns host names.
   local endpoints
@@ -99,7 +73,7 @@ function add_member() {
   local replset_addr
   replset_addr="${MONGODB_REPLICA_NAME}/${endpoints}"
 
-  if ! mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host "${replset_addr}" --eval "${script}" --quiet; then
+  if ! mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host "${replset_addr}" --eval "while (!rs.add('${host}').ok) { sleep(100); }" --quiet; then
     info "ERROR: couldn't add host to replica set!"
     return 1
   fi
@@ -112,6 +86,11 @@ function add_member() {
 
 info "Waiting for local MongoDB to accept connections  ..."
 wait_for_mongo_up &>/dev/null
+
+if [[ $(mongo --eval 'db.isMaster().setName' --quiet) == "${MONGODB_REPLICA_NAME}" ]]; then
+  info "Replica set '${MONGODB_REPLICA_NAME}' already exists, skipping initialization"
+  exit 0
+fi
 
 # StatefulSet pods are named with a predictable name, following the pattern:
 #   $(statefulset name)-$(zero-based index)
