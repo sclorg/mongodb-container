@@ -89,6 +89,7 @@ wait_for_mongo_up &>/dev/null
 
 if [[ $(mongo --eval 'db.isMaster().setName' --quiet) == "${MONGODB_REPLICA_NAME}" ]]; then
   info "Replica set '${MONGODB_REPLICA_NAME}' already exists, skipping initialization"
+  >/tmp/initialized
   exit 0
 fi
 
@@ -106,3 +107,5 @@ if [ "${MEMBER_ID}" = '0' ]; then
 else
   add_member "${MEMBER_HOST}"
 fi
+
+>/tmp/initialized
