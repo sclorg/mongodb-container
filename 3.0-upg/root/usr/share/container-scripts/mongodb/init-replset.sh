@@ -11,13 +11,6 @@ source "${CONTAINER_SCRIPTS_PATH}/common.sh"
 readonly MEMBER_HOST="$(container_addr)"
 
 # Description of possible statuses: https://docs.mongodb.com/manual/reference/replica-states/
-readonly WAIT_PRIMARY_STATUS='
-  while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) {
-    printjson(rs.status());
-    sleep(1000);
-  };
-  printjson(rs.status());
-'
 readonly WAIT_PRIMARY_OR_SECONDARY_STATUS="
   var mbrs;
   while (!mbrs || mbrs.length == 0 || !(mbrs[0].state == 1 || mbrs[0].state == 2)) {
@@ -39,7 +32,6 @@ readonly WAIT_PRIMARY_OR_SECONDARY_STATUS="
 # Uses the following global variables:
 # - MONGODB_REPLICA_NAME
 # - MONGODB_ADMIN_PASSWORD
-# - WAIT_PRIMARY_STATUS
 # - MONGODB_INITIAL_REPLICA_COUNT
 function initiate() {
   local host="$1"
@@ -78,7 +70,10 @@ function initiate() {
   local config="{_id: '${MONGODB_REPLICA_NAME}', $(replset_config_members "${current_endpoints}")}"
 
   info "Initiating MongoDB replica using: ${config}"
-  mongo admin --eval "rs.initiate(${config});${WAIT_PRIMARY_STATUS}" --quiet
+  mongo --eval "quit(rs.initiate(${config}).ok ? 0 : 1)" --quiet
+
+  info "Waiting for PRIMARY status ..."
+  mongo --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
 
   info "Creating MongoDB users ..."
   mongo_create_admin
