@@ -10,19 +10,6 @@ source "${CONTAINER_SCRIPTS_PATH}/common.sh"
 # (for example, "replica-2.mongodb.myproject.svc.cluster.local")
 readonly MEMBER_HOST="$(container_addr)"
 
-# Description of possible statuses: https://docs.mongodb.com/manual/reference/replica-states/
-readonly WAIT_PRIMARY_OR_SECONDARY_STATUS="
-  var mbrs;
-  while (!mbrs || mbrs.length == 0 || !(mbrs[0].state == 1 || mbrs[0].state == 2)) {
-    printjson(rs.status());
-    sleep(1000);
-    mbrs = rs.status().members.filter(function(el) {
-      return el.name.indexOf(\"${MEMBER_HOST}:\") > -1;
-    });
-  };
-  print(mbrs[0].stateStr);
-"
-
 # Initializes the replica set configuration. It is safe to call this function if
 # a replica set is already configured.
 #
@@ -92,7 +79,6 @@ function initiate() {
 # - MAX_ATTEMPTS
 # - SLEEP_TIME
 # - MONGODB_ADMIN_PASSWORD
-# - WAIT_PRIMARY_OR_SECONDARY_STATUS
 function add_member() {
   local host="$1"
   info "Adding ${host} to replica set ..."
@@ -128,18 +114,8 @@ function add_member() {
     return 1
   fi
 
-  info "Successfully added to replica set"
   info "Waiting for PRIMARY/SECONDARY status ..."
-
-  local rs_status_out
-  rs_status_out="$(mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host "${replset_addr}" --eval "${WAIT_PRIMARY_OR_SECONDARY_STATUS}" --quiet || :)"
-
-  if ! echo "${rs_status_out}" | grep -xqs '\(SECONDARY\|PRIMARY\)'; then
-    info "ERROR: failed waiting for PRIMARY/SECONDARY status. Command output was:"
-    echo "${rs_status_out}"
-    echo "==> End of the error output <=="
-    return 1
-  fi
+  mongo --eval "while (!rs.isMaster().ismaster && !rs.isMaster().secondary) { sleep(100); }" --quiet
 
   info "Successfully joined replica set"
 }
