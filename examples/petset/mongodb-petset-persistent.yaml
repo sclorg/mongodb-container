@@ -71,11 +71,27 @@ parameters:
     value: "512Mi"
 
 objects:
-  # A headless service to create DNS records
+  # A non-headless service which takes pod readiness into consideration
   - kind: Service
     apiVersion: v1
     metadata:
       name: "${MONGODB_SERVICE_NAME}"
+    spec:
+      # the list of ports that are exposed by this service
+      ports:
+        - name: mongodb
+          port: 27017
+      # will route traffic to pods having labels matching this selector
+      selector:
+        name: "${MONGODB_SERVICE_NAME}"
+
+  # A headless service to create DNS records
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: "${MONGODB_SERVICE_NAME}-internal"
+      annotations:
+        service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
     spec:
       clusterIP: None
       # the list of ports that are exposed by this service
@@ -92,7 +108,7 @@ objects:
       name: "${MONGODB_SERVICE_NAME}"
     spec:
       # pets get DNS/hostnames that follow the pattern: ${metadata.name}-NUM.${spec.serviceName}.default.svc.cluster.local
-      serviceName: "${MONGODB_SERVICE_NAME}"
+      serviceName: "${MONGODB_SERVICE_NAME}-internal"
       replicas: 3
       # describes the pod that will be created if insufficient replicas are detected
       template:
@@ -125,10 +141,15 @@ objects:
                 - name: MONGODB_KEYFILE_VALUE
                   value: "${MONGODB_KEYFILE_VALUE}"
                 - name: MONGODB_SERVICE_NAME
-                  value: "${MONGODB_SERVICE_NAME}"
+                  value: "${MONGODB_SERVICE_NAME}-internal"
               resources:
                 limits:
                   memory: "${MEMORY_LIMIT}"
+              readinessProbe:
+                exec:
+                  command:
+                    - stat
+                    - /tmp/initialized
       volumeClaimTemplates:
         - metadata:
             name: mongo-data
