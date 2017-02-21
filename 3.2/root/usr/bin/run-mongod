@@ -47,8 +47,8 @@ if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONG
   usage
 fi
 
-# Run the MongoDB in 'standalone' mode
-mongod $mongo_common_args &
+# Must bring up MongoDB on localhost only until it has an admin password set.
+mongod $mongo_common_args --bind_ip 127.0.0.1 &
 wait_for_mongo_up
 js_command="db.system.users.count({'user':'admin', 'db':'admin'})"
 if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
