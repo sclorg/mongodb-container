@@ -41,6 +41,7 @@ RUN yum install -y yum-utils && \
 
 VOLUME ["/var/lib/mongodb/data"]
 
+ADD README.md /help.md
 ADD root /
 
 # Container setup

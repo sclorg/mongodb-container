@@ -34,6 +34,7 @@ RUN yum install -y centos-release-scl && \
 
 VOLUME ["/var/lib/mongodb/data"]
 
+ADD README.md /help.md
 ADD root /
 
 # Container setup
