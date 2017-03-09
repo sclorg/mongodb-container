@@ -38,7 +38,8 @@ function print_logs() {
 trap print_logs ERR
 
 # Start OpenShift cluster
-oc cluster up
+[ -d openshift.pv ] || mkdir openshift.pv
+oc cluster up --host-pv-dir=$(pwd)/openshift.pv
 
 # Prepare image - add tag different than :latest
 # With :latest default imagePullPolicy is Always

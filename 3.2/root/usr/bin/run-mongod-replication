@@ -1,9 +1,15 @@
 #!/bin/bash
 #
-# Run mongod which connect to replSet
-# $1 - "initiate" (optional) -> this mongod will initiate a replSet
+# Run mongod in a StatefulSet-based replica set. See
+# https://github.com/sclorg/mongodb-container/blob/master/examples/petset/README.md
+# for a description of how this is intended to work.
 #
-# If this script is terminated it removes mongod from replSet
+# Note:
+# - It does not attempt to remove the host from the replica set configuration
+#   when it is terminating. That is by design, because, in a StatefulSet, when a
+#   pod/container terminates and is restarted by OpenShift, it will always have
+#   the same hostname. Removing hosts from the configuration affects replica set
+#   elections and can impact the replica set stability.
 
 set -o errexit
 set -o nounset
@@ -21,43 +27,12 @@ function usage() {
   echo "  MONGODB_REPLICA_NAME"
   echo "Optional variables:"
   echo "  MONGODB_SERVICE_NAME (default: mongodb)"
-  echo "  MONGODB_INITIAL_REPLICA_COUNT"
   echo "MongoDB settings:"
   echo "  MONGODB_QUIET (default: true)"
   exit 1
 }
 
 function cleanup() {
-  if [ "$(mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD} --quiet --eval 'rs.isMaster().ismaster')" == "true" ]; then
-
-    # Wait that some SECONDARY is synced with PRIMARY
-    echo "=> Waiting for syncing SECONDARY ..."
-    replset_wait_sync
-
-    # Some commands will force MongoDB client to re-connect. This is not working
-    # well in combination with '--eval'. In that case the 'mongo' command will fail
-    # with return code 254.
-    echo "=> Giving up the PRIMARY role ..."
-    mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --eval "rs.stepDown(120);" &>/dev/null || true
-
-    # Wait till the new PRIMARY member is elected
-    echo "=> Waiting for the new PRIMARY to be elected ..."
-    mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet \
-     --eval "var i = ${MAX_ATTEMPTS};
-      while(i > 0) {
-        var members=rs.status().members;
-        for(i=0;i<members.length;i++){
-          if(members[i].stateStr=='PRIMARY' && members[i].name!='$(mongo_addr)'){
-            quit(0)
-          }
-        };
-        sleep(${SLEEP_TIME}*1000)
-      };" &>/dev/null
-    echo "=> A new PRIMARY member was elected, removing from replset ..."
-  fi
-  if [ -n "${MONGODB_REPLICA_NAME-}" ]; then
-    mongo_remove
-  fi
   echo "=> Shutting down MongoDB server ..."
   pkill -INT mongod || :
   wait_for_mongo_down
@@ -72,32 +47,23 @@ if [ ! -s "${MONGODB_CONFIG_PATH}" ]; then
   envsubst < "${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template" > "${MONGODB_CONFIG_PATH}"
 fi
 
-# Need to cache the container address for the cleanup
-cache_container_addr
-mongo_common_args="-f $MONGODB_CONFIG_PATH"
 if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD && -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]]; then
   usage
 fi
 
-# Run the MongoDB in 'replicated' mode
+mongo_common_args="-f ${MONGODB_CONFIG_PATH}"
+
+# Attention: setup_keyfile may modify value of mongo_common_args!
 setup_keyfile
 
-# Initialize the replica set or add member in the background.
-${CONTAINER_SCRIPTS_PATH}/init-replset.sh "${1:-}" "$$" &
+${CONTAINER_SCRIPTS_PATH}/init-replset.sh &
 
-# TODO: capture exit code of `init-replset.sh` and exit with an error if the
-# initialization failed, so that the container will be restarted and the user
-# can gain more visibility that there is a problem in a way other than just
+# TODO: capture exit code of `init-petset-replset.sh` and exit with an error if
+# the initialization failed, so that the container will be restarted and the
+# user can gain more visibility that there is a problem in a way other than just
 # inspecting log messages.
 
-# Don't pass signals to background processes. Background processes are killed in `cleanup`.
-set -m
-# Run `mongod` in a subshell because MONGODB_ADMIN_PASSWORD should still be
-# defined when the trapped call to `cleanup` references it.
-(
-  # Make sure env variables don't propagate to mongod process.
-  unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
-
-  mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}"
-) &
+# Make sure env variables don't propagate to mongod process.
+unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}" &
 wait
