@@ -8,7 +8,19 @@ source "${CONTAINER_SCRIPTS_PATH}/common.sh"
 
 # This is a full hostname that will be added to replica set
 # (for example, "replica-2.mongodb.myproject.svc.cluster.local")
-readonly MEMBER_HOST="$(container_addr)"
+readonly MEMBER_HOST="$(hostname -f)"
+
+# Outputs available endpoints (hostnames) to stdout.
+# This also includes hostname of the current pod.
+#
+# Uses the following global variables:
+# - MONGODB_SERVICE_NAME (optional, defaults to 'mongodb')
+function find_endpoints() {
+  local service_name="${MONGODB_SERVICE_NAME:-mongodb}"
+
+  # Extract host names from lines like this: "10 33 0 mongodb-2.mongodb.myproject.svc.cluster.local."
+  dig "${service_name}" SRV +search +short | cut -d' ' -f4 | rev | cut -c2- | rev
+}
 
 # Initializes the replica set configuration.
 #
@@ -18,36 +30,10 @@ readonly MEMBER_HOST="$(container_addr)"
 # Uses the following global variables:
 # - MONGODB_REPLICA_NAME
 # - MONGODB_ADMIN_PASSWORD
-# - MONGODB_INITIAL_REPLICA_COUNT
 function initiate() {
   local host="$1"
 
-  # Wait for all nodes to be listed in endpoints() and accept connections
-  current_endpoints=$(endpoints)
-  if [ -n "${MONGODB_INITIAL_REPLICA_COUNT:-}" ]; then
-    echo -n "=> Waiting for $MONGODB_INITIAL_REPLICA_COUNT MongoDB endpoints ..."
-    while [[ "$(echo "${current_endpoints}" | wc -l)" -lt ${MONGODB_INITIAL_REPLICA_COUNT} ]]; do
-      sleep 2
-      current_endpoints=$(endpoints)
-    done
-  else
-    echo "Attention: MONGODB_INITIAL_REPLICA_COUNT is not set and it could lead to a improperly configured replica set."
-    echo "To fix this, set MONGODB_INITIAL_REPLICA_COUNT variable to the number of members in the replica set in"
-    echo "the configuration of post deployment hook."
-
-    echo -n "=> Waiting for MongoDB endpoints ..."
-    while [ -z "${current_endpoints}" ]; do
-      sleep 2
-      current_endpoints=$(endpoints)
-    done
-  fi
-  echo "${current_endpoints}"
-  echo "=> Waiting for all endpoints to accept connections..."
-  for node in ${current_endpoints}; do
-    wait_for_mongo_up ${node} &>/dev/null
-  done
-
-  local config="{_id: '${MONGODB_REPLICA_NAME}', $(replset_config_members "${current_endpoints}")}"
+  local config="{_id: '${MONGODB_REPLICA_NAME}', members: [{_id: 0, host: '${host}'}]}"
 
   info "Initiating MongoDB replica using: ${config}"
   mongo --eval "quit(rs.initiate(${config}).ok ? 0 : 1)" --quiet
@@ -68,19 +54,24 @@ function initiate() {
 # - $1: host address[:port]
 #
 # Global variables:
+# - MONGODB_REPLICA_NAME
 # - MONGODB_ADMIN_PASSWORD
 function add_member() {
   local host="$1"
   info "Adding ${host} to replica set ..."
 
-  if [ -z "$(endpoints)" ]; then
+  # TODO: replace this with a call to `replset_addr` from common.sh, once it returns host names.
+  local endpoints
+  endpoints="$(find_endpoints | paste -s -d,)"
+
+  if [ -z "${endpoints}" ]; then
     info "ERROR: couldn't add host to replica set!"
     info "CAUSE: DNS lookup for '${MONGODB_SERVICE_NAME:-mongodb}' returned no results."
     return 1
   fi
 
   local replset_addr
-  replset_addr="$(replset_addr)"
+  replset_addr="${MONGODB_REPLICA_NAME}/${endpoints}"
 
   if ! mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host "${replset_addr}" --eval "while (!rs.add('${host}').ok) { sleep(100); }" --quiet; then
     info "ERROR: couldn't add host to replica set!"
@@ -93,22 +84,28 @@ function add_member() {
   info "Successfully joined replica set"
 }
 
-info "Waiting for local MongoDB to accept connections ..."
+info "Waiting for local MongoDB to accept connections  ..."
 wait_for_mongo_up &>/dev/null
 
 if [[ $(mongo --eval 'db.isMaster().setName' --quiet) == "${MONGODB_REPLICA_NAME}" ]]; then
   info "Replica set '${MONGODB_REPLICA_NAME}' already exists, skipping initialization"
+  >/tmp/initialized
   exit 0
 fi
 
-# Initialize replica set only if we're the first member
-if [ "$1" == "initiate" ]; then
-  main_process_id=$2
-  # Initiate replica set
-  initiate "${MEMBER_HOST}"
+# StatefulSet pods are named with a predictable name, following the pattern:
+#   $(statefulset name)-$(zero-based index)
+# MEMBER_ID is computed by removing the prefix matching "*-", i.e.:
+#  "mongodb-0" -> "0"
+#  "mongodb-1" -> "1"
+#  "mongodb-2" -> "2"
+readonly MEMBER_ID="${HOSTNAME##*-}"
 
-  # Exit this pod
-  kill ${main_process_id}
+# Initialize replica set only if we're the first member
+if [ "${MEMBER_ID}" = '0' ]; then
+  initiate "${MEMBER_HOST}"
 else
   add_member "${MEMBER_HOST}"
 fi
+
+>/tmp/initialized

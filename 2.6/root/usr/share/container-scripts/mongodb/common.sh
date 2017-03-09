@@ -21,31 +21,6 @@ MONGODB_KEYFILE_PATH="${HOME}/keyfile"
 readonly MAX_ATTEMPTS=60
 readonly SLEEP_TIME=1
 
-# container_addr returns the current container external IP address
-function container_addr() {
-  echo -n $(cat ${HOME}/.address)
-}
-
-# mongo_addr returns the IP:PORT of the currently running MongoDB instance
-function mongo_addr() {
-  echo -n "$(container_addr):${CONTAINER_PORT}"
-}
-
-# cache_container_addr waits till the container gets the external IP address and
-# cache it to disk
-function cache_container_addr() {
-  echo -n "=> Waiting for container IP address ..."
-  local i
-  for i in $(seq "$MAX_ATTEMPTS"); do
-    if ip -oneline -4 addr show up scope global | grep -Eo '[0-9]{,3}(\.[0-9]{,3}){3}' > "${HOME}"/.address; then
-      echo " $(mongo_addr)"
-      return 0
-    fi
-    sleep $SLEEP_TIME
-  done
-  echo >&2 "Failed to get Docker container IP address." && exit 1
-}
-
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
 function wait_for_mongo_up() {
   _wait_for_mongo 1 "$@"
@@ -89,28 +64,6 @@ function endpoints() {
   dig ${service_name} A +search +short 2>/dev/null
 }
 
-# replset_config_members builds part of the MongoDB replicaSet config: "members: [...]"
-# used for the cluster initialization.
-# Takes a list of space-separated member IPs as the first argument.
-function replset_config_members() {
-  local current_endpoints
-  current_endpoints="$1"
-  local members
-  members="{ _id: 0, host: \"$(mongo_addr)\"},"
-  local member_id
-  member_id=1
-  local container_addr
-  container_addr="$(container_addr)"
-  local node
-  for node in ${current_endpoints}; do
-    if [ "$node" != "$container_addr" ]; then
-      members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
-      let member_id++
-    fi
-  done
-  echo -n "members: [ ${members%,} ]"
-}
-
 # replset_addr return the address of the current replSet
 function replset_addr() {
   local current_endpoints
@@ -120,49 +73,6 @@ function replset_addr() {
     return 1
   fi
   echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}"
-}
-
-# replse_wait_sync wait for at least two members to be up to date (PRIMARY and one SECONDARY)
-function replset_wait_sync() {
-  local host
-  # if we cannot determine the IP address of the primary, exit without an error
-  # to allow callers to proceed with their logic
-  host="$(replset_addr || true)"
-  if [ -z "$host" ]; then
-    return 1
-  fi
-
-  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host ${host} \
-    --eval "var i = ${MAX_ATTEMPTS};
-    while(i > 0) {
-      var status=rs.status();
-      var primary_optime=status.members.filter(function(el) {return el.state ==1})[0].optime;
-      // Check that at least one member has same optime as PRIMARY (PRIMARY and one SECONDARY ~ >= 2)
-      if(status.members.filter(function(el) {return tojson(el.optime) == tojson(primary_optime)}).length >= 2)
-        quit(0);
-      else
-        sleep(${SLEEP_TIME}*1000);
-      i--;
-    };
-    quit(1);"
-}
-
-# mongo_remove removes the current MongoDB from the cluster
-function mongo_remove() {
-  local host
-  # if we cannot determine the IP address of the primary, exit without an error
-  # to allow callers to proceed with their logic
-  host="$(replset_addr || true)"
-  if [ -z "$host" ]; then
-    return
-  fi
-
-  local mongo_addr
-  mongo_addr="$(mongo_addr)"
-
-  echo "=> Removing ${mongo_addr} from replica set ..."
-  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${host}" --eval "rs.remove('${mongo_addr}');" || true
 }
 
 # mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
