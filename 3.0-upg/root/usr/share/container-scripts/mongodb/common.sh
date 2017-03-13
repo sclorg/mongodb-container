@@ -10,7 +10,11 @@ set -o pipefail
 export MONGODB_DATADIR=/var/lib/mongodb/data
 export CONTAINER_PORT=27017
 # Configuration settings.
-export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
+if [[ "${MONGODB_NOPREALLOC:-}" == "false" ]]; then
+  export MONGODB_PREALLOC=${MONGODB_PREALLOC:-true}
+else
+  export MONGODB_PREALLOC=${MONGODB_PREALLOC:-false}
+fi
 export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
 export MONGODB_QUIET=${MONGODB_QUIET:-true}
 
