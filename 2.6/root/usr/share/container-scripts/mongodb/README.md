@@ -22,7 +22,8 @@ The following environment variables influence the MongoDB configuration file. Th
 
 |    Variable name      |    Description                                                            |    Default
 | :-------------------- | ------------------------------------------------------------------------- | ----------------
-|  `MONGODB_NOPREALLOC` | Disable data file preallocation.                                          |  true
+|  `MONGODB_PREALLOC`   | Enable data file preallocation.                                           |  false
+|  `MONGODB_NOPREALLOC`   | DEPRECATED - use `MONGODB_PREALLOC` instead. Disable data file preallocation. |
 |  `MONGODB_SMALLFILES` | Set MongoDB to use a smaller default data file size.                      |  true
 |  `MONGODB_QUIET`      | Runs MongoDB in a quiet mode that attempts to limit the amount of output. |  true
 
