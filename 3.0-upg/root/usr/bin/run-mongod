@@ -13,7 +13,7 @@ function usage() {
   echo "  MONGODB_DATABASE"
   echo "  MONGODB_ADMIN_PASSWORD"
   echo "MongoDB settings:"
-  echo "  MONGODB_NOPREALLOC (default: true)"
+  echo "  MONGODB_PREALLOC (default: false)"
   echo "  MONGODB_SMALLFILES (default: true)"
   echo "  MONGODB_QUIET (default: true)"
   exit 1

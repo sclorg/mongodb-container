@@ -112,10 +112,10 @@ function test_mongo() {
 
 function test_config_option() {
     local env_var=$1 ; shift
-    local setting=$1 ; shift
-    local value=$1 ; shift
+    local env_val=$1 ; shift
+    local config_part=$1 ; shift
 
-    local name="configuration_${setting}"
+    local name="configuration_${env_var}"
 
     # If $value is a string, it needs to be in simple quotes ''.
     DOCKER_ARGS="
@@ -123,7 +123,7 @@ function test_config_option() {
 -e MONGODB_USER=user
 -e MONGODB_PASSWORD=password
 -e MONGODB_ADMIN_PASSWORD=adminPassword
--e $env_var=${value//\'/}
+-e $env_var=${env_val}
 "
     create_container ${name} ${DOCKER_ARGS}
 
@@ -135,14 +135,14 @@ function test_config_option() {
     test_connection ${name}
 
     # If nothing is found, grep returns 1 and test fails.
-    docker exec $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "$setting = $value"
+    docker exec $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "${config_part}"
 
     docker stop $(get_cid ${name})
 }
 
 function run_configuration_tests() {
     echo "  Testing image configuration settings"
-    test_config_option MONGODB_QUIET quiet true
+    test_config_option MONGODB_QUIET true "quiet: true"
     echo "  Success!"
 }
 
