@@ -414,31 +414,40 @@ run_WT_cache_test() {
 }
 
 function run_local_replication_test() {
+    function print_logs() {
+      for file in $CIDFILE_DIR/replset*; do
+        echo "INFO: printing logs for CID file ${file}"
+        docker logs $(cat ${file})
+      done
+    }
+    trap print_logs ERR
+
     echo "Testing replication on local docker"
     #Initializing replicaset
-    ADMIN_PASS=adminPassword
-    BASE_ARGS="
--e MONGODB_DATABASE=db
--e MONGODB_USER=user
--e MONGODB_PASSWORD=password
--e MONGODB_ADMIN_PASSWORD=${ADMIN_PASS}
--e MONGODB_REPLICA_NAME=rs0
--e MONGODB_KEYFILE_VALUE=xxxxxxxxxxxx
--e MONGODB_SMALLFILES=true
--e MONGODB_SERVICE_NAME=mongodb"
+
+    cat > variables <<EOF
+    MONGODB_DATABASE=db
+    MONGODB_USER=user
+    MONGODB_PASSWORD=password
+    MONGODB_ADMIN_PASSWORD=adminPassword
+    MONGODB_REPLICA_NAME=rs0
+    MONGODB_KEYFILE_VALUE=xxxxxxxxxxxx
+    MONGODB_SMALLFILES=true
+    MONGODB_SERVICE_NAME=mongodb
+EOF
+    source variables
 
     local network_name="mongodb-replset-$$"
     docker network create ${network_name}
 
-    docker run -d --cidfile $CIDFILE_DIR/replset0 --name=replset-0 --hostname=replset-0 --network ${network_name} --network-alias mongodb ${BASE_ARGS} $IMAGE_NAME run-mongod-replication
-    docker run -d --cidfile $CIDFILE_DIR/replset1 --name=replset-1 --hostname=replset-1 --network ${network_name} --network-alias mongodb ${BASE_ARGS} $IMAGE_NAME run-mongod-replication
-    docker run -d --cidfile $CIDFILE_DIR/replset2 --name=replset-2 --hostname=replset-2 --network ${network_name} --network-alias mongodb ${BASE_ARGS} $IMAGE_NAME run-mongod-replication
+    docker run -d --cidfile $CIDFILE_DIR/replset0 --name=replset-0 --hostname=replset-0 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+    docker run -d --cidfile $CIDFILE_DIR/replset1 --name=replset-1 --hostname=replset-1 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+    docker run -d --cidfile $CIDFILE_DIR/replset2 --name=replset-2 --hostname=replset-2 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
 
-
-    local host="$(docker run --rm -e MONGODB_REPLICA_NAME=rs0 --network ${network_name} ${IMAGE_NAME} bash -c '. /usr/share/container-scripts/mongodb/common.sh && echo $(replset_addr)')"
+    local host="$(docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c '. /usr/share/container-scripts/mongodb/common.sh && echo $(replset_addr)')"
 
     # Storing document into replset and wait replication to finish ...
-    docker run --rm -e MONGODB_REPLICA_NAME=rs0 -e MONGODB_ADMIN_PASSWORD=${ADMIN_PASS} --network ${network_name} ${IMAGE_NAME} bash -c "set -e
+    docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c "set -e
       . /usr/share/container-scripts/mongodb/common.sh
       . /usr/share/container-scripts/mongodb/test-functions.sh
       wait_for_mongo_up '${host}'
@@ -446,15 +455,18 @@ function run_local_replication_test() {
       insert_and_wait_for_replication '${host}' '{a:5, b:10}'"
 
     # Adding new container
-    docker run -d --cidfile $CIDFILE_DIR/replset3 --name=replset-3 --hostname=replset-3 --network ${network_name} --network-alias mongodb ${BASE_ARGS} $IMAGE_NAME run-mongod-replication
+    docker run -d --cidfile $CIDFILE_DIR/replset3 --name=replset-3 --hostname=replset-3 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
 
     # Storing document into replset and wait replication to finish ...
-    docker run --rm -e MONGODB_REPLICA_NAME=rs0 -e MONGODB_ADMIN_PASSWORD=${ADMIN_PASS} --network ${network_name} ${IMAGE_NAME} bash -c "set -e
+    docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c "set -e
       . /usr/share/container-scripts/mongodb/common.sh
       . /usr/share/container-scripts/mongodb/test-functions.sh
       wait_for_mongo_up '${host}'
       wait_replicaset_members '${host}' 4
       insert_and_wait_for_replication '${host}' '{a:5, b:10}'"
+
+    rm variables
+    trap ERR
 
     echo "  Success!"
 }
