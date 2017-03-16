@@ -38,8 +38,11 @@ network_name="mongodb-replset"
 docker network create ${network_name}
 
 docker run -d --cidfile $CIDFILE_DIR/replset0 --name=replset-0 --hostname=replset-0 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+docker exec replset-0 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
 docker run -d --cidfile $CIDFILE_DIR/replset1 --name=replset-1 --hostname=replset-1 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+docker exec replset-1 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
 docker run -d --cidfile $CIDFILE_DIR/replset2 --name=replset-2 --hostname=replset-2 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+docker exec replset-2 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
 ```
 
 `run-mongod-replication` command have to be run in container (same script as for [OpenShift StatefulSet replication example](https://github.com/sclorg/mongodb-container/tree/master/examples/petset).
@@ -73,6 +76,7 @@ To add a new member into replicaset run:
 
 ```bash
 docker run -d --cidfile $CIDFILE_DIR/replset3 --name=replset-3 --hostname=replset-3 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+docker exec replset-3 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
 ```
 
 New container is created and it automatically connects to the replica set.
