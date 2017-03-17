@@ -452,12 +452,8 @@ run_container_creation_tests
 run_configuration_tests
 USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin
 # Test with random uid in container
-#CONTAINER_ARGS="-u 12345" USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin_altuid
-#run_change_password_test
-#run_mount_config_test
-#run_doc_test
-#CONTAINER_ARGS="-u 12345" USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin_altuid
-#run_change_password_test
-#run_mount_config_test
-
+CONTAINER_ARGS="-u 12345" USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin_altuid
+run_change_password_test
+run_mount_config_test
+run_doc_test
 run_local_replication_test
