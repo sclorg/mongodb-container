@@ -69,6 +69,10 @@ parameters:
     displayName: "Memory Limit"
     description: "Maximum amount of memory the container can use."
     value: "512Mi"
+  - name: TIMEZONE
+    displayName: "Time zone"
+    description: "The time zone for the mongodb cluster"
+    value: "UTC"    
 
 objects:
   # A non-headless service which takes pod readiness into consideration
