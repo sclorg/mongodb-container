@@ -130,6 +130,8 @@ objects:
                   value: "${MONGODB_KEYFILE_VALUE}"
                 - name: MONGODB_SERVICE_NAME
                   value: "${MONGODB_SERVICE_NAME}"
+                - name: TZ
+                  value: "${TZ}"
               resources:
                 limits:
                   memory: "${MEMORY_LIMIT}"
