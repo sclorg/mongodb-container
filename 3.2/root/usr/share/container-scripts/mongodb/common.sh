@@ -61,7 +61,9 @@ function _wait_for_mongo() {
   local mongo_cmd="mongo admin --host ${2:-localhost} --port ${CONTAINER_PORT} "
 
   local i
-  for i in $(seq $MAX_ATTEMPTS); do
+  # Wait indefinitely for MongoDB daemon
+  while true
+  do
     echo "=> ${2:-} Waiting for MongoDB daemon ${message}"
     if ([[ ${operation} -eq 1 ]] && ${mongo_cmd} --eval "quit()" &>/dev/null) || ([[ ${operation} -eq 0 ]] && ! ${mongo_cmd} --eval "quit()" &>/dev/null); then
       echo "=> MongoDB daemon is ${message}"
