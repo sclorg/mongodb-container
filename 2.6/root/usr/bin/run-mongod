@@ -34,10 +34,13 @@ if [ ! -s $MONGODB_CONFIG_PATH ]; then
   envsubst < ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template > $MONGODB_CONFIG_PATH
 fi
 
-mongo_common_args="-f $MONGODB_CONFIG_PATH"
 if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
   usage
 fi
+
+mongo_common_args="-f $MONGODB_CONFIG_PATH"
+
+setup_default_datadir
 
 # Must bring up MongoDB on localhost only until it has an admin password set.
 mongod $mongo_common_args --bind_ip 127.0.0.1 &
