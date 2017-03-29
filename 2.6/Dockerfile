@@ -27,9 +27,8 @@ RUN yum install -y centos-release-scl && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
-    mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ /var/opt/rh/rh-mongodb26/lib/mongodb && \
+    mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ && \
     # Loosen permission bits to avoid problems running container with arbitrary UID
-    chmod g+w -R /var/opt/rh/rh-mongodb26/lib/mongodb && \
     chmod -R g+rwx /var/lib/mongodb
 
 VOLUME ["/var/lib/mongodb/data"]

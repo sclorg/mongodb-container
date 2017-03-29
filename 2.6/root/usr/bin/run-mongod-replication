@@ -57,6 +57,7 @@ mongo_common_args="-f ${MONGODB_CONFIG_PATH}"
 
 # Attention: setup_keyfile may modify value of mongo_common_args!
 setup_keyfile
+setup_default_datadir
 
 ${CONTAINER_SCRIPTS_PATH}/init-replset.sh &
 
