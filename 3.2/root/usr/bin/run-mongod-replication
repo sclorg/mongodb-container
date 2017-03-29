@@ -19,12 +19,13 @@ source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
 function usage() {
   echo "You must specify the following environment variables:"
-  echo "  MONGODB_USER"
-  echo "  MONGODB_PASSWORD"
-  echo "  MONGODB_DATABASE"
   echo "  MONGODB_ADMIN_PASSWORD"
   echo "  MONGODB_KEYFILE_VALUE"
   echo "  MONGODB_REPLICA_NAME"
+  echo "Optionally you can provide settings for user with 'readWrite' role:"
+  echo "  MONGODB_USER"
+  echo "  MONGODB_PASSWORD"
+  echo "  MONGODB_DATABASE"
   echo "Optional variables:"
   echo "  MONGODB_SERVICE_NAME (default: mongodb)"
   echo "MongoDB settings:"
@@ -41,14 +42,16 @@ function cleanup() {
 
 trap 'cleanup' SIGINT SIGTERM
 
+[[ -v MONGODB_ADMIN_PASSWORD ]] || usage
+if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
+  [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage
+  CREATE_USER=1
+fi
+
 # If user provides own config file use it and do not generate new one
 if [ ! -s "${MONGODB_CONFIG_PATH}" ]; then
   # Generate config file for MongoDB
   envsubst < "${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template" > "${MONGODB_CONFIG_PATH}"
-fi
-
-if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD && -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]]; then
-  usage
 fi
 
 mongo_common_args="-f ${MONGODB_CONFIG_PATH}"
