@@ -12,10 +12,15 @@ initialization by passing `-e VAR=VALUE` to the Docker run command.
 
 |    Variable name          |    Description                              |
 | :------------------------ | -----------------------------------------   |
-|  `MONGODB_USER`       | User name for MONGODB account to be created |
+|  `MONGODB_ADMIN_PASSWORD` | Password for the admin user                 |
+
+Optionally you can provide settings for user with 'readWrite' role.
+
+|    Variable name          |    Description                              |
+| :------------------------ | -----------------------------------------   |
+|  `MONGODB_USER`           | User name for MONGODB account to be created |
 |  `MONGODB_PASSWORD`       | Password for the user account               |
 |  `MONGODB_DATABASE`       | Database name                               |
-|  `MONGODB_ADMIN_PASSWORD` | Password for the admin user                 |
 
 
 The following environment variables influence the MongoDB configuration file. They are all optional.

@@ -43,7 +43,7 @@ function initiate() {
 
   info "Creating MongoDB users ..."
   mongo_create_admin
-  mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
+  [[ -v CREATE_USER ]] && mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
   info "Successfully initialized replica set"
 }

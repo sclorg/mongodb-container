@@ -45,6 +45,42 @@ function mongo_admin_cmd() {
     docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
 }
 
+# Make sure the invocation of docker run fails.
+function assert_container_creation_fails() {
+
+  # Time the docker run command. It should fail. If it doesn't fail,
+  # container will keep running so we kill it with SIGKILL to make sure
+  # timeout returns a non-zero value.
+  set +e
+  timeout -s 9 --preserve-status 10s docker run --rm "$@" $IMAGE_NAME
+  ret=$?
+  set -e
+
+  # Timeout will exit with a high number.
+  if [ $ret -gt 30 ]; then
+    return 1
+  fi
+}
+
+function run_container_creation_tests() {
+  echo "  Testing wrong user variables usage"
+
+  assert_container_creation_fails -e MONGODB_USER=user -e MONGODB_PASSWORD=pass
+  assert_container_creation_fails -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass
+  assert_container_creation_fails -e MONGODB_DATABASE=db -e MONGODB_USER=user
+  assert_container_creation_fails -e MONGODB_USER=user -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass
+
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_USER=user
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_PASSWORD=pass
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_DATABASE=db
+
+  echo "  Success!"
+  echo "  Testing good user variables usage"
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass || [ $? -eq 1 ]
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_USER=user -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass || [ $? -eq 1 ]
+  echo "  Success!"
+}
+
 function test_connection() {
     local name=$1 ; shift
     CONTAINER_IP=$(get_container_ip $name)
@@ -348,6 +384,7 @@ run_doc_test() {
 
 
 # Tests.
+run_container_creation_tests
 run_configuration_tests
 USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin
 # Test with random uid in container
