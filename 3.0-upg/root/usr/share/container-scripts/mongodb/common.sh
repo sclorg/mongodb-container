@@ -183,6 +183,22 @@ function setup_default_datadir() {
   fi
 }
 
+# setup_wiredtiger_cache checks amount of available RAM (it has to use cgroups in container)
+# and if there are any memory restrictions set storage.wiredTiger.engineConfig.cacheSizeGB
+# in MONGODB_CONFIG_PATH to upstream default size
+# it is inteded to update mongodb.conf.template, with custom config file it might create conflict
+function setup_wiredtiger_cache() {
+  declare $(cgroup-limits)
+  if [[ ! -v MEMORY_LIMIT_IN_BYTES || "${NO_MEMORY_LIMIT:-}" == "true" ]]; then
+    return 0;
+  fi
+
+  cache_size=$(python -c "min=1; limit=int($MEMORY_LIMIT_IN_BYTES / pow(2,30) * 0.5); print( min if limit < min else limit)")
+  echo "storage.wiredTiger.engineConfig.cacheSizeGB: ${cache_size}" >> ${MONGODB_CONFIG_PATH}
+
+  info "wiredTiger cacheSizeGB set to ${cache_size}"
+}
+
 # info prints a message prefixed by date and time.
 function info() {
   printf "=> [%s] %s\n" "$(date +'%a %b %d %T')" "$*"

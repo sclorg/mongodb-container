@@ -52,6 +52,7 @@ fi
 if [ ! -s "${MONGODB_CONFIG_PATH}" ]; then
   # Generate config file for MongoDB
   envsubst < "${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template" > "${MONGODB_CONFIG_PATH}"
+  setup_wiredtiger_cache
 fi
 
 mongo_common_args="-f ${MONGODB_CONFIG_PATH}"
