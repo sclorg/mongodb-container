@@ -18,7 +18,6 @@ ENV MONGODB_VERSION=2.6 \
 
 EXPOSE 27017
 
-
 ENTRYPOINT ["container-entrypoint"]
 CMD ["run-mongod"]
 
@@ -26,16 +25,19 @@ RUN yum install -y centos-release-scl && \
     INSTALL_PKGS="bind-utils gettext iproute rsync tar v8314 rh-mongodb26-mongodb rh-mongodb26" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
-    yum clean all && \
-    mkdir -p /var/lib/mongodb/data && chown -R mongodb.0 /var/lib/mongodb/ && \
-    # Loosen permission bits to avoid problems running container with arbitrary UID
-    chmod -R g+rwx /var/lib/mongodb
-
-VOLUME ["/var/lib/mongodb/data"]
+    yum clean all
 
 ADD root /
 
+
 # Container setup
-RUN touch /etc/mongod.conf && chown mongodb:0 /etc/mongod.conf && /usr/libexec/fix-permissions /etc/mongod.conf
+RUN touch /etc/mongod.conf && \
+    mkdir -p ${HOME}/data && \
+    chown -R mongodb:0 /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template ${HOME} && \
+    # Set g+rw(x) permission for group 0 - to avoid problems running container with arbitrary UID
+    /usr/libexec/fix-permissions "/etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template \
+    ${HOME}"
+
+VOLUME ["/var/lib/mongodb/data"]
 
 USER 184
