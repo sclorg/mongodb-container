@@ -33,10 +33,9 @@ ADD root /
 # Container setup
 RUN touch /etc/mongod.conf && \
     mkdir -p ${HOME}/data && \
-    chown -R mongodb:0 /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template ${HOME} && \
-    # Set g+rw(x) permission for group 0 - to avoid problems running container with arbitrary UID
-    /usr/libexec/fix-permissions "/etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template \
-    ${HOME}"
+    # Set owner 'mongodb:0' and 'g+rw(x)' permission - to avoid problems running container with arbitrary UID
+    /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template \
+    ${HOME}
 
 VOLUME ["/var/lib/mongodb/data"]
 
