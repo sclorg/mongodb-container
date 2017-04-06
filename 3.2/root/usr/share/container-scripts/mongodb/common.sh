@@ -214,8 +214,7 @@ function check_env_vars() {
   fi
 
   if [[ -v REPLICATION ]]; then
-    [[ -v MONGODB_KEYFILE_VALUE ]] || usage "MONGODB_KEYFILE_VALUE has to be set"
-    [[ -v MONGODB_REPLICA_NAME ]] ||  usage "MONGODB_REPLICA_NAME has to be set"
+    [[ -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]] || usage "MONGODB_KEYFILE_VALUE and MONGODB_REPLICA_NAME have to be set"
   fi
 }
 
@@ -230,7 +229,7 @@ function usage() {
   echo "
 You must specify the following environment variables:
   MONGODB_ADMIN_PASSWORD
-Optionally you can provide settings for user with 'readWrite' role:
+Optionally you can provide settings for a user with 'readWrite' role:
   MONGODB_USER
   MONGODB_PASSWORD
   MONGODB_DATABASE

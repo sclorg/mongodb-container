@@ -25,12 +25,6 @@ trap 'cleanup' SIGINT SIGTERM
 
 check_env_vars
 
-[[ -v MONGODB_ADMIN_PASSWORD ]] || usage
-if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
-  [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage
-  export CREATE_USER=1
-fi
-
 # If user provides own config file use it and do not generate new one
 if [ ! -s $MONGODB_CONFIG_PATH ]; then
   # Generate config file for MongoDB
