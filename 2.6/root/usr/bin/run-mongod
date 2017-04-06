@@ -6,20 +6,6 @@ set -o pipefail
 
 source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
-function usage() {
-  echo "You must specify the following environment variables:"
-  echo "  MONGODB_ADMIN_PASSWORD"
-  echo "Optionally you can provide settings for user with 'readWrite' role:"
-  echo "  MONGODB_USER"
-  echo "  MONGODB_PASSWORD"
-  echo "  MONGODB_DATABASE"
-  echo "MongoDB settings:"
-  echo "  MONGODB_PREALLOC (default: false)"
-  echo "  MONGODB_SMALLFILES (default: true)"
-  echo "  MONGODB_QUIET (default: true)"
-  exit 1
-}
-
 function cleanup() {
   echo "=> Shutting down MongoDB server ..."
   pkill -INT mongod || :
@@ -29,11 +15,7 @@ function cleanup() {
 
 trap 'cleanup' SIGINT SIGTERM
 
-[[ -v MONGODB_ADMIN_PASSWORD ]] || usage
-if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
-  [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage
-  export CREATE_USER=1
-fi
+check_env_vars
 
 # If user provides own config file use it and do not generate new one
 if [ ! -s $MONGODB_CONFIG_PATH ]; then
