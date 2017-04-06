@@ -48,6 +48,8 @@ if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
   CREATE_USER=1
 fi
 
+setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template
+
 # If user provides own config file use it and do not generate new one
 if [ ! -s "${MONGODB_CONFIG_PATH}" ]; then
   # Generate config file for MongoDB
