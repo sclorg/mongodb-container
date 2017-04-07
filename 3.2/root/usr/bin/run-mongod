@@ -40,7 +40,7 @@ trap 'cleanup' SIGINT SIGTERM
 [[ -v MONGODB_ADMIN_PASSWORD ]] || usage
 if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
   [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage
-  CREATE_USER=1
+  export CREATE_USER=1
 fi
 
 setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template
