@@ -230,6 +230,7 @@ function usage() {
 You must specify the following environment variables:
   MONGODB_ADMIN_PASSWORD
 Optionally you can provide settings for a user with 'readWrite' role:
+(Note you MUST specify all three of these settings)
   MONGODB_USER
   MONGODB_PASSWORD
   MONGODB_DATABASE
