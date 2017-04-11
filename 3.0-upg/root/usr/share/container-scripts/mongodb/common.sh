@@ -202,6 +202,65 @@ function setup_wiredtiger_cache() {
   info "wiredTiger cacheSizeGB set to ${cache_size}"
 }
 
+# check_env_vars checks environmental variables
+# if variables to create non-admin user are provided, sets CREATE_USER=1
+# if REPLICATION variable is set, checks also replication variables
+function check_env_vars() {
+  local readonly database_regex='^[^/\. "$]*$'
+
+  [[ -v MONGODB_ADMIN_PASSWORD ]] || usage "MONGODB_ADMIN_PASSWORD has to be set."
+
+  if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
+    [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage "You have to set all or none of variables: MONGODB_USER, MONGODB_PASSWORD, MONGODB_DATABASE"
+
+    [[ "${MONGODB_DATABASE}" =~ $database_regex ]] || usage "Database name must match regex: $database_regex"
+    [ ${#MONGODB_DATABASE} -le 63 ] || usage "Database name too long (maximum 63 characters)"
+
+    export CREATE_USER=1
+  fi
+
+  if [[ -v REPLICATION ]]; then
+    [[ -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]] || usage "MONGODB_KEYFILE_VALUE and MONGODB_REPLICA_NAME have to be set"
+  fi
+}
+
+# usage prints info about required enviromental variables
+# if $1 is passed, prints error message containing $1
+# if REPLICATION variable is set, prints also info about replication variables
+function usage() {
+  if [ $# == 1 ]; then
+    echo >&2 "error: $1"
+  fi
+
+  echo "
+You must specify the following environment variables:
+  MONGODB_ADMIN_PASSWORD
+Optionally you can provide settings for a user with 'readWrite' role:
+(Note you MUST specify all three of these settings)
+  MONGODB_USER
+  MONGODB_PASSWORD
+  MONGODB_DATABASE
+Optional settings:
+  MONGODB_PREALLOC (default: false)
+  MONGODB_SMALLFILES (default: true)
+  MONGODB_QUIET (default: true)"
+
+  if [[ -v REPLICATION ]]; then
+    echo "
+For replication you must also specify the following environment variables:
+  MONGODB_KEYFILE_VALUE
+  MONGODB_REPLICA_NAME
+Optional settings:
+  MONGODB_SERVICE_NAME (default: mongodb)
+"
+  fi
+  echo "
+For more information see /usr/share/container-scripts/mongodb/README.md
+within the container or visit https://github.com/sclorgk/mongodb-container/."
+
+  exit 1
+}
+
 # info prints a message prefixed by date and time.
 function info() {
   printf "=> [%s] %s\n" "$(date +'%a %b %d %T')" "$*"

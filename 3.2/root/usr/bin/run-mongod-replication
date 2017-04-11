@@ -17,22 +17,6 @@ set -o pipefail
 
 source ${CONTAINER_SCRIPTS_PATH}/common.sh
 
-function usage() {
-  echo "You must specify the following environment variables:"
-  echo "  MONGODB_ADMIN_PASSWORD"
-  echo "  MONGODB_KEYFILE_VALUE"
-  echo "  MONGODB_REPLICA_NAME"
-  echo "Optionally you can provide settings for user with 'readWrite' role:"
-  echo "  MONGODB_USER"
-  echo "  MONGODB_PASSWORD"
-  echo "  MONGODB_DATABASE"
-  echo "Optional variables:"
-  echo "  MONGODB_SERVICE_NAME (default: mongodb)"
-  echo "MongoDB settings:"
-  echo "  MONGODB_QUIET (default: true)"
-  exit 1
-}
-
 function cleanup() {
   echo "=> Shutting down MongoDB server ..."
   pkill -INT mongod || :
@@ -42,11 +26,7 @@ function cleanup() {
 
 trap 'cleanup' SIGINT SIGTERM
 
-[[ -v MONGODB_ADMIN_PASSWORD ]] || usage
-if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
-  [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage
-  export CREATE_USER=1
-fi
+REPLICATION=1 check_env_vars
 
 setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template
 
