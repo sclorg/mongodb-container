@@ -38,11 +38,11 @@ function get_container_ip() {
 }
 
 function mongo_cmd() {
-    docker run --rm $IMAGE_NAME mongo "$DB" --host $CONTAINER_IP -u "$USER" -p "$PASS" --eval "${@}"
+    docker run --rm $IMAGE_NAME mongo "$DB" --host $CONTAINER_IP -u "$USER" -p"$PASS" --eval "${@}"
 }
 
 function mongo_admin_cmd() {
-    docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
+    docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p"$ADMIN_PASS" --eval "${@}"
 }
 
 # Make sure the invocation of docker run fails.
