@@ -26,30 +26,29 @@ function cleanup() {
 
 trap 'cleanup' SIGINT SIGTERM
 
-REPLICATION=1 check_env_vars
+export REPLICATION=1
+mongo_common_args=
 
-setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template
 
-# If user provides own config file use it and do not generate new one
-if [ ! -s "${MONGODB_CONFIG_PATH}" ]; then
-  # Generate config file for MongoDB
-  envsubst < "${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template" > "${MONGODB_CONFIG_PATH}"
-fi
+# pre-init files
+process_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
 
-mongo_common_args="-f ${MONGODB_CONFIG_PATH}"
 
-# Attention: setup_keyfile may modify value of mongo_common_args!
-setup_keyfile
-setup_default_datadir
+# Make sure env variables don't propagate to mongod process.
+(unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}") &
+
 
 ${CONTAINER_SCRIPTS_PATH}/init-replset.sh &
-
 # TODO: capture exit code of `init-petset-replset.sh` and exit with an error if
 # the initialization failed, so that the container will be restarted and the
 # user can gain more visibility that there is a problem in a way other than just
 # inspecting log messages.
+while ! [ -f /tmp/initialized ]; do sleep 1; done
 
-# Make sure env variables don't propagate to mongod process.
-unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
-mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}" &
+
+# init files
+process_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
+
+
 wait

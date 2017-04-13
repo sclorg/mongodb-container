@@ -325,7 +325,7 @@ function run_mount_config_test() {
     config_file=$volume_dir/mongod.conf
     echo "dbpath=/var/lib/mongodb/dbpath
 unixSocketPrefix = /var/lib/mongodb" > $config_file
-    chmod a+r ${config_file}
+    chmod a+wr ${config_file}
 
     DOCKER_ARGS="
 -e MONGODB_DATABASE=${database}
