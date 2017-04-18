@@ -192,7 +192,7 @@ function process_files() {
       source $default_dir/$filename
     fi
   done
-  shopt -s nullglob
+  shopt -u nullglob
 }
 
 # info prints a message prefixed by date and time.

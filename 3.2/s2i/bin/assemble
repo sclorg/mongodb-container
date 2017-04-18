@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+shopt -s dotglob
+echo "---> Installing application source ..."
+ls -A /tmp/a/* &>/dev/null && mv /tmp/src/* ./
+
+# Fix source directory permissions
+fix-permissions ./
