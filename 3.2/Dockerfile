@@ -20,7 +20,7 @@ LABEL summary="$SUMMARY" \
 
 ENV MONGODB_VERSION=3.2 \
     # Set paths to avoid hard-coding them in scripts.
-    APP_DATA=$HOME \
+    APP_DATA=/opt/app-root/src \
     HOME=/var/lib/mongodb \
     CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
     # Incantations to enable Software Collections on `bash` and `sh -i`.
