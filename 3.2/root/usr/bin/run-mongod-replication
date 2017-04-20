@@ -31,7 +31,7 @@ mongo_common_args=
 
 
 # pre-init files
-process_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
+process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
 
 
 # Make sure env variables don't propagate to mongod process.
@@ -48,7 +48,7 @@ while ! [ -f /tmp/initialized ]; do sleep 1; done
 
 
 # init files
-process_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
+process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
 
 
 wait

@@ -175,10 +175,10 @@ within the container or visit https://github.com/sclorgk/mongodb-container/."
   exit 1
 }
 
-# process_files process extending files in $1 and $2 directories
+# process_extending_files process extending files in $1 and $2 directories
 # - source all *.sh files
 #   (if there are files with same name source only file from $1)
-function process_files() {
+function process_extending_files() {
   local custom_dir default_dir
   custom_dir=$1
   default_dir=$2

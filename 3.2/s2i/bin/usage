@@ -4,4 +4,4 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-man -l /help.1
+groff -t -man -ETascii /help.1

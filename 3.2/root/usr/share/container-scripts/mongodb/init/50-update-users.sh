@@ -1,6 +1,6 @@
 # update_users creates default users (see usage)
 # if users are already created, updates passwords to match
-# environmental variables
+# environment variables
 function update_users() {
   js_command="db.system.users.count({'user':'admin', 'db':'admin'})"
   if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then

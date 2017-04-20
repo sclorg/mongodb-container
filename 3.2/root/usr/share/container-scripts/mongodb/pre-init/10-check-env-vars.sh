@@ -1,4 +1,4 @@
-# check_env_vars checks environmental variables
+# check_env_vars checks environment variables
 # if variables to create non-admin user are provided, sets CREATE_USER=1
 # if REPLICATION variable is set, checks also replication variables
 function check_env_vars() {

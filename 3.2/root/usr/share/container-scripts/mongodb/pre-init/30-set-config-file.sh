@@ -5,7 +5,7 @@ if [ ! -s $MONGODB_CONFIG_PATH ]; then
   cp ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template $MONGODB_CONFIG_PATH
 fi
 
-# Substitute environmental variables in configuration file
+# Substitute environment variables in configuration file
 TEMP=`mktemp`; cp ${MONGODB_CONFIG_PATH} $TEMP; envsubst > ${MONGODB_CONFIG_PATH} < $TEMP
 
 mongo_common_args+="-f $MONGODB_CONFIG_PATH"
