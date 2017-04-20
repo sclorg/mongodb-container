@@ -29,10 +29,6 @@ function initiate() {
   info "Waiting for PRIMARY status ..."
   mongo --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
 
-  info "Creating MongoDB users ..."
-  mongo_create_admin
-  [[ -v CREATE_USER ]] && mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
-
   info "Successfully initialized replica set"
 }
 
@@ -59,6 +55,7 @@ function add_member() {
   info "Successfully joined replica set"
 }
 
+
 info "Waiting for local MongoDB to accept connections  ..."
 wait_for_mongo_up &>/dev/null
 
@@ -68,14 +65,6 @@ if [[ $(mongo --eval 'db.isMaster().setName' --quiet) == "${MONGODB_REPLICA_NAME
   exit 0
 fi
 
-# StatefulSet pods are named with a predictable name, following the pattern:
-#   $(statefulset name)-$(zero-based index)
-# MEMBER_ID is computed by removing the prefix matching "*-", i.e.:
-#  "mongodb-0" -> "0"
-#  "mongodb-1" -> "1"
-#  "mongodb-2" -> "2"
-readonly MEMBER_ID="${HOSTNAME##*-}"
-
 # Initialize replica set only if we're the first member
 if [ "${MEMBER_ID}" = '0' ]; then
   initiate "${MEMBER_HOST}"
@@ -83,4 +72,3 @@ else
   add_member "${MEMBER_HOST}"
 fi
 
->/tmp/initialized

@@ -26,7 +26,13 @@ function cleanup() {
 
 trap 'cleanup' SIGINT SIGTERM
 
-export REPLICATION=1
+# StatefulSet pods are named with a predictable name, following the pattern:
+#   $(statefulset name)-$(zero-based index)
+# MEMBER_ID is computed by removing the prefix matching "*-", i.e.:
+#  "mongodb-0" -> "0"
+#  "mongodb-1" -> "1"
+#  "mongodb-2" -> "2"
+export readonly MEMBER_ID="${HOSTNAME##*-}"
 mongo_common_args=
 
 
@@ -38,17 +44,13 @@ process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/
 (unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
 mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}") &
 
-
-${CONTAINER_SCRIPTS_PATH}/init-replset.sh &
-# TODO: capture exit code of `init-petset-replset.sh` and exit with an error if
-# the initialization failed, so that the container will be restarted and the
-# user can gain more visibility that there is a problem in a way other than just
-# inspecting log messages.
-while ! [ -f /tmp/initialized ]; do sleep 1; done
+# Initialize the replicaset or add container to it
+${CONTAINER_SCRIPTS_PATH}/init-replset.sh
 
 
 # init files
-process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
+[ -f /tmp/initialized ] || process_extending_files ${APP_DATA}/mongodb-init/ ${CONTAINER_SCRIPTS_PATH}/init/
 
 
+>/tmp/initialized
 wait

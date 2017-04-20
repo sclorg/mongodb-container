@@ -20,4 +20,6 @@ function check_env_vars() {
   fi
 }
 
+# Can export CREATE_USER=1 to indicate that variables for optional user
+# are provided
 check_env_vars

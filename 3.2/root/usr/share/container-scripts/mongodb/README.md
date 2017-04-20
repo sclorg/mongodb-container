@@ -133,7 +133,9 @@ The directory passed to `s2i build` should contain one or more of the following 
 
 - `mongodb-init/`
   - contained shell scripts (`*.sh`) are sourced when `mongod` server is started
-    - in this phase `mongod` server don't have enabled authentication when running `run-mongod` command (for `run-mongod-replication` command configured users are already created and authentication is enabled)
+    - `run-mongod` command doesn't have enabled authentication in this phase
+    - `run-mongod-replication` command has enabled authentication in this phase
+  - these scripts are skipped if `run-mongod-replication` is run with already initialized data directory
 
 During `s2i build` all provided files are copied into `/opt/app-root/src` directory in the new image. If some configuration files are present in destination directory, files with the same name are overwritten. Also only one file with the same name can be used for customization and user provided files are preferred over default files in `/usr/share/container-scripts/mongodb/`- so it is possible to overwrite them.
 
