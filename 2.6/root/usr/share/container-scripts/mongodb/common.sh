@@ -81,7 +81,8 @@ function replset_addr() {
   local current_endpoints
   current_endpoints="$(endpoints)"
   if [ -z "${current_endpoints}" ]; then
-    echo >&2 "Cannot get address of replica set: no nodes are listed in service"
+    info "Cannot get address of replica set: no nodes are listed in service!"
+    info "CAUSE: DNS lookup for '${MONGODB_SERVICE_NAME:-mongodb}' returned no results."
     return 1
   fi
   echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}"
