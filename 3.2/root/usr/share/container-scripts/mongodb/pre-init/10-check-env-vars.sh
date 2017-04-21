@@ -1,6 +1,6 @@
 # check_env_vars checks environment variables
 # if variables to create non-admin user are provided, sets CREATE_USER=1
-# if REPLICATION variable is set, checks also replication variables
+# if MEMBER_ID variable is set, checks also replication variables
 function check_env_vars() {
   local readonly database_regex='^[^/\. "$]*$'
 
@@ -15,7 +15,7 @@ function check_env_vars() {
     export CREATE_USER=1
   fi
 
-  if [[ -v REPLICATION ]]; then
+  if [[ -v MEMBER_ID ]]; then
     [[ -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]] || usage "MONGODB_KEYFILE_VALUE and MONGODB_REPLICA_NAME have to be set"
   fi
 }

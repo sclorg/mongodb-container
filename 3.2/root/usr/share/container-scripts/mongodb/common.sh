@@ -76,7 +76,7 @@ function replset_addr() {
 
 # usage prints info about required enviromental variables
 # if $1 is passed, prints error message containing $1
-# if REPLICATION variable is set, prints also info about replication variables
+# if MEMBER_ID variable is set, prints also info about replication variables
 function usage() {
   if [ $# == 1 ]; then
     echo >&2 "error: $1"
@@ -93,7 +93,7 @@ Optionally you can provide settings for a user with 'readWrite' role:
 Optional settings:
   MONGODB_QUIET (default: true)"
 
-  if [[ -v REPLICATION ]]; then
+  if [[ -v MEMBER_ID ]]; then
     echo "
 For replication you must also specify the following environment variables:
   MONGODB_KEYFILE_VALUE
