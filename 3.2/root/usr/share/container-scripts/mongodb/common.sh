@@ -109,6 +109,16 @@ within the container or visit https://github.com/sclorgk/mongodb-container/."
   exit 1
 }
 
+# get_matched_files finds file for image extending
+function get_matched_files() {
+  local custom_dir default_dir
+  custom_dir="$1"
+  default_dir="$2"
+  files_matched="$3"
+  find "$default_dir" -maxdepth 1 -type f -name "$files_matched" -printf "%f\n"
+  [ -d "$custom_dir" ] && find "$custom_dir" -maxdepth 1 -type f -name "$files_matched" -printf "%f\n"
+}
+
 # process_extending_files process extending files in $1 and $2 directories
 # - source all *.sh files
 #   (if there are files with same name source only file from $1)
@@ -117,8 +127,7 @@ function process_extending_files() {
   custom_dir=$1
   default_dir=$2
 
-  shopt -s nullglob
-  for filename in $(echo $custom_dir/*.sh $default_dir/*.sh | xargs -r basename -a | sort | uniq); do
+  get_matched_files "$custom_dir" "$default_dir" '*.sh' | sort -u | while read filename ; do
     # Custom file is prefered
     if [ -f $custom_dir/$filename ]; then
       source $custom_dir/$filename
@@ -126,7 +135,6 @@ function process_extending_files() {
       source $default_dir/$filename
     fi
   done
-  shopt -u nullglob
 }
 
 # info prints a message prefixed by date and time.

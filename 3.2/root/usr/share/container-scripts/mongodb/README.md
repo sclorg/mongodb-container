@@ -137,6 +137,11 @@ The directory passed to `s2i build` should contain one or more of the following 
     - `run-mongod-replication` command has enabled authentication in this phase
   - these scripts are skipped if `run-mongod-replication` is run with already initialized data directory
 
+Variables that can be used in the scripts provided to s2i:
+
+- `mongo_common_args` -- contains arguments for the `mongod` server (changing this can break existing customization scripts, e.g. default scripts)
+- `$MEMBER_ID` -- contains 'id' of the container. It is defined only in scripts for replication (`run-mongod-replication` command) and has different value for each container in a replicaset cluster. Customization scripts are run by all containers in replicaset - `MEMBER_ID` can be used to write scripts which are run only by some container.
+
 During `s2i build` all provided files are copied into `/opt/app-root/src` directory in the new image. If some configuration files are present in destination directory, files with the same name are overwritten. Also only one file with the same name can be used for customization and user provided files are preferred over default files in `/usr/share/container-scripts/mongodb/`- so it is possible to overwrite them.
 
 Same configuration directory structure can be used to customize the image every time the image is started using `docker run`. The directory have to be mounted into `/opt/app-root/src/` in the image (`-v ./image-configuration/:/opt/app-root/src/`). This overwrites customization built into the image.
