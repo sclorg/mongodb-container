@@ -5,6 +5,7 @@ if [ ! -s $MONGODB_CONFIG_PATH ]; then
 fi
 [ -r "${APP_DATA}/mongodb-cfg/mongod.conf" ] && MONGODB_CONFIG_PATH="${APP_DATA}/mongodb-cfg/mongod.conf"
 
+
 # Substitute environment variables in configuration file
 TEMP=`mktemp`; cp ${MONGODB_CONFIG_PATH} $TEMP; envsubst > ${MONGODB_CONFIG_PATH} < $TEMP
 

@@ -13,6 +13,9 @@ IMAGE_NAME=${IMAGE_NAME-centos/mongodb-32-centos7-candidate}
 
 CIDFILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 
+test_dir="$(readlink -zf $(dirname "${BASH_SOURCE[0]}"))"
+s2i_args="--force-pull=false "
+
 function cleanup() {
     for cidfile in $CIDFILE_DIR/* ; do
         CONTAINER=$(cat $cidfile)
@@ -475,6 +478,62 @@ EOF
     echo "  Success!"
 }
 
+function _s2i_test_image() {
+    local name="$1"
+    local mount_opts="$2"
+    echo "    Testing s2i app image environment variable checking"
+    assert_container_creation_fails $mount_opts -e MONGODB_USER=user -e MONGODB_PASSWORD=password -e MONGODB_DATABASE=db -e MONGODB_ADMIN_PASSWORD=adminPass
+    assert_container_creation_fails $mount_opts -e MONGODB_USER=user -e MONGODB_PASSWORD=password -e MONGODB_DATABASE=db -e MONGODB_ADMIN_PASSWORD=adminPass -e MONGODB_BACKUP_USER=backup -e MONGODB_BACKUP_PASSWORD=pass || [ $? -eq 1 ]
+
+    echo "    Testing s2i app image with correct configuration"
+
+    DOCKER_ARGS="
+-e MONGODB_ADMIN_PASSWORD=adminPass
+-e MONGODB_USER=user
+-e MONGODB_PASSWORD=password
+-e MONGODB_DATABASE=db
+-e MONGODB_BACKUP_USER=backup
+-e MONGODB_BACKUP_PASSWORD=bPass
+$mount_opts
+"
+    create_container "${name}" ${DOCKER_ARGS}
+    CONTAINER_IP=$(get_container_ip ${name})
+    ADMIN_PASS=adminPass
+
+    echo "    Testing s2i app image backup user"
+    DB=admin USER=backup PASS=bPass test_connection "${name}"
+
+    echo "    Testing s2i app image mongodb-cfg/mongod.conf"
+    mongo_admin_cmd "if (db.serverStatus()['wiredTiger']['cache']['maximum bytes configured'] == Math.pow(2,30)*5){quit(0)}; quit(1)"
+
+    echo "    Testing s2i app image reading initial data"
+    mongo_admin_cmd "if (db.getSiblingDB('db').constants.count({subject: \"s2i build example\"}) == 1){quit(0)}; quit(1)"
+}
+
+
+function run_s2i_test() {
+    echo "  Testing s2i usage"
+    s2i usage ${s2i_args} ${IMAGE_NAME} &>/dev/null
+
+    echo "  Testing s2i build"
+    s2i build file://${test_dir}/../../examples/extending-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
+
+    local container_name=s2i_config_build
+    IMAGE_NAME=${IMAGE_NAME}-testapp _s2i_test_image "s2i_config_build" ""
+
+    echo "  Testing s2i mount"
+    test_app_dir=$(mktemp -d)
+    cp -r ${test_dir}/../../examples/extending-image ${test_app_dir}/
+    ls ${test_app_dir}/
+    #chgrp -R mongodb ${test_app_dir}/
+    chmod -R a+wrX ${test_app_dir}
+    _s2i_test_image "s2i_test_mount" "-v ${test_app_dir}/extending-image:/opt/app-root/src/:z"
+    rm -rf ${test_app_dir}
+    echo "  Success!"
+}
+
+
+
 
 # Tests.
 run_container_creation_tests
@@ -487,3 +546,4 @@ run_mount_config_test
 run_doc_test
 run_WT_cache_test
 run_local_replication_test
+run_s2i_test

@@ -127,14 +127,15 @@ function process_extending_files() {
   custom_dir=$1
   default_dir=$2
 
-  get_matched_files "$custom_dir" "$default_dir" '*.sh' | sort -u | while read filename ; do
+  while read filename ; do
+    echo "=> sourcing $filename ..."
     # Custom file is prefered
     if [ -f $custom_dir/$filename ]; then
       source $custom_dir/$filename
     else
       source $default_dir/$filename
     fi
-  done
+  done <<<"$(get_matched_files "$custom_dir" "$default_dir" '*.sh' | sort -u)"
 }
 
 # info prints a message prefixed by date and time.
