@@ -35,7 +35,7 @@ ENTRYPOINT ["container-entrypoint"]
 CMD ["run-mongod"]
 
 RUN yum install -y centos-release-scl && \
-    INSTALL_PKGS="bind-utils gettext iproute rsync tar rh-mongodb32-mongodb rh-mongodb32 rh-mongodb32-mongo-tools groff-base" && \
+    INSTALL_PKGS="bind-utils gettext iproute rsync tar shadow-utils rh-mongodb32-mongodb rh-mongodb32 rh-mongodb32-mongo-tools groff-base" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all
@@ -49,7 +49,8 @@ RUN touch /etc/mongod.conf && \
     mkdir -p ${HOME}/data && \
     # Set owner 'mongodb:0' and 'g+rw(x)' permission - to avoid problems running container with arbitrary UID
     /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template \
-    ${HOME} ${APP_DATA}/..
+    ${HOME} ${APP_DATA}/.. && \
+    usermod -a -G root mongodb
 
 VOLUME ["/var/lib/mongodb/data"]
 

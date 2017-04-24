@@ -9,4 +9,4 @@ echo "---> Installing application source ..."
 ls -A /tmp/src/* &>/dev/null && mv /tmp/src/* ./
 
 # Fix source directory permissions
-fix-permissions ./
+/usr/libexec/fix-permissions ./
