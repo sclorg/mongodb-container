@@ -3,7 +3,7 @@ if [ ! -s $MONGODB_CONFIG_PATH ]; then
   # If no configuration is provided use template
   cp ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template $MONGODB_CONFIG_PATH
 fi
-[ -r "${APP_DATA}/mongodb-cfg/mongod.conf" ] && MONGODB_CONFIG_PATH="${APP_DATA}/mongodb-cfg/mongod.conf"
+[ -r "${APP_DATA}/mongodb-cfg/mongod.conf" ] && cp "${APP_DATA}/mongodb-cfg/mongod.conf" $MONGODB_CONFIG_PATH
 
 
 # Substitute environment variables in configuration file

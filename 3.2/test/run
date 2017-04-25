@@ -524,7 +524,7 @@ function run_s2i_test() {
     echo "  Testing s2i mount"
     test_app_dir=$(mktemp -d)
     cp -r ${test_dir}/../../examples/extending-image ${test_app_dir}/
-    chmod -R a+rwX ${test_app_dir}
+    chmod -R a+rX ${test_app_dir}
     _s2i_test_image "s2i_test_mount" "-v ${test_app_dir}/extending-image:/opt/app-root/src/:z"
     rm -rf ${test_app_dir}
     echo "  Success!"
