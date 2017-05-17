@@ -4,7 +4,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source "${CONTAINER_SCRIPTS_PATH}/common.sh"
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
+source ${CONTAINER_SCRIPTS_PATH}/setup_rhmap.sh
 
 # This is a full hostname that will be added to replica set
 # (for example, "replica-2.mongodb.myproject.svc.cluster.local")
