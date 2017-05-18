@@ -38,14 +38,6 @@ function cleanup() {
 
 trap 'cleanup' SIGINT SIGTERM
 
-if [ $# -gt 0 ] && [ "$1" == "initiate" ]; then
-  if ! [[ -v MONGODB_ADMIN_PASSWORD ]]; then
-    usage
-  fi
-  setup_keyfile
-  exec ${CONTAINER_SCRIPTS_PATH}/init-replset.sh
-fi
-
 check_env_vars
 
 setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template

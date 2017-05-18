@@ -984,24 +984,6 @@
       "spec": {
         "strategy": {
           "type": "Recreate",
-          "recreateParams": {
-            "post": {
-              "failurePolicy": "Retry",
-              "execNewPod": {
-                "command": [
-                  "run-mongod",
-                  "initiate"
-                ],
-                "containerName": "mongodb",
-                "env": [
-                  {
-                    "name": "MONGODB_INITIAL_REPLICA_COUNT",
-                    "value": "3"
-                  }
-                ]
-              }
-            }
-          },
           "resources": {
             "limits": {
               "cpu": "1000m",
@@ -1044,6 +1026,7 @@
               {
                 "name": "mongodb",
                 "image": "${MONGODB_IMAGE}:${MONGODB_IMAGE_VERSION}",
+                "command": ["run-mongod-replication"],
                 "ports": [
                   {
                     "containerPort": 27017
@@ -1184,6 +1167,7 @@
               {
                 "name": "mongodb",
                 "image": "${MONGODB_IMAGE}:${MONGODB_IMAGE_VERSION}",
+                "command": ["run-mongod-replication"],
                 "ports": [
                   {
                     "containerPort": 27017
@@ -1324,6 +1308,7 @@
               {
                 "name": "mongodb",
                 "image": "${MONGODB_IMAGE}:${MONGODB_IMAGE_VERSION}",
+                "command": ["run-mongod-replication"],
                 "ports": [
                   {
                     "containerPort": 27017
@@ -1554,12 +1539,12 @@
     },
     {
       "name": "MONGODB_IMAGE",
-      "value": "docker.io/rhmap/mongodb",
+      "value": "docker.io/philipgough/mongo",
       "description": "The name of the mongodb image"
     },
     {
       "name": "MONGODB_IMAGE_VERSION",
-      "value": "centos-3.2-44",
+      "value": "3",
       "description": "The version for the MONGODB_IMAGE"
     },
     {

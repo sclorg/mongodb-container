@@ -9,7 +9,7 @@ source ${CONTAINER_SCRIPTS_PATH}/setup_rhmap.sh
 
 # This is a full hostname that will be added to replica set
 # (for example, "replica-2.mongodb.myproject.svc.cluster.local")
-readonly MEMBER_HOST="$(hostname -f)"
+readonly MEMBER_HOST="$(hostname -f | grep -o mongodb-[1-9])"
 
 # Initializes the replica set configuration.
 #
@@ -32,6 +32,7 @@ function initiate() {
 
   info "Creating MongoDB users ..."
   mongo_create_admin
+  setUpDatabases "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
   [[ -v CREATE_USER ]] && mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
   info "Successfully initialized replica set"

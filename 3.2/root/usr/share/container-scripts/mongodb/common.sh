@@ -69,7 +69,8 @@ function _wait_for_mongo() {
 # mongodb-2.3node-mbaas
 # mongodb-3.3node-mbaas
 function endpoints() {
-  printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d.${METADATA_NAMESPACE}\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
+  service_name=${MONGODB_SERVICE_NAME:-mongodb}
+  dig $(hostname -f | grep -o mongodb-[1-9]) A +search +short 2>/dev/null
 }
 
 # replset_addr return the address of the current replSet
