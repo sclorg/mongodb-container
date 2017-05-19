@@ -42,9 +42,7 @@ function _wait_for_mongo() {
   local mongo_cmd="mongo admin --host ${2:-localhost} "
 
   local i
-  # Wait indefinitely for MongoDB daemon
-  while true
-  do
+  for i in $(seq $MAX_ATTEMPTS); do
     echo "=> ${2:-} Waiting for MongoDB daemon ${message}"
     if ([[ ${operation} -eq 1 ]] && ${mongo_cmd} --eval "quit()" &>/dev/null) || ([[ ${operation} -eq 0 ]] && ! ${mongo_cmd} --eval "quit()" &>/dev/null); then
       echo "=> MongoDB daemon is ${message}"
@@ -56,18 +54,21 @@ function _wait_for_mongo() {
   return 1
 }
 
-# endpoints returns a list of hosts to be part of a replica set. Host names are
-# generated from MONGODB_SERVICE_NAME, appending a suffix based on the number of
-# replicas defined in MONGODB_INITIAL_REPLICA_COUNT. For each host name, there
-# should be a service with the same name, so that the name points to a valid DNS
-# entry. Example output, where:
-# MONGODB_SERVICE_NAME=mongodb
-# MONGODB_INITIAL_REPLICA_COUNT=3
-# METADATA_NAMESPACE=3node-mbaas:
-#
-# mongodb-1.3node-mbaas
-# mongodb-2.3node-mbaas
-# mongodb-3.3node-mbaas
+function wait_for_service() {
+  for x in {1..100}; do                                                                                                                                                                                                                                                                                                    
+    test=$(dig $1 A +short +search)                                                                                                                                                                                                                                                                                 
+    if [ "$test" != "" ]; then                                                                                                                                                                                                                                                                                             
+      break                                                                                                                                                                                                                                                                                                              
+    fi                                                                                                                                                                                                                                                                                                                     
+    sleep 1; 
+    echo "=> Waiting for $1 service"
+  done
+  return 0 
+}
+
+# endpoints returns list of IP addresses with other instances of MongoDB
+# To get list of endpoints, you need to have headless Service named 'mongodb'.
+# NOTE: This won't work with standalone Docker container.
 function endpoints() {
   service_name=${MONGODB_SERVICE_NAME:-mongodb}
   dig $(hostname -f | grep -o mongodb-[1-9]) A +search +short 2>/dev/null
@@ -206,6 +207,63 @@ function setup_wiredtiger_cache() {
   echo "storage.wiredTiger.engineConfig.cacheSizeGB: ${cache_size}" >> ${config_file}
 
   info "wiredTiger cacheSizeGB set to ${cache_size}"
+}
+
+# check_env_vars checks environmental variables
+# if variables to create non-admin user are provided, sets CREATE_USER=1
+# if REPLICATION variable is set, checks also replication variables
+function check_env_vars() {
+  local readonly database_regex='^[^/\. "$]*$'
+
+  [[ -v MONGODB_ADMIN_PASSWORD ]] || usage "MONGODB_ADMIN_PASSWORD has to be set."
+
+  if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
+    [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage "You have to set all or none of variables: MONGODB_USER, MONGODB_PASSWORD, MONGODB_DATABASE"
+
+    [[ "${MONGODB_DATABASE}" =~ $database_regex ]] || usage "Database name must match regex: $database_regex"
+    [ ${#MONGODB_DATABASE} -le 63 ] || usage "Database name too long (maximum 63 characters)"
+
+    export CREATE_USER=1
+  fi
+
+  if [[ -v REPLICATION ]]; then
+    [[ -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]] || usage "MONGODB_KEYFILE_VALUE and MONGODB_REPLICA_NAME have to be set"
+  fi
+}
+
+# usage prints info about required enviromental variables
+# if $1 is passed, prints error message containing $1
+# if REPLICATION variable is set, prints also info about replication variables
+function usage() {
+  if [ $# == 1 ]; then
+    echo >&2 "error: $1"
+  fi
+
+  echo "
+You must specify the following environment variables:
+  MONGODB_ADMIN_PASSWORD
+Optionally you can provide settings for a user with 'readWrite' role:
+(Note you MUST specify all three of these settings)
+  MONGODB_USER
+  MONGODB_PASSWORD
+  MONGODB_DATABASE
+Optional settings:
+  MONGODB_QUIET (default: true)"
+
+  if [[ -v REPLICATION ]]; then
+    echo "
+For replication you must also specify the following environment variables:
+  MONGODB_KEYFILE_VALUE
+  MONGODB_REPLICA_NAME
+Optional settings:
+  MONGODB_SERVICE_NAME (default: mongodb)
+"
+  fi
+  echo "
+For more information see /usr/share/container-scripts/mongodb/README.md
+within the container or visit https://github.com/sclorgk/mongodb-container/."
+
+  exit 1
 }
 
 # info prints a message prefixed by date and time.
