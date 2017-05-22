@@ -27,7 +27,7 @@ RUN yum install -y centos-release-scl && \
     rpm -V $INSTALL_PKGS && \
     yum clean all
 
-ADD root /
+COPY root /
 
 
 # Container setup

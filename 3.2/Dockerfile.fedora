@@ -34,7 +34,7 @@ RUN INSTALL_PKGS="bind-utils gettext iproute rsync tar findutils python mongodb 
     rpm -V $INSTALL_PKGS && \
     dnf clean all
 
-ADD root /
+COPY root /
 
 
 # Container setup
