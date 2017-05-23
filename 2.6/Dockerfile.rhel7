@@ -1,16 +1,18 @@
 FROM rhel7
 
-LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
+ENV SUMMARY="MongoDB NoSQL database server" \
+    DESCRIPTION="MongoDB is a scalable, high-performance, open source NoSQL database."
+
+LABEL summary="$SUMMARY" \
+      description="$DESCRIPTION" \
+      io.k8s.description="$DESCRIPTION" \
       io.k8s.display-name="MongoDB 2.6" \
       io.openshift.expose-services="27017:mongodb" \
-      io.openshift.tags="database,mongodb,rh-mongodb26"
-
-# Labels consumed by Red Hat build service
-LABEL com.redhat.component="rh-mongodb26-docker" \
+      io.openshift.tags="database,mongodb,rh-mongodb26" \
+      com.redhat.component="rh-mongodb26-docker" \
       name="rhscl/mongodb-26-rhel7" \
       version="2.6" \
-      release="1" \
-      architecture="x86_64"
+      release="1"
 
 ENV MONGODB_VERSION=2.6 \
     # Set paths to avoid hard-coding them in scripts.

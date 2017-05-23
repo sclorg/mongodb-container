@@ -1,10 +1,19 @@
 FROM centos:centos7
-MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
+LABEL MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
-LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
+ENV SUMMARY="MongoDB NoSQL database server" \
+    DESCRIPTION="MongoDB is a scalable, high-performance, open source NoSQL database."
+
+LABEL summary="$SUMMARY" \
+      description="$DESCRIPTION" \
+      io.k8s.description="$DESCRIPTION" \
       io.k8s.display-name="MongoDB 3.2" \
       io.openshift.expose-services="27017:mongodb" \
-      io.openshift.tags="database,mongodb,rh-mongodb32"
+      io.openshift.tags="database,mongodb,rh-mongodb32" \
+      com.redhat.component="rh-mongodb32-docker" \
+      name="centos/mongodb-32-centos7" \
+      version="3.2" \
+      release="1"
 
 ENV MONGODB_VERSION=3.2 \
     # Set paths to avoid hard-coding them in scripts.
