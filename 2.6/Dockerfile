@@ -2,7 +2,10 @@ FROM centos:centos7
 LABEL MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
 ENV SUMMARY="MongoDB NoSQL database server" \
-    DESCRIPTION="MongoDB is a scalable, high-performance, open source NoSQL database."
+    DESCRIPTION="MongoDB (from humongous) is a free and open-source \
+cross-platform document-oriented database program. Classified as a NoSQL \
+database program, MongoDB uses JSON-like documents with schemas. This \
+container image contains programs to run mongod server."
 
 LABEL summary="$SUMMARY" \
       description="$DESCRIPTION" \
