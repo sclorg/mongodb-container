@@ -34,7 +34,7 @@ RUN yum install -y centos-release-scl && \
 
 VOLUME ["/var/lib/mongodb/data"]
 
-COPY root /
+ADD root /
 
 # Container setup
 RUN touch /etc/mongod.conf && chown mongodb:0 /etc/mongod.conf && /usr/libexec/fix-permissions /etc/mongod.conf
