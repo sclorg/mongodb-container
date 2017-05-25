@@ -1,5 +1,4 @@
 FROM centos:centos7
-LABEL MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
 ENV SUMMARY="MongoDB NoSQL database server" \
     DESCRIPTION="MongoDB (from humongous) is a free and open-source \
@@ -16,7 +15,8 @@ LABEL summary="$SUMMARY" \
       com.redhat.component="rh-mongodb30-upg-docker" \
       name="centos/mongodb-30-upg-centos7" \
       version="3.0-upg" \
-      release="1"
+      release="1" \
+      maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
 ENV MONGODB_VERSION=3.0-upg \
     # Set paths to avoid hard-coding them in scripts.

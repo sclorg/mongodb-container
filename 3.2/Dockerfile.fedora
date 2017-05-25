@@ -1,5 +1,4 @@
 FROM registry.fedoraproject.org/fedora:25
-LABEL MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
 ENV NAME=mongodb \
     VERSION=0 \
@@ -24,7 +23,8 @@ LABEL summary="$SUMMARY" \
       help="help.1" \
       io.k8s.display-name="MongoDB 3.2" \
       io.openshift.expose-services="27017:mongodb" \
-      io.openshift.tags="database,mongodb"
+      io.openshift.tags="database,mongodb" \
+      maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
 ENV MONGODB_VERSION=3.2 \
     # Set paths to avoid hard-coding them in scripts.
