@@ -1,10 +1,22 @@
 FROM centos:centos7
-MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
 
-LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
+ENV SUMMARY="MongoDB NoSQL database server" \
+    DESCRIPTION="MongoDB (from humongous) is a free and open-source \
+cross-platform document-oriented database program. Classified as a NoSQL \
+database program, MongoDB uses JSON-like documents with schemas. This \
+container image contains programs to run mongod server."
+
+LABEL summary="$SUMMARY" \
+      description="$DESCRIPTION" \
+      io.k8s.description="$DESCRIPTION" \
       io.k8s.display-name="MongoDB 3.2" \
       io.openshift.expose-services="27017:mongodb" \
-      io.openshift.tags="database,mongodb,rh-mongodb32"
+      io.openshift.tags="database,mongodb,rh-mongodb32" \
+      com.redhat.component="rh-mongodb32-docker" \
+      name="centos/mongodb-32-centos7" \
+      version="3.2" \
+      release="1" \
+      maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
 ENV MONGODB_VERSION=3.2 \
     # Set paths to avoid hard-coding them in scripts.
@@ -27,7 +39,7 @@ RUN yum install -y centos-release-scl && \
     rpm -V $INSTALL_PKGS && \
     yum clean all
 
-ADD root /
+COPY root /
 
 
 # Container setup
