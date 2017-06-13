@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Fix directory and file permissions to allow users in the root group to access
+# them in the built image.
+#
+# Because the container user is always a member of the root group, the container
+# user can read and write these files. The root group does not have any special
+# permissions (unlike the root user) so there are no security concerns with
+# this arrangement.
+for i in "$@"; do
+  find "$i" -exec chgrp -R 0 {} \;
+  find "$i" -exec chown -R 184:0 {} \;
+  find "$i" -exec chmod -R g+rwX {} \;
+done

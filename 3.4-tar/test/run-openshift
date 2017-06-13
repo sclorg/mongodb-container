@@ -1,0 +1,88 @@
+#!/bin/bash
+#
+# Test the MongoDB image in OpenShift.
+#
+# IMAGE_NAME specifies a name of the candidate image used for testing.
+# The image has to be available before this script is executed.
+#
+
+set -exo nounset
+
+function prepare_oc_client() {
+  # Prepare oc command
+  if [[ ! -d ../openshift-client/ ]]; then
+    OC_RELEASE=$(curl -s https://api.github.com/repos/openshift/origin/releases | grep "browser_download_url" | grep "openshift-origin-client" | grep "linux-64bit" | sort | tail -n 1 | sed -e 's|"browser_download_url": ||' | tr -d ' "')
+
+    curl -L ${OC_RELEASE} | tar xz
+    mv ./openshift-origin-client-tools-* ../openshift-client
+  fi
+  export PATH=${PATH}:`pwd`/../openshift-client/
+}
+prepare_oc_client
+
+function cleanup() {
+  echo "Stopping and removing OpenShift cluster..."
+  oc delete project --all
+  oc cluster down
+}
+trap cleanup EXIT SIGINT
+
+function print_logs() {
+  oc get all
+  while read pod_info; do
+    pod=$(echo ${pod_info} | tr -s ' ' | cut -f1 -d' ')
+    echo "INFO: printing logs for pod ${pod}"
+    oc logs ${pod}
+  done < <(oc get pods --no-headers=true)
+}
+trap print_logs ERR
+
+# Start OpenShift cluster
+[ -d openshift.pv ] || mkdir openshift.pv
+oc cluster up --host-pv-dir=$(pwd)/openshift.pv
+
+# Prepare image - add tag different than :latest
+# With :latest default imagePullPolicy is Always
+# https://docs.openshift.com/enterprise/3.2/dev_guide/managing_images.html#image-pull-policy
+docker tag ${IMAGE_NAME} ${IMAGE_NAME}:test-openshift
+IMAGE_NAME=${IMAGE_NAME}:test-openshift
+
+#
+# General functions
+#
+
+# wait_for_ready_pods wait till number of pods with label get ready
+function wait_for_ready_pods() {
+  local label="$1"
+  local count="$2"
+  for i in $(seq 30); do
+    if [[ "$(oc get pods --no-headers=true -l${label} | grep "1/1" | wc -l)" -eq ${count} ]]; then
+      return 0
+    fi
+    echo "Waiting for ${count} ready pods labeled with '${label}'..."
+    sleep 20
+  done
+  return 1
+}
+
+# Deploy MongoDB clustered application
+USER=user
+PASS=pass
+ADMIN_PASS=adminPass
+DB=db
+
+oc new-project petset-example
+oc new-app --file=../examples/petset/mongodb-petset-persistent.yaml -p MONGODB_USER=${USER} -p MONGODB_PASSWORD=${PASS} -p MONGODB_DATABASE=${DB} -p MONGODB_ADMIN_PASSWORD=${ADMIN_PASS} -p MONGODB_IMAGE=${IMAGE_NAME} -p VOLUME_CAPACITY=500M
+
+wait_for_ready_pods "app=mongodb-petset-replication" 3
+wait_for_ready_pods "openshift.io/deployer-pod-for.name" 0
+
+host="rs0/$(oc get endpoints mongodb --no-headers | tr -s ' ' | cut -f2 -d' ')"
+
+docker exec origin kubectl run --attach --restart=Never mongodb-test --image ${IMAGE_NAME} --env="MONGODB_ADMIN_PASSWORD=${ADMIN_PASS}" --command -- bash -c "set -x
+. /usr/share/container-scripts/mongodb/common.sh
+. /usr/share/container-scripts/mongodb/test-functions.sh
+wait_for_mongo_up '${host}'
+wait_replicaset_members '${host}' 3
+insert_and_wait_for_replication '${host}' '{a:5, b:10}'"
+

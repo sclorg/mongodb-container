@@ -1,0 +1,111 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# @public Create either a replica set or add member in the background.
+#
+# @value  MONGODB_REPLICA_NAME
+# @value  MEMBER_ID
+#
+# 05/2017 Marked function as readonly.
+function replicaset() {
+  local comm="db.isMaster().setName"
+
+  wait_for_mongo_up &>/dev/null
+
+  if [[ "$($MONGO --eval "${comm}" --quiet)" == "${MONGODB_REPLICA_NAME:-}" ]]; then
+    log_info "Replica set '${MONGODB_REPLICA_NAME:-}' already exists, skipping initialization"
+    >/tmp/initialized
+    exit 0
+  fi
+
+  if [[ "$MEMBER_ID" == "0" ]]; then
+    rs_init
+  else
+    rs_add
+  fi
+
+  >/tmp/initialized
+}
+readonly -f replicaset
+
+# @public Initializes the replica set configuration.
+#
+# @value  MONGODB_REPLICA_NAME
+# @value  MEMBER_HOST
+# @value  MONGODB_ADMIN_PASSWORD
+# @value  MONGODB_ADMIN_USER
+#
+# 05/2017 Marked function as readonly.
+# 05/2017 Enforced keyfile access control.
+# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
+function rs_init() {
+  local conf="{_id: '${MONGODB_REPLICA_NAME:-}', members: [{_id: 0, host: '$MEMBER_HOST'}]}"
+
+  log_info "Setting up config document"
+  $MONGO --eval "quit(rs.initiate(${conf}).ok ? 0 : 1)" --quiet
+
+  log_info "Waiting for PRIMARY status"
+  $MONGO --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
+
+  mongo_create_admin
+  [[ -v CREATE_USER ]] && mongo_create_user "-u ${MONGODB_ADMIN_USER:-} -p ${MONGODB_ADMIN_PASSWORD:-}"
+
+  log_pass "Replica set initialized"
+}
+readonly -f rs_init
+
+# @public Adds a member to replica set.
+#
+# @value  MEMBER_HOST
+# @value  MONGODB_ADMIN_PASSWORD
+# @value  MONGODB_ADMIN_USER
+#
+# 05/2017 Marked function as readonly.
+# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
+function rs_add() {
+  local comm="while (!rs.add('$MEMBER_HOST').ok) { sleep(100); }"
+  local host
+  host=$(endpoint -u "${MONGODB_ADMIN_USER:-}" -p "${MONGODB_ADMIN_PASSWORD:-}")
+
+  log_info "Adding $MEMBER_HOST to replica set"
+  if ! $MONGO "${host}" --eval "${comm}" --quiet; then
+    log_fail "Couldn't add host to replica set"
+    return 1
+  fi
+
+  log_info "Waiting for PRIMARY/SECONDARY status"
+  $MONGO --eval "while (!rs.isMaster().ismaster && !rs.isMaster().secondary) { sleep(100); }"
+
+  log_pass "Member added to replica set"
+}
+readonly -f rs_add
+
+# @public Removes a member from replica set.
+#
+# @value  MEMBER_HOST
+# @value  MONGODB_ADMIN_PASSWORD
+# @value  MONGODB_ADMIN_USER
+#
+# 05/2017 Marked function as readonly.
+# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
+function rs_remove() {
+  local comm="while (!rs.remove('$MEMBER_HOST').ok) { sleep(100); }"
+  local host
+  host=$(endpoint -u "${MONGODB_ADMIN_USER:-}" -p "${MONGODB_ADMIN_PASSWORD:-}")
+
+  log_info "Removing $MEMBER_HOST from replica set"
+
+  if ! $MONGO "${host}" --eval "${comm}" --quiet; then
+    log_fail "Couldn't remove host from replica set"
+    return 1
+  fi
+
+  log_info "Waiting for PRIMARY/SECONDARY status"
+  $MONGO --eval "while (!rs.isMaster().ismaster && !rs.isMaster().secondary) { sleep(100); }"
+
+  log_pass "Member removed from replica set"
+}
+readonly -f rs_remove

@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# @public Create a standalone instance of mongod that is running as a single
+# server and not as part of a replica set.
+#
+# @value  MONGODB_USER
+# @value  MONGODB_PASSWORD
+# @value  MONGODB_DATABASE
+# @value  MONGODB_ADMIN_PASSWORD
+# @value  MONGODB_ADMIN_USER
+# @param  $1 mongo configuration file
+#
+# 05/2017 Marked function as readonly.
+# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
+# 06/2017 Replaced mongod with 'MONGOD'.
+# 06/2017 Changed base image to 'centos:centos7' and removed MMS.
+function standalone() {
+  local conf=${1:-}
+  local comm="db.system.users.count({'user':'admin'})"
+
+  if [[ -z "${conf}" ]]; then
+    log_fail "Couldn't read config file. Conf is not set, no such file or directory"
+    exit 1
+  fi
+
+  wait_for_mongo_up &>/dev/null
+
+  if [[ "$($MONGO admin --quiet --eval "${comm}")" == "1" ]]; then
+    mongo_reset_admin
+  else
+    mongo_create_admin
+  fi
+
+  if [[ -v CREATE_USER ]]; then
+    comm="db.system.users.count({'user':'${MONGODB_USER:-}', 'db':'${MONGODB_DATABASE:-}'})"
+
+    if [[ "$($MONGO admin --quiet --eval "${comm}")" == "1" ]]; then
+      mongo_reset_user
+    else
+      mongo_create_user
+    fi
+  fi
+}
+readonly -f standalone
