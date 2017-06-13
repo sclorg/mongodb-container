@@ -1,14 +1,14 @@
 FROM centos:centos7
 
-ENV CONTAINER=docker \
+ENV CONTAINER="docker" \
     LANG="en_US.UTF-8" \
     TERM="xterm" \
-    HOME=/var/lib/mongodb \
-    MONGODB_MAJOR=3 \
-    MONGODB_MINOR=4 \
-    MONGODB_PATCH=4 \
-    CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
-    NAMESPACE=rh \
+    HOME="/var/lib/mongodb" \
+    MONGODB_MAJOR="3" \
+    MONGODB_MINOR="4" \
+    MONGODB_PATCH="4" \
+    CONTAINER_SCRIPTS_PATH="/usr/share/container-scripts/mongodb" \
+    NAMESPACE="rh" \
     MONGODB_SRC="https://fastdl.mongodb.org/linux" \
     NSS_SRC="https://dl.fedoraproject.org/pub/epel/7/x86_64/n" \
     NSS_RPM="nss_wrapper-1.1.3-1.el7.x86_64.rpm"
@@ -18,7 +18,7 @@ ENV SUMMARY="MongoDB NoSQL database server" \
     cross-platform document-oriented database program. Classified as a NoSQL \
     database program, MongoDB uses JSON-like documents with schemas. This \
     container image contains programs to run mongod server." \
-    MONGODB_HOME="/opt/$NAMESPACE/$MONGODB_MAJOR$MONGODB_MINORmongodb" \
+    MONGODB_HOME="/opt/$NAMESPACE/mongodb$MONGODB_MAJOR$MONGODB_MINOR" \
     MONGODB_VERSION="$MONGODB_MAJOR.$MONGODB_MINOR" \
 # Incantations to enable Software Collections on `bash` and `sh -i`
     ENABLED_COLLECTIONS="$NAMESPACE-mongodb$MONGODB_MAJOR$MONGODB_MINOR" \
@@ -73,23 +73,23 @@ EXPOSE 27017
 
 ENTRYPOINT ["container-entrypoint"]
 
-VOLUME ["$MONGODB_HOME/data"]
-
 COPY root /
 
 # Create files and directory locations
-RUN mkdir -p $HOME/data \
-             $HOME/log \
-             $HOME/run \
-&& touch /etc/mongod.conf \
-&& /usr/libexec/fix-permissions $HOME \
-                                $MONGODB_HOME \
-                                $HOME/data \
-                                $HOME/log \
-                                $HOME/run \
-                                /etc/mongod.conf \
-                                $CONTAINER_SCRIPTS_PATH/mongodb.conf.template \
+RUN touch /etc/mongod.conf \
+&& mkdir -p /var/lib/mongodb/data /var/lib/mongodb/log /var/lib/mongodb/run   \
+&& /usr/libexec/fix-permissions $CONTAINER_SCRIPTS_PATH/mongodb.conf.template \
+                                /etc/mongod.conf                              \
+                                /var/lib/mongodb                              \
+                                /var/lib/mongodb/data                         \
+                                /var/lib/mongodb/log                          \
+                                /var/lib/mongodb/run                          \
+                                $MONGODB_HOME                                 \
 && ln -s $MONGODB_HOME/bin/* /usr/bin
+
+VOLUME ["/var/lib/mongodb/data"]
+
+WORKDIR /var/lib/mongodb
 
 USER 184
 

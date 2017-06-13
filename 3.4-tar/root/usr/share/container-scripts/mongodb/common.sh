@@ -4,6 +4,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/environment
+
 #----------------------------------------------------
 # Verification
 #----------------------------------------------------

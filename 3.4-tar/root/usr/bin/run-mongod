@@ -8,10 +8,7 @@ set -o pipefail
 source ${CONTAINER_SCRIPTS_PATH:-}/generate_container_user
 
 # shellcheck source=/dev/null
-source ${CONTAINER_SCRIPTS_PATH:-}/environment
-
-# shellcheck source=/dev/null
-source ${CONTAINER_SCRIPTS_PATH:-}/common
+source ${CONTAINER_SCRIPTS_PATH:-}/common.sh
 
 # shellcheck source=/dev/null
 source ${CONTAINER_SCRIPTS_PATH:-}/init-mongod

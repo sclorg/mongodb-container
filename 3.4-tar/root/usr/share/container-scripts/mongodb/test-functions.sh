@@ -6,6 +6,7 @@ set -o pipefail
 
 # insert_and_wait_for_replication insert data in host and wait all replset members
 # applied recent oplog entry
+# See https://jira.mongodb.org/browse/SERVER-27289 (bug fix)
 function insert_and_wait_for_replication() {
   local host
   host=$1
@@ -34,10 +35,11 @@ function insert_and_wait_for_replication() {
     printjson(rs.status());
     quit(1);"
 
-  mongo admin --host "${host}" -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "${script}"
+  mongo "${host}" --eval "${script}"
 }
 
 # wait_replicaset_members waits till replset has specified number of members
+# See https://jira.mongodb.org/browse/SERVER-27289 (bug fix)
 function wait_replicaset_members() {
   local host
   host=$1
@@ -57,5 +59,5 @@ function wait_replicaset_members() {
   printjson(rs.status());
   quit(1);"
 
-  mongo admin --host "${host}" -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "${script}"
+  mongo "${host}" --eval "${script}"
 }
