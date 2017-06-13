@@ -1,0 +1,116 @@
+.TH MongoDB Docker image
+.PP
+This repository contains MongoDB Dockerfiles for general use and with OpenShift.
+
+.SH Environment variables
+.PP
+The image recognizes the following default values that you can set during by
+passing \fB\fC\-e VAR=VALUE\fR to the Docker \fB\fCrun\fR command.
+.TS
+allbox;
+Name  Description  Value 
+\fB\fCMONGODB\_ADMIN\_USER\fR		Username for 'userAdmin' account		admin	
+
+\fB\fCMONGODB\_ADMIN\_PASSWORD\fR		Password for 'userAdmin' account		\-	
+
+\fB\fCMONGODB\_USER\fR		Username for 'readWrite' account		\-	
+
+\fB\fCMONGODB\_PASSWORD\fR		Password for 'readWrite' account		\-	
+
+\fB\fCMONGODB\_DATABASE\fR		Database for 'readWrite' account		\-	
+
+\fB\fCMONGODB\_QUIET\fR		Suppress system log output		true	
+
+Replica Set <td colspan="2"/>					
+
+\fB\fCMONGODB\_KEYFILE\_VALUE\fR		Specific replica set secret		\-	
+
+\fB\fCMONGODB\_REPLICA\_NAME\fR		Specific replica set name		\-	
+
+\fB\fCMONGODB\_SERVICE\_NAME\fR		Specific replica set service		mongodb	
+
+.TE
+
+.SH Usage
+.PP
+For this, we will assume that you are using the \fB\fCcentos/mongodb\-34\-tar\-centos7\fR
+image.
+
+.SS Mount volume
+.PP
+The following command initializes a standalone MongoDB instance with two users
+and stores the data on the host file system.
+
+.PP
+.RS
+
+.nf
+export DOCKER\_ARGS="\-e MONGODB\_USER=<username> \\
+                    \-e MONGODB\_PASSWORD=<password> \\
+                    \-e MONGODB\_DATABASE=<database> \\
+                    \-e MONGODB\_ADMIN\_PASSWORD=<admin\_password> \\
+                    \-v /home/user/database:/var/lib/mongodb/data:Z"
+
+docker run \-d ${DOCKER\_ARGS} centos/mongodb\-34\-tar\-centos7
+
+.fi
+.RE
+
+.PP
+If you are re\-attaching the volume to another container, the creation of the
+database user and admin user will be skipped and only the standalone MongoDB
+instance will be started.
+
+.PP
+\fBNotice: When mounting data locally, ensure that the mount point has the right
+permissions by checking that the owner/group matches the user private group
+(UPG) inside the container.\fP
+
+.SS Custom configuration
+.PP
+The following command initializes a standalone MongoDB instance with a
+configuration file already stored on the host file system.
+
+.PP
+.RS
+
+.nf
+export DOCKER\_ARGS="\-e MONGODB\_ADMIN\_PASSWORD=<admin\_password> \\
+                    \-v /home/user/mongod.conf:/etc/mongod.conf:Z"
+
+docker run \-d ${DOCKER\_ARGS} centos/mongodb\-34\-tar\-centos7
+
+.fi
+.RE
+
+.PP
+\fBNotice: Custom config file does not affect name of replica set. It has to be
+set in \fB\fCMONGODB\_REPLICA\_NAME\fR environment variable.\fP
+
+.SS Update credentials
+.PP
+The following commands initializes a standalone MongoDB instance and then resets
+the 'userAdmin' account password.
+
+.PP
+.RS
+
+.nf
+export CONTAINER=mongo\-test
+
+export DOCKER\_ARGS="\-e MONGODB\_ADMIN\_PASSWORD=<admin\_password>"
+
+docker run \-d ${DOCKER\_ARGS} \-\-name ${CONTAINER} centos/mongodb\-34\-tar\-centos7
+
+docker exec ${CONTAINER} bash \-c "\-e MONGODB\_ADMIN\_PASSWORD=<new\_admin\_password>"
+
+docker restart ${CONTAINER}
+
+.fi
+.RE
+
+.PP
+\fBNotice: Changing database passwords directly in MongoDB will cause a mismatch
+between the values stored in the variables and the actual passwords. Whenever a
+database container starts it will reset the passwords to the values stored in
+the environment variables.\fP

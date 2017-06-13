@@ -1,0 +1,25 @@
+# mongod.conf
+
+# For documentation of all options, see:
+# http://docs.mongodb.org/manual/reference/configuration-options/
+
+# systemLog Options - How to do logging
+systemLog:
+  destination: file
+  logAppend: true
+  quiet: ${MONGODB_QUIET} # Runs MongoDB in a quiet mode that attempts to limit the amount of output. Default: true
+  path: ${MONGODB_LOG_PATH}/mongod.log
+
+# storage Options - How and Where to store data
+storage:
+  dbPath: ${MONGODB_DATADIR} # Directory for datafiles (defaults to /data/db/)
+  journal:
+    enabled: true
+
+# How the process runs
+processManagement:
+  pidFilePath: ${MONGODB_PID_PATH}/mongodb.pid
+
+# replication Options - Configures replication
+replication:
+  oplogSizeMB: 64 # Size (MB) for replication oplog (default 5% of disk space)

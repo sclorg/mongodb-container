@@ -1,0 +1,83 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+#----------------------------------------------------
+# Commands
+#----------------------------------------------------
+
+# PYTHON is the full path of the python command, explicitly set to guard against
+# incautious use of shebang or interpreter/program invokation.
+readonly PYTHON=/usr/bin/python
+
+# MONGO is the full path of the interactive JavaScript shell interface to
+# MongoDB, explicitly set to guard against incautious use of shebang or
+# interpreter/program invokation.
+readonly MONGO=/usr/bin/mongo
+
+# MONGOD is the full path of the primary daemon process for the MongoDB system,
+# explicitly set to guard against incautious use of shebang or
+# interpreter/program invokation.
+readonly MONGOD=/usr/bin/mongod
+
+#----------------------------------------------------
+# Directory PATHs
+#----------------------------------------------------
+
+# MONGODB_DATADIR is the location of the database files live for mongo runtime
+export MONGODB_DATADIR=$HOME/data
+
+# MONGODB_LOG_PATH is the location of mongo log path for mongo runtime
+export MONGODB_LOG_PATH=$HOME/log
+
+# MONGODB_PID_PATH is the location of the process ID file  for mongo runtime
+export MONGODB_PID_PATH=$HOME/run
+
+#----------------------------------------------------
+# File PATHs
+#----------------------------------------------------
+
+# MONGODB_CONFIG_PATH is the location of the configuration file for mongo runtime
+# configuration options
+readonly MONGODB_CONFIG_PATH=/etc/mongod.conf
+
+# MONGODB_KEYFILE_PATH is location of the key file that stores the shared secret
+# that MongoDB instances use to authenticate to each other in a sharded cluster
+# or replica set
+readonly MONGODB_KEYFILE_PATH=$HOME/keyfile
+
+#----------------------------------------------------
+# Constants
+#----------------------------------------------------
+
+# MEMBER_HOST is the FQDN of this host that will be added to a replica set, e.g.
+# "replica-2.mongodb.myproject.svc.cluster.local"
+readonly MEMBER_HOST=$(hostname -f)
+
+# [NOTE] For a StatefulSet with N replicas, when Pods are being deployed, they
+# are created sequentially, in order from {0..N-1} with using a predictable
+# naming convention, e.g. "${statefulset-name}-${zero-based-index}"
+
+# MEMBER_ID is computed by removing the prefix matching "*-", e.g.
+#  "mongodb-0" -> "0"
+#  "mongodb-1" -> "1"
+#  "mongodb-2" -> "2"
+readonly MEMBER_ID=${HOSTNAME##*-}
+
+#----------------------------------------------------
+# Parameters
+#----------------------------------------------------
+
+# MAX_ATTEMPTS is the maximum number of conntection retries when attempting
+# to synchronize processes with the MongoDB daemon
+export MAX_ATTEMPTS=${MAX_ATTEMPTS:-60}
+
+# MONGODB_ADMIN_USER is a configuration parameter that represents the
+# administrative account's username (default admin).
+export MONGODB_ADMIN_USER=${MONGODB_ADMIN_USER:-admin}
+
+# MONGODB_QUIET is a configuration parameter that runs the MongoDB daemon in a
+# quiet mode that attempts to limit the amount of outputted system logging
+export MONGODB_QUIET=${MONGODB_QUIET:-true}
