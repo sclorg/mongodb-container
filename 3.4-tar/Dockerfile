@@ -73,8 +73,6 @@ EXPOSE 27017
 
 ENTRYPOINT ["container-entrypoint"]
 
-VOLUME ["$MONGODB_HOME/data"]
-
 COPY root /
 
 # Create files and directory locations
@@ -90,6 +88,8 @@ RUN mkdir -p $HOME/data \
                                 /etc/mongod.conf \
                                 $CONTAINER_SCRIPTS_PATH/mongodb.conf.template \
 && ln -s $MONGODB_HOME/bin/* /usr/bin
+
+VOLUME ["$HOME/data"]
 
 USER 184
 
