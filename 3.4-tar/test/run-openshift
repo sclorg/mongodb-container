@@ -5,18 +5,23 @@
 # IMAGE_NAME specifies a name of the candidate image used for testing.
 # The image has to be available before this script is executed.
 #
+# Implemented fix for host, see https://jira.mongodb.org/browse/SERVER-27289
+# Use oc-cluster wrapper for creating PVs
 
 set -exo nounset
 
 function prepare_oc_client() {
-  # Prepare oc command
-  if [[ ! -d ../openshift-client/ ]]; then
+  OS_CLIENT_DIR=`pwd`/../openshift-client/
+
+  if [[ ! -d ${OS_CLIENT_DIR} ]]; then
     OC_RELEASE=$(curl -s https://api.github.com/repos/openshift/origin/releases | grep "browser_download_url" | grep "openshift-origin-client" | grep "linux-64bit" | sort | tail -n 1 | sed -e 's|"browser_download_url": ||' | tr -d ' "')
 
-    curl -L ${OC_RELEASE} | tar xz
-    mv ./openshift-origin-client-tools-* ../openshift-client
+    mkdir ${OS_CLIENT_DIR}
+    curl -L ${OC_RELEASE} | tar -xzf - -C ${OS_CLIENT_DIR} --strip 1 &>/dev/null
+    curl -L 'https://github.com/openshift-evangelists/oc-cluster-wrapper/tarball/master' | tar -xzf - -C ${OS_CLIENT_DIR} --strip 1 &>/dev/null
   fi
-  export PATH=${PATH}:`pwd`/../openshift-client/
+
+  export PATH=${OS_CLIENT_DIR}:${PATH}
 }
 prepare_oc_client
 
@@ -37,9 +42,14 @@ function print_logs() {
 }
 trap print_logs ERR
 
-# Start OpenShift cluster
-[ -d openshift.pv ] || mkdir openshift.pv
-oc cluster up --host-pv-dir=$(pwd)/openshift.pv
+# Start OpenShift "oc cluster up" via wrapper script
+if echo "$(oc-cluster status)" | grep -o "no cluster running"; then
+  oc-cluster up
+fi
+
+# # Start OpenShift cluster
+# [ -d openshift.pv ] || mkdir openshift.pv
+# oc cluster up --host-pv-dir=$(pwd)/openshift.pv
 
 # Prepare image - add tag different than :latest
 # With :latest default imagePullPolicy is Always
@@ -47,6 +57,11 @@ oc cluster up --host-pv-dir=$(pwd)/openshift.pv
 docker tag ${IMAGE_NAME} ${IMAGE_NAME}:test-openshift
 IMAGE_NAME=${IMAGE_NAME}:test-openshift
 
+echo "Pause to avoid race condition"
+sleep 5
+
+echo "Change file SELinux security category"
+chcat -d ${HOME}/.oc/profiles/default/volumes/vol{01..10}
 #
 # General functions
 #
@@ -68,6 +83,7 @@ function wait_for_ready_pods() {
 # Deploy MongoDB clustered application
 USER=user
 PASS=pass
+ADMIN_USER=admin
 ADMIN_PASS=adminPass
 DB=db
 
@@ -77,7 +93,7 @@ oc new-app --file=../examples/petset/mongodb-petset-persistent.yaml -p MONGODB_U
 wait_for_ready_pods "app=mongodb-petset-replication" 3
 wait_for_ready_pods "openshift.io/deployer-pod-for.name" 0
 
-host="rs0/$(oc get endpoints mongodb --no-headers | tr -s ' ' | cut -f2 -d' ')"
+host="mongodb://${ADMIN_USER}:${ADMIN_PASS}@$(oc get endpoints mongodb --no-headers | tr -s ' ' | cut -f2 -d' ')/?replicaSet=rs0"
 
 docker exec origin kubectl run --attach --restart=Never mongodb-test --image ${IMAGE_NAME} --env="MONGODB_ADMIN_PASSWORD=${ADMIN_PASS}" --command -- bash -c "set -x
 . /usr/share/container-scripts/mongodb/common.sh
@@ -85,4 +101,3 @@ docker exec origin kubectl run --attach --restart=Never mongodb-test --image ${I
 wait_for_mongo_up '${host}'
 wait_replicaset_members '${host}' 3
 insert_and_wait_for_replication '${host}' '{a:5, b:10}'"
-
