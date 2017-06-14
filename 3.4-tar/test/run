@@ -238,7 +238,7 @@ function run_tests() {
     CONTAINER_IP=$(get_container_ip $name)
     test_connection $name
     echo "  Testing scl usage"
-    test_scl_usage $name 'mongo --version' '3.2'
+    test_scl_usage $name 'mongo --version' '3.4'
     test_mongo $name
 }
 
@@ -447,7 +447,7 @@ EOF
     docker run -d --cidfile $CIDFILE_DIR/replset2 --name=replset-2 --hostname=replset-2 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
     docker exec replset-2 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
 
-    local host="$(docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c '. /usr/share/container-scripts/mongodb/common.sh && echo $(replset_addr)')"
+    local host="$(docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c '. /usr/share/container-scripts/mongodb/common.sh && MONGODB_REPLICA_NAME=rs0 echo $(endpoint -u 'admin' -p 'adminPassword')')"
 
     # Storing document into replset and wait replication to finish ...
     docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c "set -e
