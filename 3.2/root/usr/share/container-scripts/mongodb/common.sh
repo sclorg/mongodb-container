@@ -5,7 +5,7 @@ set -o nounset
 set -o pipefail
 
 # Data directory where MongoDB database files live. The data subdirectory is here
-# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
+# because mongod.conf lives in /var/lib/mongodb/ and we don't want a volume to
 # override it.
 export MONGODB_DATADIR=/var/lib/mongodb/data
 export CONTAINER_PORT=27017

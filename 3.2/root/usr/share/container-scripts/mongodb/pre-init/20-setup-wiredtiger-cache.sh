@@ -1,7 +1,7 @@
 # setup_wiredtiger_cache checks amount of available RAM (it has to use cgroups in container)
 # and if there are any memory restrictions set storage.wiredTiger.engineConfig.cacheSizeGB
 # in MONGODB_CONFIG_PATH to upstream default size
-# it is intended to update mongodb.conf.template, with custom config file it might create conflict
+# it is intended to update mongod.conf.template, with custom config file it might create conflict
 function setup_wiredtiger_cache() {
   local config_file
   config_file=${1:-$MONGODB_CONFIG_PATH}
@@ -17,4 +17,4 @@ function setup_wiredtiger_cache() {
   info "wiredTiger cacheSizeGB set to ${cache_size}"
 }
 
-setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template
+setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongod.conf.template

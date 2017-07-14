@@ -48,7 +48,7 @@ COPY root /
 RUN touch /etc/mongod.conf && \
     mkdir -p ${HOME}/data && \
     # Set owner 'mongodb:0' and 'g+rw(x)' permission - to avoid problems running container with arbitrary UID
-    /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template \
+    /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongod.conf.template \
     ${HOME} ${APP_DATA}/.. && \
     usermod -a -G root mongodb
 
