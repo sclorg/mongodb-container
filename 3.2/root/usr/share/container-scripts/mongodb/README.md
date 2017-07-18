@@ -133,28 +133,39 @@ $ s2i build ~/image-configuration/ centos/mongodb-32-centos7 my-mongodb-centos7
 ```
 
 The directory passed to `s2i build` should contain one or more of the
-following directories::
+following directories:
 
-- `mongodb-cfg/`
-  - when running `run-mongod` or `run-mongod-replication` commands contained
-  `mongod.conf` file is used for `mongod` configuration
-    - `envsubst` command is run on this file to still allow customization of
+----------------------------------------------
+
+##### `mongodb-cfg/`
+
+when running `run-mongod` or `run-mongod-replication` commands contained
+`mongod.conf` file is used for `mongod` configuration
+
+   - `envsubst` command is run on this file to still allow customization of
     the image using environment variables
-    - custom configuration file does not affect name of replica set - it has
+
+   - custom configuration file does not affect name of replica set - it has
     to be set in `MONGODB_REPLICA_NAME` environment variable
-    - it is not possible to configure SSL using custom configuration file
 
-- `mongodb-pre-init/`
-  - contained shell scripts (`*.sh`) are sourced before `mongod` server is
-  started
+   - it is not possible to configure SSL using custom configuration file
 
-- `mongodb-init/`
-  - contained shell scripts (`*.sh`) are sourced when `mongod` server is
-  started
-    - `run-mongod` command doesn't have enabled authentication in this phase
-    - `run-mongod-replication` command has enabled authentication in this phase
-  - these scripts are skipped if `run-mongod-replication` is run with already
-  initialized data directory
+##### `mongodb-pre-init/`
+
+contained shell scripts (`*.sh`) are sourced before `mongod` server is
+started
+
+##### `mongodb-init/`
+
+contained shell scripts (`*.sh`) are sourced when `mongod` server is
+started
+   - `run-mongod` command doesn't have enabled authentication in this phase
+   - `run-mongod-replication` command has enabled authentication in this phase
+
+these scripts are skipped if `run-mongod-replication` is run with already
+initialized data directory
+
+----------------------------------------------
 
 Variables that can be used in the scripts provided to s2i:
 
