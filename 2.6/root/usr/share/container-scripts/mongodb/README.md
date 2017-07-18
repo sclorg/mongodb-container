@@ -1,10 +1,47 @@
-MongoDB Docker image
+% MONGODB-26(1) Container Image Pages
+% SoftwareCollections.org
+% July 18, 2017
+
+MongoDB 2.6 NoSQL Database Server Docker image
 ====================
 
 This repository contains Dockerfiles for MongoDB images for general usage and OpenShift.
 Users can choose between RHEL and CentOS based images.
+The RHEL image is available in the [Red Hat Container Catalog](https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/mongodb-26-rhel7)
+as registry.access.redhat.com/rhscl/mongodb-26-rhel7.
+The CentOS image is then available on [Docker Hub](https://hub.docker.com/r/centos/mongodb-26-centos7/)
+as centos/mongodb-26-centos7.
 
-Environment variables
+
+Description
+-----------
+
+This container image provides a containerized packaging of the MongoDB mongod daemon
+and client application. The mongod server daemon accepts connections from clients
+and provides access to content from MongoDB databases on behalf of the clients.
+You can find more information on the MongoDB project from the project Web site
+(https://www.mongodb.com/).
+
+
+Usage
+-----
+
+For this, we will assume that you are using the `rhscl/mongodb-26-rhel7` image.
+If you want to set only the mandatory environment variables and store the database
+in the `/home/user/database` directory on the host filesystem, execute the following command:
+
+```
+$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -e MONGODB_ADMIN_PASSWORD=<admin_password> -v /home/user/database:/var/lib/mongodb/data rhscl/mongodb-26-rhel7
+```
+
+If you are initializing the database and it's the first time you are using the
+specified shared volume, the database will be created with two users: `admin` and `MONGODB_USER`. After that the MongoDB daemon
+will be started. If you are re-attaching the volume to another container, the
+creation of the database user and admin user will be skipped and only the
+MongoDB daemon will be started.
+
+
+Environment variables and volumes
 ---------------------------------
 
 The image recognizes the following environment variables that you can set during
@@ -43,33 +80,6 @@ You can also set the following mount points by passing the `-v /host:/container`
 directory has the appropriate permissions and that the owner and group of the directory
 matches the user UID or name which is running inside the container.**
 
-
-Usage
----------------------------------
-
-For this, we will assume that you are using the `centos/mongodb-26-centos7` image.
-If you want to set only the mandatory environment variables and store the database
-in the `/home/user/database` directory on the host filesystem, execute the following command:
-
-```
-$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -e MONGODB_ADMIN_PASSWORD=<admin_password> -v /home/user/database:/var/lib/mongodb/data centos/mongodb-26-centos7
-```
-
-If you are initializing the database and it's the first time you are using the
-specified shared volume, the database will be created with two users: `admin` and `MONGODB_USER`. After that the MongoDB daemon
-will be started. If you are re-attaching the volume to another container, the
-creation of the database user and admin user will be skipped and only the
-MongoDB daemon will be started.
-
-Custom configuration file
----------------------------------
-
-It is allowed to use custom configuration file for mongod server. Providing a custom configuration file supercedes the individual configuration environment variable values.
-
-To use custom configuration file in container it has to be mounted into `/etc/mongod.conf`. For example to use configuration file stored in `/home/user` directory use this option for `docker run` command: `-v /home/user/mongod.conf:/etc/mongod.conf:Z`.
-
-**Notice: Custom config file does not affect name of replica set. It has to be set in `MONGODB_REPLICA_NAME` environment variable.**
-
 MongoDB admin user
 ---------------------------------
 
@@ -91,3 +101,33 @@ the values stored in the variables and the actual passwords. Whenever a database
 container starts it will reset the passwords to the values stored in the
 environment variables.
 
+
+
+Custom configuration file
+---------------------------------
+
+It is allowed to use custom configuration file for mongod server. 
+Providing a custom configuration file supercedes the individual configuration 
+environment variable values.
+
+To use custom configuration file in container it has to be mounted into `/etc/mongod.conf`. 
+For example to use configuration file stored in `/home/user` directory 
+use this option for `docker run` command: `-v /home/user/mongod.conf:/etc/mongod.conf:Z`.
+
+**Notice: Custom config file does not affect name of replica set. It has 
+to be set in `MONGODB_REPLICA_NAME` environment variable.**
+
+
+Troubleshooting
+---------------
+The mongod deamon in the container logs to the standard output, so the log is available in the container log. The log can be examined by running:
+
+    docker logs <container>
+
+
+See also
+--------
+Dockerfile and other sources for this container image are available on
+https://github.com/sclorg/mongodb-container.
+In that repository, Dockerfile for CentOS is called Dockerfile, Dockerfile
+for RHEL is called Dockerfile.rhel7.
