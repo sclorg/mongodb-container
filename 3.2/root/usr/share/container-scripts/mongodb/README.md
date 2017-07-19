@@ -142,13 +142,15 @@ following directories:
 when running `run-mongod` or `run-mongod-replication` commands contained
 `mongod.conf` file is used for `mongod` configuration
 
-   - `envsubst` command is run on this file to still allow customization of
-    the image using environment variables
+~~~~~
+- `envsubst` command is run on this file to still allow customization of
+  the image using environment variables
 
-   - custom configuration file does not affect name of replica set - it has
-    to be set in `MONGODB_REPLICA_NAME` environment variable
+- custom configuration file does not affect name of replica set - it has
+  to be set in `MONGODB_REPLICA_NAME` environment variable
 
-   - it is not possible to configure SSL using custom configuration file
+- it is not possible to configure SSL using custom configuration file
+~~~~~
 
 ##### `mongodb-pre-init/`
 
@@ -159,8 +161,11 @@ started
 
 contained shell scripts (`*.sh`) are sourced when `mongod` server is
 started
-   - `run-mongod` command doesn't have enabled authentication in this phase
-   - `run-mongod-replication` command has enabled authentication in this phase
+~~~~~
+- `run-mongod` command doesn't have enabled authentication in this phase
+
+- `run-mongod-replication` command has enabled authentication in this phase
+~~~~~
 
 these scripts are skipped if `run-mongod-replication` is run with already
 initialized data directory
@@ -169,13 +174,16 @@ initialized data directory
 
 Variables that can be used in the scripts provided to s2i:
 
+~~~~~
 - `mongo_common_args` -- contains arguments for the `mongod` server (changing
 this can break existing customization scripts, e.g. default scripts)
+
 - `$MEMBER_ID` -- contains 'id' of the container. It is defined only in
 scripts for replication (`run-mongod-replication` command) and has different
 value for each container in a replicaset cluster. Customization scripts are
 run by all containers in replicaset - `MEMBER_ID` can be used to write scripts
 which are run only by some container.
+~~~~~
 
 During `s2i build` all provided files are copied into `/opt/app-root/src`
 directory in the new image. If some configuration files are present in
