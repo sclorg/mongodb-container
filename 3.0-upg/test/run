@@ -55,7 +55,7 @@ function assert_container_creation_fails() {
   # container will keep running so we kill it with SIGKILL to make sure
   # timeout returns a non-zero value.
   set +e
-  timeout -s 9 --preserve-status 10s docker run --rm "$@" $IMAGE_NAME
+  timeout -s SIGTERM --preserve-status 10s docker run --rm "$@" $IMAGE_NAME
   ret=$?
   set -e
 
