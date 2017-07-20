@@ -29,7 +29,7 @@ function cleanup() {
     rmdir $CIDFILE_DIR
 
     local network_name="mongodb-replset-$$"
-    docker network ls | grep -q ${network_name} && docker network rm ${network_name}
+    docker network ls | grep -qv ${network_name} || docker network rm ${network_name}
 }
 trap cleanup EXIT SIGINT
 
@@ -504,7 +504,7 @@ $mount_opts
     DB=admin USER=backup PASS=bPass test_connection "${name}"
 
     echo "    Testing s2i app image mongodb-cfg/mongod.conf"
-    mongo_admin_cmd "if (db.serverStatus()['wiredTiger']['cache']['maximum bytes configured'] == Math.pow(2,30)*5){quit(0)}; quit(1)"
+    mongo_admin_cmd "if (db.serverCmdLineOpts()['parsed']['replication']['oplogSizeMB'] == 128){quit(0)}; quit(1)"
 
     echo "    Testing s2i app image reading initial data"
     mongo_admin_cmd "if (db.getSiblingDB('db').constants.count({subject: \"s2i build example\"}) == 1){quit(0)}; quit(1)"
@@ -514,6 +514,10 @@ $mount_opts
 function run_s2i_test() {
     echo "  Testing s2i usage"
     s2i usage ${s2i_args} ${IMAGE_NAME} &>/dev/null
+
+    # Set configuration file (differs for mmapv1 storage engine)
+    rm -f ${test_dir}/../../examples/extending-image/mongodb-cfg/mongod.conf
+    ln -s mongod-WT.conf ${test_dir}/../../examples/extending-image/mongodb-cfg/mongod.conf
 
     echo "  Testing s2i build"
     s2i build file://${test_dir}/../../examples/extending-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
