@@ -40,7 +40,7 @@ RUN yum install -y centos-release-scl && \
     rpm -V $INSTALL_PKGS && \
     yum clean all
 
-ADD s2i/bin/ $STI_SCRIPTS_PATH
+COPY s2i/bin/ $STI_SCRIPTS_PATH
 
 COPY root /
 
