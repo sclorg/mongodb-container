@@ -1,4 +1,4 @@
-FROM centos:centos7
+FROM centos/s2i-base-centos7
 
 ENV SUMMARY="MongoDB NoSQL database server" \
     DESCRIPTION="MongoDB (from humongous) is a free and open-source \
@@ -20,6 +20,7 @@ LABEL summary="$SUMMARY" \
 
 ENV MONGODB_VERSION=3.2 \
     # Set paths to avoid hard-coding them in scripts.
+    APP_DATA=/opt/app-root/src \
     HOME=/var/lib/mongodb \
     CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
     # Incantations to enable Software Collections on `bash` and `sh -i`.
@@ -34,20 +35,22 @@ ENTRYPOINT ["container-entrypoint"]
 CMD ["run-mongod"]
 
 RUN yum install -y centos-release-scl && \
-    INSTALL_PKGS="bind-utils gettext iproute rsync tar rh-mongodb32-mongodb rh-mongodb32 rh-mongodb32-mongo-tools" && \
+    INSTALL_PKGS="bind-utils gettext iproute rsync tar shadow-utils rh-mongodb32-mongodb rh-mongodb32 rh-mongodb32-mongo-tools groff-base" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all
 
-COPY root /
+COPY s2i/bin/ $STI_SCRIPTS_PATH
 
+COPY root /
 
 # Container setup
 RUN touch /etc/mongod.conf && \
     mkdir -p ${HOME}/data && \
     # Set owner 'mongodb:0' and 'g+rw(x)' permission - to avoid problems running container with arbitrary UID
-    /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template \
-    ${HOME}
+    /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongod.conf.template \
+    ${HOME} ${APP_DATA}/.. && \
+    usermod -a -G root mongodb
 
 VOLUME ["/var/lib/mongodb/data"]
 

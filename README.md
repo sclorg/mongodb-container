@@ -5,7 +5,8 @@ This repository contains Dockerfiles for MongoDB images for OpenShift.
 Users can choose between RHEL and CentOS based images.
 
 For more information about using these images with OpenShift, please see the
-official [OpenShift Documentation](https://docs.openshift.org/latest/using_images/db_images/mongodb.html).
+official [OpenShift
+Documentation](https://docs.openshift.org/latest/using_images/db_images/mongodb.html).
 
 Versions
 ---------------------------------
@@ -52,8 +53,8 @@ Choose either the CentOS7 or RHEL7 based image:
 	$ make build TARGET=centos7 VERSION=3.2
 	```
 
-**Notice: By omitting the `VERSION` parameter, the build/test action will be performed
-on all provided versions of MongoDB.**
+**Notice: By omitting the `VERSION` parameter, the build/test action will be
+performed on all provided versions of MongoDB.**
 
 
 Usage
@@ -71,8 +72,8 @@ see [usage documentation](3.2/README.md).
 Test
 ---------------------------------
 
-This repository also provides a test framework which checks basic functionality
-of the MongoDB image.
+This repository also provides a test framework which checks basic
+functionality of the MongoDB image.
 
 Users can choose between testing MongoDB based on a RHEL or CentOS image.
 
@@ -93,5 +94,5 @@ Users can choose between testing MongoDB based on a RHEL or CentOS image.
     $ make test TARGET=centos7 VERSION=3.2
     ```
 
-**Notice: By omitting the `VERSION` parameter, the build/test action will be performed
-on all provided versions of MongoDB.**
+**Notice: By omitting the `VERSION` parameter, the build/test action will be
+performed on all provided versions of MongoDB.**
