@@ -201,20 +201,6 @@ mounted into `/opt/app-root/src/` in the image (`-v
 ./image-configuration/:/opt/app-root/src/`). This overwrites customization
 built into the image.
 
-Mounting custom configuration file
----------------------------------
-
-It is allowed to use custom configuration file for mongod server.
-Providing a custom configuration file supercedes the individual configuration
-environment variable values.
-
-To use custom configuration file in container it has to be mounted into `/etc/mongod.conf`.
-For example to use configuration file stored in `/home/user` directory
-use this option for `docker run` command: `-v /home/user/mongod.conf:/etc/mongod.conf:Z`.
-
-For more information see description of `mongodb-cfg/` directory in section about extending
-image using s2i.
-
 
 Troubleshooting
 ---------------
