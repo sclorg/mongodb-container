@@ -23,3 +23,6 @@ processManagement:
 # replication Options - Configures replication
 replication:
   oplogSizeMB: 64 # Size (MB) for replication oplog (default 5% of disk space)
+
+net:
+  port: 27017

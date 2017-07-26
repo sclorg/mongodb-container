@@ -1,0 +1,55 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/environment
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/generate_container_user
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/db/standalone/common.sh
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/db/standalone/init-standalone
+
+
+unset share_files share_file
+trap cleanup SIGINT SIGTERM
+
+check_db_env_vars
+
+log_info "Checking data directory"
+check_data_dir
+
+log_info "Setting up storage cache"
+setup_wiredtiger_cache "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template"
+
+log_info "Setting up config file"
+if [[ ! -s "$MONGODB_CONFIG_PATH" ]]; then
+	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template" > "$MONGODB_CONFIG_PATH"
+fi
+
+log_info "Starting mongo daemon (standalone mode)"
+$MONGOD --config "$MONGODB_CONFIG_PATH" &
+
+configure_standalone_mode "$MONGODB_CONFIG_PATH"
+
+log_info "Restarting Mongo for access control"
+
+log_info "Stopping mongo daemon"
+$MONGOD --config "$MONGODB_CONFIG_PATH" --shutdown
+wait_for_mongo_down
+
+log_info "Starting mongo daemon (enable access control)"
+$MONGOD --config "$MONGODB_CONFIG_PATH" --auth &
+
+
+wait_for_mongo_up
+#Make sure environment variables don't propagate passed initialization
+unset_env_vars
+tail_mongodb_log
+wait

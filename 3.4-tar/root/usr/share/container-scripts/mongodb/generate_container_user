@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Set current user in nss_wrapper
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)

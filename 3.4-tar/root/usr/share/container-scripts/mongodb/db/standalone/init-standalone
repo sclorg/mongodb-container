@@ -18,7 +18,7 @@ set -o pipefail
 # 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
 # 06/2017 Replaced mongod with 'MONGOD'.
 # 06/2017 Changed base image to 'centos:centos7' and removed MMS.
-function standalone() {
+function configure_standalone_mode() {
   local conf=${1:-}
   local comm="db.system.users.count({'user':'admin'})"
 
@@ -45,4 +45,4 @@ function standalone() {
     fi
   fi
 }
-readonly -f standalone
+readonly -f configure_standalone_mode

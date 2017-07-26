@@ -4,27 +4,13 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# shellcheck source=/dev/null
-source ${CONTAINER_SCRIPTS_PATH:-}/environment
-
 #----------------------------------------------------
 # Verification
 #----------------------------------------------------
 
-# @public  Checks environmental variables.
+# @public  Checks base environmental variables necessary for creating a mongo instance
 #
-# @value  MONGODB_ADMIN_PASSWORD
-# @value  MONGODB_USER
-# @value  MONGODB_PASSWORD
-# @value  MONGODB_DATABASE
-# @value  MONGODB_KEYFILE_VALUE
-# @value  MONGODB_REPLICA_NAME
-# @param  REPLICATION=1 checks if MONGODB_KEYFILE_VALUE, MONGODB_REPLICA_NAME exists
-# @return CREATE_USER=1 if MONGODB_USER, MONGODB_PASSWORD, MONGODB_DATABASE exists
-#
-# 05/2017 Marked function as readonly.
-# 06/2017 Renamed parameter 'MONGODB_USER' to 'MONGODB_USER'
-function check_env_vars() {
+function check_db_env_vars() {
   local database_regex='^[^/\. "$]*$'
 
   [[ -v MONGODB_ADMIN_PASSWORD ]] || usage "MONGODB_ADMIN_PASSWORD has to be set."
@@ -37,20 +23,13 @@ function check_env_vars() {
 
     export CREATE_USER=1
   fi
-
-  if [[ -v REPLICATION ]]; then
-    [[ -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]] || usage "MONGODB_KEYFILE_VALUE and MONGODB_REPLICA_NAME have to be set"
-  fi
 }
-readonly -f check_env_vars
+readonly -f check_db_env_vars
 
 # @public  Checks permissions of database volume.
 #
 # @value  MONGODB_DATADIR
 #
-# 05/2017 Renamed function from `setup_default_datadir` to `check_data_dir` to
-#         improve execution order & legibility.
-# 05/2017 Marked function as readonly.
 function check_data_dir() {
   if [ ! -w "${MONGODB_DATADIR:-}" ]; then
     log_fail "Couldn't write into ${MONGODB_DATADIR:-}. User $(id -u) and Group $(id -G) don't have permissions, $(stat -c '%A owned by %u:%g, SELinux = %C' ${MONGODB_DATADIR:-})"
@@ -71,8 +50,6 @@ readonly -f check_data_dir
 # @param  NO_MEMORY_LIMIT whether there are RAM restrictions or not
 # @param  MEMORY_LIMIT_IN_BYTES cache size of memory limit
 #
-# 05/2017 Marked function as readonly.
-# 05/2017 Implemented explicit `python` interpreter.
 function setup_wiredtiger_cache() {
   local config_file=${1:-$MONGODB_CONFIG_PATH}
   local cache_size
@@ -96,8 +73,6 @@ readonly -f setup_wiredtiger_cache
 # @value MONGODB_KEYFILE_PATH
 # @value MONGODB_CONFIG_PATH
 #
-# 05/2017 Marked function as readonly.
-# 05/2017 Moved --keyFile concatenation to main/driver (run-mongod).
 function setup_keyfile() {
   local keyfile_dir
   keyfile_dir="$(dirname "$MONGODB_KEYFILE_PATH")"
@@ -174,8 +149,6 @@ readonly -f mongo_create_admin
 # @param  $1 optional mongo parameters
 # @param  $2 host where to connect (default localhost)
 #
-# 05/2017 Marked function as readonly.
-# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
 function mongo_reset_admin() {
   local comm="db.changeUserPassword('${MONGODB_ADMIN_USER:-}', '${MONGODB_ADMIN_PASSWORD:-}')"
 
@@ -198,7 +171,6 @@ readonly -f mongo_reset_admin
 # @param  $1 optional mongo parameters
 # @param  $2 host where to connect (default localhost)
 #
-# 05/2017 Marked function as readonly.
 function mongo_create_user() {
   local comm="db.getSiblingDB('${MONGODB_DATABASE:-}').createUser({
     user: '${MONGODB_USER:-}',
@@ -237,7 +209,6 @@ readonly -f mongo_create_user
 # @param  $1 optional mongo parameters
 # @param  $2 host where to connect (default localhost)
 #
-# 05/2017 Marked function as readonly.
 function mongo_reset_user() {
   local comm="db.changeUserPassword('${MONGODB_USER:-}', '${MONGODB_PASSWORD:-}')"
 
@@ -259,7 +230,6 @@ readonly -f mongo_reset_user
 #
 # @param  $@ host where to connect
 #
-# 05/2017 Marked function as readonly.
 function wait_for_mongo_up() {
   _wait_for_mongo 1 "$@"
 }
@@ -269,7 +239,6 @@ readonly -f wait_for_mongo_up
 #
 # @param  $@ host where to connect
 #
-# 05/2017 Marked function as readonly.
 function wait_for_mongo_down() {
   _wait_for_mongo 0 "$@"
 }
@@ -280,7 +249,6 @@ readonly -f wait_for_mongo_down
 # @param  $1 desired connection state (default down)
 # @param  $2 host where to connect (default localhost)
 #
-# 05/2017 Marked function as readonly.
 function _wait_for_mongo() {
   local hold=${1:-1}
   local host=${2:-localhost}
@@ -308,9 +276,6 @@ readonly -f _wait_for_mongo
 
 # @public Cleanly and safely terminates the MongoDB daemon.
 #
-# 05/2017 Marked function as readonly.
-# 06/2017 Moved function to 'Synchronization' section improve legibility.
-# 06/2017 Replaced mongod with 'MONGOD'.
 function cleanup() {
   # [NOTE] Does not attempt to remove the host from the replica set configuration
 	# when it is terminating. That is by design, because, in a StatefulSet, when a
@@ -328,7 +293,7 @@ function cleanup() {
 }
 readonly -f cleanup
 
-# @public Make sure environment variables don't propagate to MongoDB daemon.
+# @public Make sure sensitive environment variables don't propagate.
 #
 # @value  MONGODB_ADMIN_PASSWORD
 # @value  MONGODB_USER
@@ -337,7 +302,6 @@ readonly -f cleanup
 # @value  MONGODB_KEYFILE_VALUE
 # @value  MONGODB_REPLICA_NAME
 #
-# 06/2017 Initial revision.
 function unset_env_vars() {
 	unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD MONGODB_ADMIN_USER
 }
@@ -355,8 +319,6 @@ function unset_env_vars() {
 # @param  -p <password>
 # @param  -d <database>
 #
-# 05/2017 Initial revision.
-# 05/2017 Added new arguments optarg.
 function endpoint() {
   endpoint_usage() { log_info "usage: ${FUNCNAME[0]} -h <hostname> -u <username> -p <password> -d <database>]" 1>&2; exit 1; }
 
@@ -404,8 +366,6 @@ readonly -f endpoint
 
 # @public Returns fully qualified domain name (FQDN) of the MongoDB daemon.
 #
-# 05/2017 Use hostname command, rather than cached IP address
-# 05/2017 Marked function as readonly.
 function hostfqdn() {
   [[ -z "$(type -P hostname &>/dev/null)" ]] \
   && [[ -n "$(hostname -f)" ]] \
@@ -418,7 +378,6 @@ readonly -f hostfqdn
 # @param  $1 host where to connect
 # @return IP address
 #
-# 05/2017 Initial revision.
 function mongo_addr() {
   local host=${1:-}
   local addr
@@ -459,7 +418,6 @@ readonly -f mongo_addr
 # @param  $1 host where to connect
 # @return a hostname or IP address
 #
-# 05/2017 Initial revision.
 function replset_addr() {
   local host=${1:-}
   local rsid="${HOSTNAME##*-}"
@@ -502,9 +460,6 @@ readonly -f replset_addr
 #
 # @param  $1 system log failure message
 #
-# 05/2017 Marked function as readonly.
-# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
-# 06/2017 Renamed parameter 'MONGODB_USER' to 'MONGODB_USER'.
 function usage() {
   if [ $# == 1 ]; then
     log_fail "$1"
@@ -539,6 +494,17 @@ function usage() {
 readonly -f usage
 
 #----------------------------------------------------
+# Usage
+#----------------------------------------------------
+
+# @public Continuously prints mongodb log messages to stdout. Runs as a background process.
+#
+function tail_mongodb_log() {
+  tail -f "${MONGODB_LOG_PATH}/mongod.log" &
+}
+readonly -f tail_mongodb_log
+
+#----------------------------------------------------
 # Logger
 #----------------------------------------------------
 
@@ -554,7 +520,6 @@ readonly -f log_info
 #
 # @param  $1 message details
 #
-# 05/2017 Marked function as readonly.
 function log_fail() {
   printf "\xe2\x9c\x98 [%s FAIL] %s\n" "$(date +'%a %b %d %T')" "${1:-}"
 }
@@ -564,7 +529,6 @@ readonly -f log_fail
 #
 # @param  $1 message details
 #
-# 05/2017 Marked function as readonly.
 function log_pass() {
   printf "\xE2\x9C\x94 [%s PASS] %s\n" "$(date +'%a %b %d %T')" "${1:-}"
 }

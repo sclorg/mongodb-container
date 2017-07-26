@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/environment
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/generate_container_user
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/db/replset/init-replset
+
+unset share_files share_file
+trap cleanup SIGINT SIGTERM
+
+log_info "Checking required env variables"
+check_repl_env_vars
+
+log_info "Checking data directory"
+check_data_dir
+
+log_info "Setting up storage cache"
+setup_wiredtiger_cache "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template"
+
+log_info "Setting up config file"
+if [[ ! -s "$MONGODB_CONFIG_PATH" ]]; then
+	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template" > "$MONGODB_CONFIG_PATH"
+fi
+
+log_info "Settings up keys"
+setup_keyfile
+
+log_info "Starting mongo daemon (replica set mode)"
+$MONGOD --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH --replSet "${MONGODB_REPLICA_NAME:-}" &
+
+# [TODO] Capture exit code and print error if initialization failed.
+configure_replicaset
+
+wait_for_mongo_up
+#Make sure environment variables don't propagate passed initialization
+unset_env_vars
+tail_mongodb_log
+wait

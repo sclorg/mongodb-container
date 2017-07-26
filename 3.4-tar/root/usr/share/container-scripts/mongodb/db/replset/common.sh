@@ -1,16 +1,23 @@
 #!/bin/bash
+source ${CONTAINER_SCRIPTS_PATH:-}/db/common.sh
 
-set -o errexit
-set -o nounset
-set -o pipefail
+# @public  Checks environmental variables for initializing a mongo replica set
+#
+function check_repl_env_vars() {
+    [[ -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]] || usage "MONGODB_KEYFILE_VALUE and MONGODB_REPLICA_NAME have to be set"
+    check_db_env_vars
+}
+readonly -f check_repl_env_vars
 
 # @public Create either a replica set or add member in the background.
 #
+# @param  replicaset_init_fn - if this is the first member of the set, call this function to initialize. Init may differ based on what kind of replicaset
+# we are creating, for e.g (configserver rs, shard rs)
 # @value  MONGODB_REPLICA_NAME
 # @value  MEMBER_ID
 #
 # 05/2017 Marked function as readonly.
-function replicaset() {
+function configure_replicaset_mode() {
   local comm="db.isMaster().setName"
 
   wait_for_mongo_up &>/dev/null
@@ -18,44 +25,18 @@ function replicaset() {
   if [[ "$($MONGO --eval "${comm}" --quiet)" == "${MONGODB_REPLICA_NAME:-}" ]]; then
     log_info "Replica set '${MONGODB_REPLICA_NAME:-}' already exists, skipping initialization"
     >/tmp/initialized
-    exit 0
+    return 0
   fi
 
   if [[ "$MEMBER_ID" == "0" ]]; then
-    rs_init
+    $1
   else
     rs_add
   fi
 
   >/tmp/initialized
 }
-readonly -f replicaset
-
-# @public Initializes the replica set configuration.
-#
-# @value  MONGODB_REPLICA_NAME
-# @value  MEMBER_HOST
-# @value  MONGODB_ADMIN_PASSWORD
-# @value  MONGODB_ADMIN_USER
-#
-# 05/2017 Marked function as readonly.
-# 05/2017 Enforced keyfile access control.
-# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
-function rs_init() {
-  local conf="{_id: '${MONGODB_REPLICA_NAME:-}', members: [{_id: 0, host: '$MEMBER_HOST'}]}"
-
-  log_info "Setting up config document"
-  $MONGO --eval "quit(rs.initiate(${conf}).ok ? 0 : 1)" --quiet
-
-  log_info "Waiting for PRIMARY status"
-  $MONGO --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
-
-  mongo_create_admin
-  [[ -v CREATE_USER ]] && mongo_create_user "-u ${MONGODB_ADMIN_USER:-} -p ${MONGODB_ADMIN_PASSWORD:-}"
-
-  log_pass "Replica set initialized"
-}
-readonly -f rs_init
+readonly -f configure_replicaset_mode
 
 # @public Adds a member to replica set.
 #
@@ -63,8 +44,6 @@ readonly -f rs_init
 # @value  MONGODB_ADMIN_PASSWORD
 # @value  MONGODB_ADMIN_USER
 #
-# 05/2017 Marked function as readonly.
-# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
 function rs_add() {
   local comm="while (!rs.add('$MEMBER_HOST').ok) { sleep(100); }"
   local host
@@ -89,8 +68,6 @@ readonly -f rs_add
 # @value  MONGODB_ADMIN_PASSWORD
 # @value  MONGODB_ADMIN_USER
 #
-# 05/2017 Marked function as readonly.
-# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
 function rs_remove() {
   local comm="while (!rs.remove('$MEMBER_HOST').ok) { sleep(100); }"
   local host
