@@ -516,26 +516,24 @@ function run_s2i_test() {
     s2i usage ${s2i_args} ${IMAGE_NAME} &>/dev/null
 
     # Set configuration file (differs for mmapv1 storage engine)
-    rm -f ${test_dir}/../../examples/extending-image/mongodb-cfg/mongod.conf
-    ln -s mongod-WT.conf ${test_dir}/../../examples/extending-image/mongodb-cfg/mongod.conf
+    mv ${test_dir}/test-image/mongodb-cfg/mongod.conf ${test_dir}/test-image/mongodb-cfg/mongod.conf.backup
+    ln -s mongod-WT.conf ${test_dir}/test-image/mongodb-cfg/mongod.conf
 
     echo "  Testing s2i build"
-    s2i build file://${test_dir}/../../examples/extending-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
+    s2i build file://${test_dir}/test-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
 
     local container_name=s2i_config_build
     IMAGE_NAME=${IMAGE_NAME}-testapp _s2i_test_image "s2i_config_build" ""
 
     echo "  Testing s2i mount"
     test_app_dir=$(mktemp -d)
-    cp -r ${test_dir}/../../examples/extending-image ${test_app_dir}/
+    cp -r ${test_dir}/test-image/ ${test_app_dir}/
     chmod -R a+rX ${test_app_dir}
-    _s2i_test_image "s2i_test_mount" "-v ${test_app_dir}/extending-image:/opt/app-root/src/:z"
+    _s2i_test_image "s2i_test_mount" "-v ${test_app_dir}/test-image:/opt/app-root/src/:z"
     rm -rf ${test_app_dir}
+    mv ${test_dir}/test-image/mongodb-cfg/mongod.conf.backup ${test_dir}/test-image/mongodb-cfg/mongod.conf
     echo "  Success!"
 }
-
-
-
 
 # Tests.
 run_container_creation_tests
