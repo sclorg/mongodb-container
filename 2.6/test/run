@@ -492,7 +492,7 @@ function run_s2i_test() {
     ln -s mongod-mmapv1.conf ${test_dir}/test-image/mongodb-cfg/mongod.conf
 
     echo "  Testing s2i build"
-    s2i build file://${test_dir}/test-image/ ${IMAGE_NAME}-testapp
+    s2i build file://${test_dir}/test-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
 
     local container_name=s2i_config_build
     IMAGE_NAME=${IMAGE_NAME}-testapp _s2i_test_image "s2i_config_build" ""
