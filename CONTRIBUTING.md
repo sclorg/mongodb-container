@@ -12,7 +12,7 @@ As a suggestion, start making changes to files of a single image version, e.g.,
 the latest one, and then run tests for that image:
 
 ```bash
-make test VERSION=3.2 SKIP_SQUASH=1
+make test VERSIONS=3.2 SKIP_SQUASH=1
 ```
 
 By default, the last step in the image build process is to squash the output
@@ -24,7 +24,7 @@ rebuilds as you work in the image contents.
 The `SKIP_SQUASH=1` option disables image squashing, so that building and
 rebuilding images locally should take less time.
 
-Setting `VERSION=3.2` equally saves development time. Instead of building every
+Setting `VERSIONS=3.2` equally saves development time. Instead of building every
 image version, only the version you are working on will be built.
 
 The tests run via `make test` cover some basic usage patterns of the images.
@@ -33,7 +33,7 @@ that are copied into the images. For instance, you can build and rebuild a
 specific image (without running tests) with this command:
 
 ```bash
-make VERSION=3.2 SKIP_SQUASH=1
+make VERSIONS=3.2 SKIP_SQUASH=1
 ```
 
 When you are done with your changes, you probably want to [change all other
