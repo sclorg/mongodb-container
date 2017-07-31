@@ -29,7 +29,7 @@ check_mongos_env_vars
 
 log_info "Setting up config file"
 if [[ ! -s "$MONGODB_CONFIG_PATH" ]]; then
-	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template" > "$MONGODB_CONFIG_PATH"
+	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/template/mongos.conf.template" > "$MONGODB_CONFIG_PATH"
 fi
 
 log_info "Settings up keys"
