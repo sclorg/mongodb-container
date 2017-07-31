@@ -23,18 +23,22 @@ log_info "Checking data directory"
 check_data_dir
 
 log_info "Setting up storage cache"
-setup_wiredtiger_cache "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template"
+setup_wiredtiger_cache "${CONTAINER_SCRIPTS_PATH:-}/template/mongod.conf.template"
 
 log_info "Setting up config file"
 if [[ ! -s "$MONGODB_CONFIG_PATH" ]]; then
-	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template" > "$MONGODB_CONFIG_PATH"
+	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/template/mongod.conf.template" > "$MONGODB_CONFIG_PATH"
 fi
 
 log_info "Settings up keys"
 setup_keyfile
 
 log_info "Starting mongo daemon (replica set mode)"
-$MONGOD --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH --replSet "${MONGODB_REPLICA_NAME:-}" &
+if [ "${SHARD_ENABLED}" == "true" ]; then
+	log_info "Shard mode enabled"
+	SHARD_ARG="--shardsvr"
+fi
+$MONGOD --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH "${SHARD_ARG:-}" --replSet "${MONGODB_REPLICA_NAME:-}" &
 
 # [TODO] Capture exit code and print error if initialization failed.
 configure_replicaset

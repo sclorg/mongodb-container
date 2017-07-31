@@ -17,6 +17,11 @@ readonly MONGO=/usr/bin/mongo
 # interpreter/program invokation.
 readonly MONGOD=/usr/bin/mongod
 
+# MONGOS is the full path of the sharding router,
+# explicitly set to guard against incautious use of shebang or
+# interpreter/program invokation.
+readonly MONGOS=/usr/bin/mongos
+
 #----------------------------------------------------
 # Directory PATHs
 #----------------------------------------------------

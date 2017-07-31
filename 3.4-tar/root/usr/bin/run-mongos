@@ -1,0 +1,47 @@
+#!/bin/bash
+
+#
+# Required environment variables to be set:
+# CONFIG_REPLSET_NAME - name of the config server replica set
+# CONFIG_REPLSET_SERVER - At least one server from the CONFIG_REPLSET_NAME group
+# REPLSET_NAMES - comma delimited names of each shard's replica set name
+# REPLSET_SERVERS - comma delimited server from each of the above REPLSET_NAMES. Order of the two must coorespond
+# MONGODB_KEYFILE_VALUE - key value for inter-mongo server communication
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/environment
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/generate_container_user
+
+# shellcheck source=/dev/null
+source ${CONTAINER_SCRIPTS_PATH:-}/mongos/init-mongos
+
+unset share_files share_file
+trap cleanup SIGINT SIGTERM
+
+log_info "Checking required env variables"
+check_mongos_env_vars
+
+log_info "Setting up config file"
+if [[ ! -s "$MONGODB_CONFIG_PATH" ]]; then
+	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template" > "$MONGODB_CONFIG_PATH"
+fi
+
+log_info "Settings up keys"
+setup_keyfile
+
+$MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH --configdb "${CONFIG_REPLSET_NAME}/${CONFIG_REPLSET_SERVERS}" &
+
+# [TODO] Capture exit code and print error if initialization failed.
+configure_mongos
+
+wait_for_mongo_up
+#Make sure environment variables don't propagate passed initialization
+unset_env_vars
+tail_mongodb_log
+wait
