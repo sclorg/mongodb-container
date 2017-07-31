@@ -34,7 +34,7 @@ Choose either the CentOS7 or RHEL7 based image:
 	```
 	$ git clone https://github.com/openshift/mongodb.git
 	$ cd mongodb
-	$ make build TARGET=rhel7 VERSION=3.2
+	$ make build TARGET=rhel7 VERSIONS=3.2
 	```
 
 *  **CentOS7 based image**
@@ -50,10 +50,10 @@ Choose either the CentOS7 or RHEL7 based image:
 	```
 	$ git clone https://github.com/openshift/mongodb.git
 	$ cd mongodb
-	$ make build TARGET=centos7 VERSION=3.2
+	$ make build TARGET=centos7 VERSIONS=3.2
 	```
 
-**Notice: By omitting the `VERSION` parameter, the build/test action will be
+**Notice: By omitting the `VERSIONS` parameter, the build/test action will be
 performed on all provided versions of MongoDB.**
 
 
@@ -84,15 +84,15 @@ Users can choose between testing MongoDB based on a RHEL or CentOS image.
 
     ```
     $ cd mongodb
-    $ make test TARGET=rhel7 VERSION=3.2
+    $ make test TARGET=rhel7 VERSIONS=3.2
     ```
 
 *  **CentOS based image**
 
     ```
     $ cd mongodb
-    $ make test TARGET=centos7 VERSION=3.2
+    $ make test TARGET=centos7 VERSIONS=3.2
     ```
 
-**Notice: By omitting the `VERSION` parameter, the build/test action will be
+**Notice: By omitting the `VERSIONS` parameter, the build/test action will be
 performed on all provided versions of MongoDB.**
