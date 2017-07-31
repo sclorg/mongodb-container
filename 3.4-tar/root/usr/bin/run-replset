@@ -34,7 +34,11 @@ log_info "Settings up keys"
 setup_keyfile
 
 log_info "Starting mongo daemon (replica set mode)"
-$MONGOD --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH --replSet "${MONGODB_REPLICA_NAME:-}" &
+if [ "${SHARD_ENABLED}" == "true" ]; then
+	log_info "Shard mode enabled"
+	SHARD_ARG="--shardsvr"
+fi
+$MONGOD --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH "${SHARD_ARG:-}" --replSet "${MONGODB_REPLICA_NAME:-}" &
 
 # [TODO] Capture exit code and print error if initialization failed.
 configure_replicaset
