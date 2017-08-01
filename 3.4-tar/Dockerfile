@@ -78,7 +78,7 @@ COPY root /
 # Create files and directory locations
 RUN touch /etc/mongod.conf \
 && mkdir -p /var/lib/mongodb/data /var/lib/mongodb/log /var/lib/mongodb/run   \
-&& /usr/libexec/fix-permissions $CONTAINER_SCRIPTS_PATH/mongodb.conf.template \
+&& /usr/libexec/fix-permissions $CONTAINER_SCRIPTS_PATH/template              \
                                 /etc/mongod.conf                              \
                                 /var/lib/mongodb                              \
                                 /var/lib/mongodb/data                         \

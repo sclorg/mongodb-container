@@ -1,0 +1,18 @@
+# mongod.conf
+
+# For documentation of all options, see:
+# http://docs.mongodb.org/manual/reference/configuration-options/
+
+# systemLog Options - How to do logging
+systemLog:
+  destination: file
+  logAppend: true
+  quiet: ${MONGODB_QUIET} # Runs MongoDB in a quiet mode that attempts to limit the amount of output. Default: true
+  path: ${MONGODB_LOG_PATH}/mongod.log
+
+# How the process runs
+processManagement:
+  pidFilePath: ${MONGODB_PID_PATH}/mongodb.pid
+
+net:
+  port: 27017

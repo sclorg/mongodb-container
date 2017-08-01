@@ -23,11 +23,11 @@ log_info "Checking data directory"
 check_data_dir
 
 log_info "Setting up storage cache"
-setup_wiredtiger_cache "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template"
+setup_wiredtiger_cache "${CONTAINER_SCRIPTS_PATH:-}/template/mongod.conf.template"
 
 log_info "Setting up config file"
 if [[ ! -s "$MONGODB_CONFIG_PATH" ]]; then
-	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/mongodb.conf.template" > "$MONGODB_CONFIG_PATH"
+	envsubst < "${CONTAINER_SCRIPTS_PATH:-}/template/mongod.conf.template" > "$MONGODB_CONFIG_PATH"
 fi
 
 log_info "Settings up keys"
