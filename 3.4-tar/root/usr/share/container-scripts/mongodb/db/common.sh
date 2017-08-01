@@ -226,6 +226,17 @@ readonly -f mongo_reset_user
 # Synchronization
 #----------------------------------------------------
 
+# @public returns 0 if a a given mongo host is up, 1 otherwise
+# $1 is host, or localhost if not specified
+function mongo_is_up() {
+  local host=${1:-localhost}
+  local comm="db.version();"
+  $MONGO "${host}" --eval "${comm}" --quiet &> /dev/null
+  return $?
+}
+readonly -f mongo_is_up
+
+
 # @public Waits until the mongo daemon connection is up.
 #
 # @param  $@ host where to connect
@@ -260,8 +271,8 @@ function _wait_for_mongo() {
   for i in $(seq $MAX_ATTEMPTS); do
     log_info "Waiting for ${host} connection"
 
-    if ([[ ${hold} -eq 1 ]] && $MONGO "${host}" --eval "${comm}" --quiet &>/dev/null) || \
-       ([[ ${hold} -eq 0 ]] && ! $MONGO "${host}" --eval "${comm}" --quiet &>/dev/null); then
+    if ([[ ${hold} -eq 1 ]] && mongo_is_up "${host}") || \
+       ([[ ${hold} -eq 0 ]] && ! mongo_is_up "${host}"); then
       log_pass "Connection is ${stat}"
       return 0
     fi

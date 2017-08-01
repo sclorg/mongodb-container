@@ -19,7 +19,7 @@ source ${CONTAINER_SCRIPTS_PATH:-}/environment
 source ${CONTAINER_SCRIPTS_PATH:-}/generate_container_user
 
 # shellcheck source=/dev/null
-source ${CONTAINER_SCRIPTS_PATH:-}/mongos/init-mongos
+source ${CONTAINER_SCRIPTS_PATH:-}/db/mongos/init-mongos
 
 unset share_files share_file
 trap cleanup SIGINT SIGTERM
@@ -35,7 +35,7 @@ fi
 log_info "Settings up keys"
 setup_keyfile
 
-$MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH --configdb "${CONFIG_REPLSET_NAME}/${CONFIG_REPLSET_SERVERS}" &
+$MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH --configdb "${CONFIG_REPLSET_NAME}/${CONFIG_REPLSET_SERVER}" &
 
 # [TODO] Capture exit code and print error if initialization failed.
 configure_mongos

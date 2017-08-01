@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source ${CONTAINER_SCRIPTS_PATH:-}/environment
+source ${CONTAINER_SCRIPTS_PATH:-}/db/common.sh
+
+exit $(mongo_is_up) && stat /tmp/initialized

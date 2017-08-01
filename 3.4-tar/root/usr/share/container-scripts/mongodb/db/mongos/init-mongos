@@ -12,10 +12,10 @@ function check_mongos_env_vars() {
     [[ -v CONFIG_REPLSET_NAME && -v CONFIG_REPLSET_SERVER ]] || usage "CONFIG_REPLSET_NAME and CONFIG_REPLSET_SERVER have to be set"
     [[ -v REPLSET_NAMES && -v REPLSET_SERVERS ]] || usage "REPLSET_NAMES and REPLSET_SERVERS have to be set"
 }
-readonly -f check_repl_env_vars
+readonly -f check_mongos_env_vars
 
 
 function configure_mongos() {
-
+    return 0
 }
 readonly -f configure_mongos
