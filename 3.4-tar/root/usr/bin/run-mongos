@@ -2,6 +2,7 @@
 
 #
 # Required environment variables to be set:
+# MONGODB_ADMIN_PASSWORD - password for the admin user
 # CONFIG_REPLSET_NAME - name of the config server replica set
 # CONFIG_REPLSET_SERVER - At least one server from the CONFIG_REPLSET_NAME group
 # REPLSET_NAMES - comma delimited names of each shard's replica set name
@@ -37,10 +38,11 @@ setup_keyfile
 
 $MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH --configdb "${CONFIG_REPLSET_NAME}/${CONFIG_REPLSET_SERVER}" &
 
+wait_for_mongo_up
+
 # [TODO] Capture exit code and print error if initialization failed.
 configure_mongos
 
-wait_for_mongo_up
 #Make sure environment variables don't propagate passed initialization
 unset_env_vars
 tail_mongodb_log

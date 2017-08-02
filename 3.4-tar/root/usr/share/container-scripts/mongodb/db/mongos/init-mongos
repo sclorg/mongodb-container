@@ -16,6 +16,20 @@ readonly -f check_mongos_env_vars
 
 
 function configure_mongos() {
-    return 0
+    local rs_names=$( echo $REPLSET_NAMES | sed 's/ /,/g' )
+    local rs_servers=$( echo $REPLSET_SERVERS | sed 's/ /,/g' )
+    IFS=',' rs_names_array=( $rs_names )
+    IFS=',' rs_servers_array=( $rs_servers )
+    local rs_names_length=${#rs_names_array[@]}
+    local rs_servers_length=${#rs_servers_array[@]}
+    if [[ rs_names_length -ne rs_servers_length ]]; then
+      usage "Number of ReplicaSet names provided does not match the number of ReplicaSet servers provided"
+    fi
+
+    for (( i=0; i<$rs_names_length; i++ )); do
+      log_info "Adding shard entry ${rs_names_array[$i]}/${rs_servers_array[$i]}"
+      $MONGO admin -u "${MONGODB_ADMIN_USER}" -p "${MONGODB_ADMIN_PASSWORD}" --eval "sh.addShard('${rs_names_array[$i]}/${rs_servers_array[$i]}')" --quiet
+    done
+    >/tmp/initialized
 }
 readonly -f configure_mongos
