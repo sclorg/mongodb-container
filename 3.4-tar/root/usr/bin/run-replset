@@ -33,12 +33,23 @@ fi
 log_info "Settings up keys"
 setup_keyfile
 
+if [[ "${ENABLE_TLS:-}" == "true" ]]; then
+	log_info "TLS enabled"
+	if [ ! -n "${SSL_CA_FILE:-}" ]; then
+		log_info "A certificate authority (SSL_CA_FILE) was not set. Assuming self-signed"
+	else
+		ca_opts="--sslCAFile ${SSL_CA_FILE}"
+	fi
+	setup_certificate
+	TLS="--sslMode preferSSL --sslPEMKeyFile ${MONGO_TLS_CERTIFICATE} ${ca_opts:-} ${ADDITIONAL_SSL_OPTS:-}"
+fi
+
 log_info "Starting mongo daemon (replica set mode)"
-if [ "${SHARD_ENABLED}" == "true" ]; then
+if [ "${SHARD_ENABLED:-}" == "true" ]; then
 	log_info "Shard mode enabled"
 	SHARD_ARG="--shardsvr"
 fi
-$MONGOD --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH "${SHARD_ARG:-}" --replSet "${MONGODB_REPLICA_NAME:-}" &
+$MONGOD --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH ${TLS:-} ${SHARD_ARG:-} --replSet ${MONGODB_REPLICA_NAME:-} &
 
 # [TODO] Capture exit code and print error if initialization failed.
 configure_replicaset

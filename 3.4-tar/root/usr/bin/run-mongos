@@ -36,7 +36,18 @@ fi
 log_info "Settings up keys"
 setup_keyfile
 
-$MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH --configdb "${CONFIG_REPLSET_NAME}/${CONFIG_REPLSET_SERVER}" &
+if [[ "${ENABLE_TLS:-}" == "true" ]]; then
+	log_info "TLS enabled"
+	if [ ! -n "${SSL_CA_FILE:-}" ]; then
+		log_info "A certificate authority (SSL_CA_FILE) was not set. Assuming self-signed"
+	else
+		ca_opts="--sslCAFile ${SSL_CA_FILE}"
+	fi
+	setup_certificate
+	TLS="--sslMode preferSSL --sslPEMKeyFile ${MONGO_TLS_CERTIFICATE} ${ca_opts:-} ${ADDITIONAL_SSL_OPTS:-}"
+fi
+
+$MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH ${TLS:-} --configdb "${CONFIG_REPLSET_NAME}/${CONFIG_REPLSET_SERVER}" &
 
 wait_for_mongo_up
 

@@ -100,6 +100,31 @@ function setup_keyfile() {
 }
 readonly -f setup_keyfile
 
+# @public creates a PEM for use by mongodb
+function setup_certificate() {
+  log_info "Checking certificate.."
+  if [ ! -f ${MONGO_TLS_CERTIFICATE} ]; then
+    local hostname=$(hostname)
+    local fqdn=$(hostfqdn)
+    log_info "No certificate found. Generating one for ${fqdn}.."
+    log_info "Generating OpenSSL configuration"
+    export SAN=${fqdn}
+    envsubst < "${CONTAINER_SCRIPTS_PATH:-}/template/openssl.cnf.template" > openssl.cnf
+    openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout mongo.key -out mongo.crt \
+    -subj "/C=US/ST=NC/L=Raleigh/O=Red Hat/CN=${hostname}" \
+    -reqexts SAN -extensions SAN \
+    -config openssl.cnf > /dev/null
+    openssl x509 -in mongo.crt -signkey mongo.key -x509toreq -out mongo.csr
+    # TODO: Have option to submit CSR to CA. For now self-sign
+    mkdir -p ${MONGO_TLS_CERTIFICATE_FOLDER}
+    cat mongo.key mongo.crt > ${MONGO_TLS_CERTIFICATE}
+    log_info "Success"
+  else
+    log_info "Certificate already generated, and signed"
+  fi
+}
+readonly -f setup_certificate
+
 #----------------------------------------------------
 # Role-Based Access Control (RBAC)
 #----------------------------------------------------

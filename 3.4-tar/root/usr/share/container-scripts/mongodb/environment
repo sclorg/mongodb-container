@@ -81,3 +81,7 @@ export MONGODB_ADMIN_USER=${MONGODB_ADMIN_USER:-admin}
 # MONGODB_QUIET is a configuration parameter that runs the MongoDB daemon in a
 # quiet mode that attempts to limit the amount of outputted system logging
 export MONGODB_QUIET=${MONGODB_QUIET:-true}
+
+#Certificate for use in encrypting mongo communications
+export MONGO_TLS_CERTIFICATE_FOLDER="/var/lib/mongodb/certs"
+export MONGO_TLS_CERTIFICATE="${MONGO_TLS_CERTIFICATE_FOLDER}/mongodb.pem"
