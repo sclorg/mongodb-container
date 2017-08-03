@@ -298,7 +298,7 @@ function cleanup() {
   # fi
 
   log_info "Shutting down $(hostfqdn)"
-  pkill -INT $MONGOD || :
+  pkill -INT $MONGOD && pkill -INT $MONGOS || :
   wait_for_mongo_down "localhost"
   exit 0
 }
