@@ -1,4 +1,4 @@
-FROM centos/s2i-base-centos7
+FROM centos/s2i-core-centos7
 
 ENV SUMMARY="MongoDB NoSQL database server" \
     DESCRIPTION="MongoDB (from humongous) is a free and open-source \
