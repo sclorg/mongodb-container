@@ -9,18 +9,31 @@ Environment variables
 The image recognizes the following default values that you can set during by
 passing `-e VAR=VALUE` to the Docker `run` command.
 
-|    Name                   |    Description                   |    Value |
-| :------------------------ | ---------------------------------| ---------|
-|  `MONGODB_ADMIN_USER`     | Username for 'userAdmin' account | admin    |
-|  `MONGODB_ADMIN_PASSWORD` | Password for 'userAdmin' account | -        |
-|  `MONGODB_USER`           | Username for 'readWrite' account | -        |
-|  `MONGODB_PASSWORD`       | Password for 'readWrite' account | -        |
-|  `MONGODB_DATABASE`       | Database for 'readWrite' account | -        |
-|  `MONGODB_QUIET`          | Suppress system log output       | true     |
+|    Name                    |    Description                   |    Value |
+| :------------------------  | ---------------------------------| ---------|
+|  `MONGODB_ADMIN_USER`      | Username for 'userAdmin' account | admin    |
+|  `MONGODB_ADMIN_PASSWORD`  | Password for 'userAdmin' account | -        |
+|  `MONGODB_USER`            | Username for 'readWrite' account | -        |
+|  `MONGODB_PASSWORD`        | Password for 'readWrite' account | -        |
+|  `MONGODB_DATABASE`        | Database for 'readWrite' account | -        |
+|  `MONGODB_QUIET`           | Suppress system log output       | true     |
+|  `ADDITIONAL_STARTUP_OPTS` | Additional daemon options        |          |
 |    Replica Set <td colspan="2"/>
-|  `MONGODB_KEYFILE_VALUE`  | Specific replica set secret      | -        |
-|  `MONGODB_REPLICA_NAME`   | Specific replica set name        | -        |
-|  `MONGODB_SERVICE_NAME`   | Specific replica set service     | mongodb  |
+|  `MONGODB_KEYFILE_VALUE`   | Specific replica set secret      | -        |
+|  `MONGODB_REPLICA_NAME`    | Specific replica set name        | -        |
+|  `MONGODB_SERVICE_NAME`    | Specific replica set service     | mongodb  |
+|    SSL Support <td colspan="2"/>
+|   `ENABLE_TLS`             | Turn on TLS encryption           | false    |
+|   `SSL_CA_PATH`            | Certificate authority .ca path   |          |
+|   `ADDITIONAL_SSL_OPTS`    | Any additional SSL options       |          |
+|    Replica Set Support <td colspan="2"/>
+|   `MONGODB_KEYFILE_VALUE`  | Keyfile content for replica set authentication | |
+|   `MONGODB_REPLICA_NAME`   | Name of the replica set                        | |
+|    Shard Router Support <td colspan="2"/>
+|    `CONFIG_REPLSET_NAME`   | Replica Set name of the config server  | |
+|   `CONFIG_REPLSET_SERVER`  | A single member URI of the config server replica set | |
+|   `REPLSET_NAMES`          | Comma delimited names of replica sets apart of shard cluster | |
+|   `REPLSET_SERVERS`        | Comma delimited members of each replica set in shard cluster. One from each replica set, in order | |
 
 Usage
 ---------------------------------
@@ -50,6 +63,24 @@ instance will be started.
 **Notice: When mounting data locally, ensure that the mount point has the right
 permissions by checking that the owner/group matches the user private group
 (UPG) inside the container.**
+
+### Docker entry points
+
+|    Name                   |    Description                   |
+| :------------------------ | ---------------------------------|
+| `run-standalone`          | Run a standalone, non-replicated instance |
+| `run-replset`             | Run a replica set                |
+| `run-configsvr`           | Run a configuration server       |
+| `run-mongos`              | Run a shard router               |
+
+### OpenShift readiness check
+
+"mongo-is-ready" script is available on the PATH for use to determine that a given server is up, initialized, and ready to receive requests.
+
+### Available OpenShift example templates
+
+https://github.com/jbornemann/mongodb-on-os
+
 
 ### Custom configuration
 

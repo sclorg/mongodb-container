@@ -45,7 +45,7 @@ function mongo_cmd() {
 }
 
 function mongo_admin_cmd() {
-    docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
+    docker run --rm $IMAGE_NAME $MONGOADMIN --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
 }
 
 # Make sure the invocation of docker run fails.

@@ -10,7 +10,19 @@ readonly PYTHON=/usr/bin/python
 # MONGO is the full path of the interactive JavaScript shell interface to
 # MongoDB, explicitly set to guard against incautious use of shebang or
 # interpreter/program invokation.
-readonly MONGO=/usr/bin/mongo
+function _mongo() {
+  local base="/usr/bin/mongo ${1:-}"
+  if [[ "${ENABLE_TLS:-}" == "true" ]]; then
+    	if [ ! -n "${SSL_CA_FILE:-}" ]; then
+        ext="--ssl --sslAllowInvalidCertificates"
+      else
+        ext="--ssl --sslCAFile ${SSL_CA_FILE}"
+      fi
+  fi
+  printf "${base} ${ext:-}"
+}
+readonly MONGO=$(_mongo)
+readonly MONGOADMIN=$(_mongo admin)
 
 # MONGOD is the full path of the primary daemon process for the MongoDB system,
 # explicitly set to guard against incautious use of shebang or
@@ -28,6 +40,9 @@ readonly MONGOS=/usr/bin/mongos
 
 # MONGODB_DATADIR is the location of the database files live for mongo runtime
 export MONGODB_DATADIR=$HOME/data
+
+# MONGODB_DATADIR is the location of certs used for SSL communication within a mongo cluster
+export MONGODB_CERTDIR=$HOME/data/certs
 
 # MONGODB_LOG_PATH is the location of mongo log path for mongo runtime
 export MONGODB_LOG_PATH=$HOME/log
@@ -47,6 +62,12 @@ readonly MONGODB_CONFIG_PATH=/etc/mongod.conf
 # that MongoDB instances use to authenticate to each other in a sharded cluster
 # or replica set
 readonly MONGODB_KEYFILE_PATH=$HOME/keyfile
+
+# MONGO_TLS_CERTIFICATE is the certificate used for SSL communication
+readonly MONGO_TLS_CERTIFICATE="${MONGODB_CERTDIR}/mongodb.pem"
+
+# MONGO_TLS_CSR is the generated CSR for optionally signing the MONGO_TLS_CERTIFICATE
+readonly MONGO_TLS_CSR="${MONGODB_CERTDIR}/mongodb.csr"
 
 #----------------------------------------------------
 # Constants
@@ -81,7 +102,3 @@ export MONGODB_ADMIN_USER=${MONGODB_ADMIN_USER:-admin}
 # MONGODB_QUIET is a configuration parameter that runs the MongoDB daemon in a
 # quiet mode that attempts to limit the amount of outputted system logging
 export MONGODB_QUIET=${MONGODB_QUIET:-true}
-
-#Certificate for use in encrypting mongo communications
-export MONGO_TLS_CERTIFICATE_FOLDER="/var/lib/mongodb/certs"
-export MONGO_TLS_CERTIFICATE="${MONGO_TLS_CERTIFICATE_FOLDER}/mongodb.pem"

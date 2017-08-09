@@ -41,11 +41,11 @@ if [[ "${ENABLE_TLS:-}" == "true" ]]; then
 		ca_opts="--sslCAFile ${SSL_CA_FILE}"
 	fi
 	setup_certificate
-	TLS="--sslMode preferSSL --sslPEMKeyFile ${MONGO_TLS_CERTIFICATE} ${ca_opts:-} ${ADDITIONAL_SSL_OPTS:-}"
+	TLS="--sslMode requireSSL --sslPEMKeyFile ${MONGO_TLS_CERTIFICATE} ${ca_opts:-} ${ADDITIONAL_SSL_OPTS:-}"
 fi
 
 log_info "Starting mongo configuration server"
-$MONGOD --config "$MONGODB_CONFIG_PATH" --configsvr ${TLS:-} --keyFile $MONGODB_KEYFILE_PATH --replSet ${MONGODB_REPLICA_NAME:-} &
+$MONGOD --config "$MONGODB_CONFIG_PATH" --configsvr ${TLS:-} --keyFile $MONGODB_KEYFILE_PATH --replSet ${MONGODB_REPLICA_NAME:-} ${ADDITIONAL_STARTUP_OPTS:-} &
 
 # [TODO] Capture exit code and print error if initialization failed.
 configure_configsvr

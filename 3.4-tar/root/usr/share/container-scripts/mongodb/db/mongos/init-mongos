@@ -7,14 +7,16 @@ set -o pipefail
 source ${CONTAINER_SCRIPTS_PATH:-}/db/common.sh
 
 # @public  Checks environmental variables for mongos
-#
 function check_mongos_env_vars() {
+    # For triggering proper usage()
+    SHARD=1
     [[ -v CONFIG_REPLSET_NAME && -v CONFIG_REPLSET_SERVER ]] || usage "CONFIG_REPLSET_NAME and CONFIG_REPLSET_SERVER have to be set"
     [[ -v REPLSET_NAMES && -v REPLSET_SERVERS ]] || usage "REPLSET_NAMES and REPLSET_SERVERS have to be set"
 }
 readonly -f check_mongos_env_vars
 
 
+# @public Adds replica set members to the shard cluster
 function configure_mongos() {
     local rs_names=$( echo $REPLSET_NAMES | sed 's/ /,/g' )
     local rs_servers=$( echo $REPLSET_SERVERS | sed 's/ /,/g' )
@@ -28,7 +30,7 @@ function configure_mongos() {
 
     for (( i=0; i<$rs_names_length; i++ )); do
       log_info "Adding shard entry ${rs_names_array[$i]}/${rs_servers_array[$i]}"
-      $MONGO admin -u "${MONGODB_ADMIN_USER}" -p "${MONGODB_ADMIN_PASSWORD}" --eval "sh.addShard('${rs_names_array[$i]}/${rs_servers_array[$i]}')" --quiet
+      eval "$MONGOADMIN -u ${MONGODB_ADMIN_USER} -p ${MONGODB_ADMIN_PASSWORD} --host $(hostfqdn) --eval \"sh.addShard('${rs_names_array[$i]}/${rs_servers_array[$i]}')\" --quiet"
     done
     >/tmp/initialized
 }

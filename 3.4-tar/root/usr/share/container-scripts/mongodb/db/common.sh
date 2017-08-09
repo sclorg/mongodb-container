@@ -113,14 +113,15 @@ function setup_certificate() {
     openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout mongo.key -out mongo.crt \
     -subj "/C=US/ST=NC/L=Raleigh/O=Red Hat/CN=${hostname}" \
     -reqexts SAN -extensions SAN \
-    -config openssl.cnf > /dev/null
-    openssl x509 -in mongo.crt -signkey mongo.key -x509toreq -out mongo.csr
-    # TODO: Have option to submit CSR to CA. For now self-sign
-    mkdir -p ${MONGO_TLS_CERTIFICATE_FOLDER}
+    -config openssl.cnf &> /dev/null
+    log_info "Generating certificate request"
+    mkdir -p ${MONGODB_CERTDIR}
+    openssl x509 -in mongo.crt -signkey mongo.key -x509toreq -out ${MONGO_TLS_CSR} &> /dev/null
+    log_info "You can find your CSR in ${MONGODB_CERTDIR}"
     cat mongo.key mongo.crt > ${MONGO_TLS_CERTIFICATE}
     log_info "Success"
   else
-    log_info "Certificate already generated, and signed"
+    log_info "Certificate already generated"
   fi
 }
 readonly -f setup_certificate
@@ -133,15 +134,6 @@ readonly -f setup_certificate
 #
 # @value  MONGODB_ADMIN_USER
 # @value  MONGODB_ADMIN_PASSWORD
-# @value  MONGODB_ADMIN_ROLES
-# @param  $1 optional mongo parameters
-# @param  $2 host where to connect (default localhost)
-#
-# 05/2017 Marked function as readonly.
-# 05/2017 'root' provides access to the operations and all the resources of the
-#         readWriteAnyDatabase, dbAdminAnyDatabase, userAdminAnyDatabase,
-#         clusterAdmin roles, restore, and backup roles combined.
-# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
 function mongo_create_admin() {
   local comm="db.getSiblingDB('admin').createUser({
     user: '${MONGODB_ADMIN_USER:-}',
@@ -160,7 +152,8 @@ function mongo_create_admin() {
   fi
 
   log_info "Creating admin user"
-  if ! $MONGO admin ${1:-} --host ${2:-"localhost"} --eval "${comm}"; then
+  #https://docs.mongodb.com/v3.0/core/security-users/#localhost-exception
+  if ! $MONGOADMIN --host localhost --eval "${comm}"; then
     log_fail "Couldn't create admin user"
     exit 1
   fi
@@ -172,7 +165,7 @@ readonly -f mongo_create_admin
 # @value  MONGODB_ADMIN_USER
 # @value  MONGODB_ADMIN_PASSWORD
 # @param  $1 optional mongo parameters
-# @param  $2 host where to connect (default localhost)
+# @param  $2 host where to connect (default to the host's fqdn)
 #
 function mongo_reset_admin() {
   local comm="db.changeUserPassword('${MONGODB_ADMIN_USER:-}', '${MONGODB_ADMIN_PASSWORD:-}')"
@@ -180,7 +173,7 @@ function mongo_reset_admin() {
   if [[ -n "${MONGODB_ADMIN_PASSWORD:-}" ]] && \
      [[ -n "${MONGODB_ADMIN_USER:-}" ]]; then
     log_info "Admin user already exists. Resetting password"
-    if ! $MONGO admin --eval "${comm}"; then
+    if ! $MONGOADMIN --host ${2:-$(hostfqdn)} --eval "${comm}"; then
       log_fail "Couldn't reset admin user password"
       exit 1
     fi
@@ -193,9 +186,6 @@ readonly -f mongo_reset_admin
 # @value  MONGODB_USER
 # @value  MONGDOB_PASSWORD
 # @value  MONGODB_DATABASE
-# @param  $1 optional mongo parameters
-# @param  $2 host where to connect (default localhost)
-#
 function mongo_create_user() {
   local comm="db.getSiblingDB('${MONGODB_DATABASE:-}').createUser({
     user: '${MONGODB_USER:-}',
@@ -219,7 +209,7 @@ function mongo_create_user() {
   fi
 
   log_info "Creating database user"
-  if ! $MONGO admin ${1:-} --host ${2:-"localhost"} --eval "${comm}"; then
+  if ! $MONGOADMIN -u ${MONGODB_ADMIN_USER:-} -p ${MONGODB_ADMIN_PASSWORD:-} --host $(hostfqdn) --eval "${comm}"; then
     log_fail "Couldn't create ${MONGODB_USER:-} user"
     exit 1
   fi
@@ -231,15 +221,12 @@ readonly -f mongo_create_user
 # @value  MONGODB_USER
 # @value  MONGDOB_PASSWORD
 # @value  MONGODB_DATABASE
-# @param  $1 optional mongo parameters
-# @param  $2 host where to connect (default localhost)
-#
 function mongo_reset_user() {
   local comm="db.changeUserPassword('${MONGODB_USER:-}', '${MONGODB_PASSWORD:-}')"
 
   if [[ -n "${MONGODB_USER:-}" && -n "${MONGODB_PASSWORD:-}" && -n "${MONGODB_DATABASE:-}" ]]; then
     log_info "Database user already exists. Resetting password"
-    if ! $MONGO ${MONGODB_DATABASE:-} --eval "${comm}"; then
+    if ! $MONGO ${MONGODB_DATABASE:-} --host $(hostfqdn) --eval "${comm}"; then
       log_fail "Couldn't reset ${MONGODB_USER:-} user password"
       exit 1
     fi
@@ -252,11 +239,11 @@ readonly -f mongo_reset_user
 #----------------------------------------------------
 
 # @public returns 0 if a a given mongo host is up, 1 otherwise
-# $1 is host, or localhost if not specified
+# $1 is host, or this host's FQDN
 function mongo_is_up() {
-  local host=${1:-localhost}
+  local host=${1:-$(hostfqdn)}
   local comm="db.version();"
-  $MONGO "${host}" --eval "${comm}" --quiet &> /dev/null
+  $MONGO --host "${host}" --eval "${comm}" --quiet &> /dev/null
   return $?
 }
 readonly -f mongo_is_up
@@ -283,11 +270,11 @@ readonly -f wait_for_mongo_down
 # @private Helper method that waits until the mongo daemon is up/down.
 #
 # @param  $1 desired connection state (default down)
-# @param  $2 host where to connect (default localhost)
+# @param  $2 host where to connect (default to this host's fqdn)
 #
 function _wait_for_mongo() {
   local hold=${1:-1}
-  local host=${2:-localhost}
+  local host=${2:-$(hostfqdn)}
   local comm="db.version();"
   local stat
 
@@ -324,7 +311,7 @@ function cleanup() {
 
   log_info "Shutting down $(hostfqdn)"
   pkill -INT $MONGOD && pkill -INT $MONGOS || :
-  wait_for_mongo_down "localhost"
+  wait_for_mongo_down
   exit 0
 }
 readonly -f cleanup
@@ -510,6 +497,10 @@ function usage() {
   MONGODB_PASSWORD
   MONGODB_DATABASE
   Optional settings:
+  ENABLE_TLS (default: false)
+  SSL_CA_PATH
+  ADDITIONAL_SSL_OPTS
+  ADDITIONAL_STARTUP_OPTS
   MONGODB_ADMIN_USER (default: admin)
   MONGODB_QUIET (default: true)"
 
@@ -521,6 +512,17 @@ function usage() {
     Optional settings:
     MONGODB_SERVICE_NAME (default: mongodb)"
   fi
+
+  if [[ -v SHARD ]]; then
+    echo "
+    For shard server you must also specify the following environment variables:
+    CONFIG_REPLSET_NAME: e.g (cs0)
+    CONFIG_REPLSET_SERVER: Only one replica (e.g configsvr-0.example.com:27017)
+    REPLSET_NAMES: e.g (rs0)
+    REPLSET_SERVERS: Only one replica server from each set (e.g replica-0.example.com:27017)
+    "
+  fi
+
   echo "
   For more information see /usr/share/container-scripts/mongodb/README.md
   within the container or visit https://github.com/sclorgk/mongodb-container/."

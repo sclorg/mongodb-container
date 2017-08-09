@@ -44,10 +44,10 @@ if [[ "${ENABLE_TLS:-}" == "true" ]]; then
 		ca_opts="--sslCAFile ${SSL_CA_FILE}"
 	fi
 	setup_certificate
-	TLS="--sslMode preferSSL --sslPEMKeyFile ${MONGO_TLS_CERTIFICATE} ${ca_opts:-} ${ADDITIONAL_SSL_OPTS:-}"
+	TLS="--sslMode requireSSL --sslPEMKeyFile ${MONGO_TLS_CERTIFICATE} ${ca_opts:-} ${ADDITIONAL_SSL_OPTS:-}"
 fi
 
-$MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH ${TLS:-} --configdb "${CONFIG_REPLSET_NAME}/${CONFIG_REPLSET_SERVER}" &
+$MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH ${TLS:-} --configdb "${CONFIG_REPLSET_NAME}/${CONFIG_REPLSET_SERVER}" ${ADDITIONAL_STARTUP_OPTS:-} &
 
 wait_for_mongo_up
 
