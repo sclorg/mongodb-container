@@ -24,6 +24,9 @@ function cleanup() {
         echo "Done."
     done
     rmdir $CIDFILE_DIR
+
+    local network_name="mongodb-replset-$$"
+    docker network ls | grep -q ${network_name} && docker network rm ${network_name}
 }
 trap cleanup EXIT SIGINT
 
@@ -38,16 +41,47 @@ function get_container_ip() {
 }
 
 function mongo_cmd() {
-    docker run --rm $IMAGE_NAME mongo "$DB" --host $CONTAINER_IP -u "$USER" -p "$PASS" --eval "${@}"
+    docker run --rm $IMAGE_NAME mongo "$DB" --host $CONTAINER_IP -u "$USER" -p"$PASS" --eval "${@}"
 }
 
 function mongo_admin_cmd() {
-    docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p "$ADMIN_PASS" --eval "${@}"
+    docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p"$ADMIN_PASS" --eval "${@}"
 }
 
-function mongo_cmd_local() {
-    local name="$1" ; shift
-    docker exec $(get_cid $name) bash -c "mongo $@"
+# Make sure the invocation of docker run fails.
+function assert_container_creation_fails() {
+
+  # Time the docker run command. It should fail. If it doesn't fail,
+  # container will keep running so we kill it with SIGKILL to make sure
+  # timeout returns a non-zero value.
+  set +e
+  timeout -s 9 --preserve-status 10s docker run --rm "$@" $IMAGE_NAME
+  ret=$?
+  set -e
+
+  # Timeout will exit with a high number.
+  if [ $ret -gt 30 ]; then
+    return 1
+  fi
+}
+
+function run_container_creation_tests() {
+  echo "  Testing wrong user variables usage"
+
+  assert_container_creation_fails -e MONGODB_USER=user -e MONGODB_PASSWORD=pass
+  assert_container_creation_fails -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass
+  assert_container_creation_fails -e MONGODB_DATABASE=db -e MONGODB_USER=user
+  assert_container_creation_fails -e MONGODB_USER=user -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass
+
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_USER=user
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_PASSWORD=pass
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_DATABASE=db
+
+  echo "  Success!"
+  echo "  Testing good user variables usage"
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass || [ $? -eq 1 ]
+  assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_USER=user -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass || [ $? -eq 1 ]
+  echo "  Success!"
 }
 
 function test_connection() {
@@ -117,10 +151,10 @@ function test_mongo() {
 
 function test_config_option() {
     local env_var=$1 ; shift
-    local setting=$1 ; shift
-    local value=$1 ; shift
+    local env_val=$1 ; shift
+    local config_part=$1 ; shift
 
-    local name="configuration_${setting}"
+    local name="configuration_${env_var}"
 
     # If $value is a string, it needs to be in simple quotes ''.
     DOCKER_ARGS="
@@ -128,7 +162,7 @@ function test_config_option() {
 -e MONGODB_USER=user
 -e MONGODB_PASSWORD=password
 -e MONGODB_ADMIN_PASSWORD=adminPassword
--e $env_var=${value//\'/}
+-e $env_var=${env_val}
 "
     create_container ${name} ${DOCKER_ARGS}
 
@@ -140,16 +174,14 @@ function test_config_option() {
     test_connection ${name}
 
     # If nothing is found, grep returns 1 and test fails.
-    docker exec $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "$setting = $value"
+    docker exec $(get_cid $name) bash -c "cat /etc/mongod.conf" | grep -q "${config_part}"
 
     docker stop $(get_cid ${name})
 }
 
 function run_configuration_tests() {
     echo "  Testing image configuration settings"
-    test_config_option MONGODB_NOPREALLOC noprealloc true
-    test_config_option MONGODB_SMALLFILES smallfiles true
-    test_config_option MONGODB_QUIET quiet true
+    test_config_option MONGODB_QUIET true "quiet: true"
     echo "  Success!"
 }
 
@@ -208,7 +240,6 @@ function run_tests() {
     echo "  Testing scl usage"
     test_scl_usage $name 'mongo --version' '3.2'
     test_mongo $name
-    mongo_cmd_local $name <<< ""
 }
 
 function run_change_password_test() {
@@ -280,9 +311,179 @@ function run_change_password_test() {
     echo "  Success!"
 }
 
+function run_mount_config_test() {
+    local name="mount_config"
+    echo "  Testing config file mount"
+    local database='db'
+    local user='user'
+    local password='password'
+    local admin_password='adminPassword'
+
+    local volume_dir
+    volume_dir=`mktemp -d --tmpdir mongodb-testdata.XXXXX`
+    chmod a+rwx ${volume_dir}
+    config_file=$volume_dir/mongod.conf
+    echo "dbpath=/var/lib/mongodb/dbpath
+unixSocketPrefix = /var/lib/mongodb" > $config_file
+    chmod a+r ${config_file}
+
+    DOCKER_ARGS="
+-e MONGODB_DATABASE=${database}
+-e MONGODB_USER=${user}
+-e MONGODB_PASSWORD=${password}
+-e MONGODB_ADMIN_PASSWORD=${admin_password}
+-v ${config_file}:/etc/mongod.conf:Z
+-v ${volume_dir}:/var/lib/mongodb/dbpath:Z
+"
+    create_container ${name} ${DOCKER_ARGS}
+
+    # need to set these because `mongo_cmd` relies on global variables
+    USER=${user}
+    PASS=${password}
+    DB=${database}
+
+    # need this to wait for the container to start up
+    CONTAINER_IP=$(get_container_ip ${name})
+    echo "  Testing mongod is running"
+    test_connection ${name}
+    echo "  Testing config file works"
+    docker exec $(get_cid ${name}) bash -c "test -S /var/lib/mongodb/mongodb-27017.sock"
+
+    # need to remove volume_dir with sudo because of permissions of files written
+    # by the Docker container
+    sudo rm -rf ${volume_dir}
+
+    echo "  Success!"
+}
+
+run_doc_test() {
+  local tmpdir=$(mktemp -d)
+  local f
+  echo "  Testing documentation in the container image"
+  # Extract the help files from the container
+  for f in /usr/share/container-scripts/mongodb/README.md help.1 ; do
+    docker run --rm ${IMAGE_NAME} /bin/bash -c "cat /${f}" >${tmpdir}/$(basename ${f})
+    # Check whether the files include some important information
+    for term in MONGODB_ADMIN_PASSWORD volume ; do
+      if ! cat ${tmpdir}/$(basename ${f}) | grep -q -e "${term}" ; then
+        echo "ERROR: File /${f} does not include '${term}'."
+        return 1
+      fi
+    done
+  done
+  # Check whether the files use the correct format
+  if ! file ${tmpdir}/help.1 | grep -q roff ; then
+    echo "ERROR: /help.1 is not in troff or groff format"
+    return 1
+  fi
+  echo "  Success!"
+  echo
+}
+
+run_WT_cache_test() {
+    local name="WT_cache_size"
+    echo "  Testing setting of WT cache size"
+    local database='db'
+    local user='user'
+    local password='password'
+    local admin_password='adminPassword'
+
+    DOCKER_ARGS="
+-e MONGODB_DATABASE=${database}
+-e MONGODB_USER=${user}
+-e MONGODB_PASSWORD=${password}
+-e MONGODB_ADMIN_PASSWORD=${admin_password}
+"
+    # need to set these because `mongo_cmd` relies on global variables
+    USER=${user}
+    PASS=${password}
+    DB=${database}
+    ADMIN_PASS=${admin_password}
+
+    # minimum is 1G
+    create_container "${name}_200M" ${DOCKER_ARGS} -m 200M
+    test_connection ${name}_200M
+    mongo_admin_cmd "if (db.serverStatus()['wiredTiger']['cache']['maximum bytes configured'] == Math.pow(2,30)){quit(0)}; quit(1)"
+    # if greater that 1G, use 60% of (RAM - 1G)
+    create_container "${name}_6G" ${DOCKER_ARGS} -m 6G
+    test_connection ${name}_6G
+    mongo_admin_cmd "if (db.serverStatus()['wiredTiger']['cache']['maximum bytes configured'] == 3*Math.pow(2,30)){quit(0)}; quit(1)"
+
+    echo "  Success!"
+    echo
+}
+
+function run_local_replication_test() {
+    function print_logs() {
+      for file in $CIDFILE_DIR/replset*; do
+        echo "INFO: printing logs for CID file ${file}"
+        docker logs $(cat ${file})
+      done
+    }
+    trap print_logs ERR
+
+    echo "Testing replication on local docker"
+    #Initializing replicaset
+
+    cat > variables <<EOF
+    MONGODB_DATABASE=db
+    MONGODB_USER=user
+    MONGODB_PASSWORD=password
+    MONGODB_ADMIN_PASSWORD=adminPassword
+    MONGODB_REPLICA_NAME=rs0
+    MONGODB_KEYFILE_VALUE=xxxxxxxxxxxx
+    MONGODB_SMALLFILES=true
+    MONGODB_SERVICE_NAME=mongodb
+EOF
+    source variables
+
+    local network_name="mongodb-replset-$$"
+    docker network create ${network_name}
+
+    docker run -d --cidfile $CIDFILE_DIR/replset0 --name=replset-0 --hostname=replset-0 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+    docker exec replset-0 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
+    docker run -d --cidfile $CIDFILE_DIR/replset1 --name=replset-1 --hostname=replset-1 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+    docker exec replset-1 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
+    docker run -d --cidfile $CIDFILE_DIR/replset2 --name=replset-2 --hostname=replset-2 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+    docker exec replset-2 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
+
+    local host="$(docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c '. /usr/share/container-scripts/mongodb/common.sh && echo $(replset_addr)')"
+
+    # Storing document into replset and wait replication to finish ...
+    docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c "set -e
+      . /usr/share/container-scripts/mongodb/common.sh
+      . /usr/share/container-scripts/mongodb/test-functions.sh
+      wait_for_mongo_up '${host}'
+      wait_replicaset_members '${host}' 3
+      insert_and_wait_for_replication '${host}' '{a:5, b:10}'"
+
+    # Adding new container
+    docker run -d --cidfile $CIDFILE_DIR/replset3 --name=replset-3 --hostname=replset-3 --network ${network_name} --network-alias mongodb --env-file=variables $IMAGE_NAME run-mongod-replication
+    docker exec replset-3 bash -c "while ! [ -f /tmp/initialized ]; do sleep 1; done"
+
+    # Storing document into replset and wait replication to finish ...
+    docker run --rm --env-file=variables --network ${network_name} ${IMAGE_NAME} bash -c "set -e
+      . /usr/share/container-scripts/mongodb/common.sh
+      . /usr/share/container-scripts/mongodb/test-functions.sh
+      wait_for_mongo_up '${host}'
+      wait_replicaset_members '${host}' 4
+      insert_and_wait_for_replication '${host}' '{a:5, b:10}'"
+
+    rm variables
+    trap ERR
+
+    echo "  Success!"
+}
+
+
 # Tests.
+run_container_creation_tests
 run_configuration_tests
 USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin
 # Test with random uid in container
 CONTAINER_ARGS="-u 12345" USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" run_tests admin_altuid
 run_change_password_test
+run_mount_config_test
+run_doc_test
+run_WT_cache_test
+run_local_replication_test

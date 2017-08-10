@@ -1,0 +1,49 @@
+FROM registry.fedoraproject.org/fedora:25
+LABEL MAINTAINER SoftwareCollections.org <sclorg@redhat.com>
+
+ENV NAME=mongodb \
+    VERSION=0 \
+    RELEASE=1 \
+    ARCH=x86_64
+
+LABEL com.redhat.component = "$NAME" \
+      name="$FGC/$NAME" \
+      version="$VERSION" \
+      release="$RELEASE.$DISTTAG" \
+      architecture="$ARCH" \
+      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass $FGC/$NAME" \
+      help="help.1"
+
+LABEL io.k8s.description="MongoDB is a scalable, high-performance, open source NoSQL database." \
+      io.k8s.display-name="MongoDB 3.2" \
+      io.openshift.expose-services="27017:mongodb" \
+      io.openshift.tags="database,mongodb"
+
+ENV MONGODB_VERSION=3.2 \
+    # Set paths to avoid hard-coding them in scripts.
+    HOME=/var/lib/mongodb \
+    CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb
+
+EXPOSE 27017
+
+ENTRYPOINT ["container-entrypoint"]
+CMD ["run-mongod"]
+
+RUN INSTALL_PKGS="bind-utils gettext iproute rsync tar findutils python mongodb mongodb-server mongo-tools" && \
+    dnf install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
+    rpm -V $INSTALL_PKGS && \
+    dnf clean all
+
+ADD root /
+
+
+# Container setup
+RUN : > /etc/mongod.conf && \
+    mkdir -p ${HOME}/data && \
+    # Set owner 'mongodb:0' and 'g+rw(x)' permission - to avoid problems running container with arbitrary UID
+    /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template \
+    ${HOME}
+
+VOLUME ["/var/lib/mongodb/data"]
+
+USER 184

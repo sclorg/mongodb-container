@@ -1,0 +1,77 @@
+#!/bin/bash
+#
+# Run mongod in a StatefulSet-based replica set. See
+# https://github.com/sclorg/mongodb-container/blob/master/examples/petset/README.md
+# for a description of how this is intended to work.
+#
+# Note:
+# - It does not attempt to remove the host from the replica set configuration
+#   when it is terminating. That is by design, because, in a StatefulSet, when a
+#   pod/container terminates and is restarted by OpenShift, it will always have
+#   the same hostname. Removing hosts from the configuration affects replica set
+#   elections and can impact the replica set stability.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
+source ${CONTAINER_SCRIPTS_PATH}/setup_rhmap.sh
+
+
+# Data directory where MongoDB database files live. The data subdirectory is here
+# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
+# override it.
+export MONGODB_DATADIR=/var/lib/mongodb/data
+
+# Configuration settings.
+export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
+export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
+export MONGODB_QUIET=${MONGODB_QUIET:-true}
+
+export MONGODB_KEYFILE_SOURCE_PATH="/var/run/secrets/mongo/keyfile"
+export MONGODB_KEYFILE_PATH="${HOME}/keyfile"
+
+# Make sure env variables don't propagate to mongod process.
+function unset_env_vars() {
+  unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+  unset MONGODB_FHMBAAS_USER MONGODB_FHMBAAS_PASSWORD MONGODB_FHMBAAS_DATABASE \
+        MONGODB_FHREPORTING_USER MONGODB_FHREPORTING_PASSWORD MONGODB_FHREPORTING_DATABASE
+}
+
+function cleanup() {
+  echo "=> Shutting down MongoDB server ..."
+  pkill -INT mongod || :
+  wait_for_mongo_down
+  exit 0
+}
+
+trap 'cleanup' SIGINT SIGTERM
+
+REPLICATION=1 check_env_vars
+
+setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template
+
+# If user provides own config file use it and do not generate new one
+if [ ! -s "${MONGODB_CONFIG_PATH}" ]; then
+  # Generate config file for MongoDB
+  envsubst < "${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template" > "${MONGODB_CONFIG_PATH}"
+fi
+
+mongo_common_args="-f ${MONGODB_CONFIG_PATH}"
+
+# Attention: setup_keyfile may modify value of mongo_common_args!
+setup_keyfile
+setup_default_datadir
+
+${CONTAINER_SCRIPTS_PATH}/init-replset.sh &
+
+# TODO: capture exit code of `init-petset-replset.sh` and exit with an error if
+# the initialization failed, so that the container will be restarted and the
+# user can gain more visibility that there is a problem in a way other than just
+# inspecting log messages.
+
+# Make sure env variables don't propagate to mongod process.
+unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}" &
+wait

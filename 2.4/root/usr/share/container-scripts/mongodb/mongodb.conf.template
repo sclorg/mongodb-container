@@ -1,7 +1,6 @@
 # mongodb.conf
 
-port = 27017
-pidfilepath = ${MONGODB_PID_FILE}
+port = ${CONTAINER_PORT}
 
 # Set this value to designate a directory for the mongod instance to store its data.
 # Default: /var/lib/mongodb/data
@@ -19,6 +18,9 @@ quiet = ${MONGODB_QUIET}
 
 # Disable the HTTP interface (Defaults to localhost:28017).
 nohttpinterface = true
+
+# Size to use (in MB) for replication op log (default 5% of disk space)
+oplogSize = 64
 
 # If the flag is not enabled, you cannot create new text indexes, and you cannot perform text searches. 
 # Since it is not recommended to have this on in production, the default is "false".

@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+# Run mongod which connect to replSet
+# $1 - "initiate" (optional) -> this mongod will initiate a replSet
+#
+# If this script is terminated it removes mongod from replSet
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
+
+function usage() {
+  echo "You must specify the following environment variables:"
+  echo "  MONGODB_USER"
+  echo "  MONGODB_PASSWORD"
+  echo "  MONGODB_DATABASE"
+  echo "  MONGODB_ADMIN_PASSWORD"
+  echo "  MONGODB_KEYFILE_VALUE"
+  echo "  MONGODB_REPLICA_NAME"
+  echo "Optional variables:"
+  echo "  MONGODB_SERVICE_NAME (default: mongodb)"
+  echo "  MONGODB_INITIAL_REPLICA_COUNT"
+  echo "MongoDB settings:"
+  echo "  MONGODB_NOPREALLOC (default: true)"
+  echo "  MONGODB_SMALLFILES (default: true)"
+  echo "  MONGODB_QUIET (default: true)"
+  exit 1
+}
+
+function cleanup() {
+  if [ "$(mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD} --quiet --eval 'rs.isMaster().ismaster')" == "true" ]; then
+
+    # Wait that some SECONDARY is synced with PRIMARY
+    echo "=> Waiting for syncing SECONDARY ..."
+    replset_wait_sync
+
+    # Some commands will force MongoDB client to re-connect. This is not working
+    # well in combination with '--eval'. In that case the 'mongo' command will fail
+    # with return code 254.
+    echo "=> Giving up the PRIMARY role ..."
+    mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet --eval "rs.stepDown(120);" &>/dev/null || true
+
+    # Wait till the new PRIMARY member is elected
+    echo "=> Waiting for the new PRIMARY to be elected ..."
+    mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --quiet \
+     --eval "var i = ${MAX_ATTEMPTS};
+      while(i > 0) {
+        var members=rs.status().members;
+        for(i=0;i<members.length;i++){
+          if(members[i].stateStr=='PRIMARY' && members[i].name!='$(mongo_addr)'){
+            quit(0)
+          }
+        };
+        sleep(${SLEEP_TIME}*1000)
+      };" &>/dev/null
+    echo "=> A new PRIMARY member was elected, removing from replset ..."
+  fi
+  if [ -n "${MONGODB_REPLICA_NAME-}" ]; then
+    mongo_remove
+  fi
+  echo "=> Shutting down MongoDB server ..."
+  pkill -INT mongod || :
+  wait_for_mongo_down
+  exit 0
+}
+
+trap 'cleanup' SIGINT SIGTERM
+
+# If user provides own config file use it and do not generate new one
+if [ ! -s "${MONGODB_CONFIG_PATH}" ]; then
+  # Generate config file for MongoDB
+  envsubst < "${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template" > "${MONGODB_CONFIG_PATH}"
+fi
+
+# Need to cache the container address for the cleanup
+cache_container_addr
+mongo_common_args="-f $MONGODB_CONFIG_PATH"
+if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD && -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]]; then
+  usage
+fi
+
+# Run the MongoDB in 'replicated' mode
+setup_keyfile
+
+# Initialize the replica set or add member in the background.
+${CONTAINER_SCRIPTS_PATH}/init-replset.sh "${1:-}" "$$" &
+
+# TODO: capture exit code of `init-replset.sh` and exit with an error if the
+# initialization failed, so that the container will be restarted and the user
+# can gain more visibility that there is a problem in a way other than just
+# inspecting log messages.
+
+# Don't pass signals to background processes. Background processes are killed in `cleanup`.
+set -m
+# Run `mongod` in a subshell because MONGODB_ADMIN_PASSWORD should still be
+# defined when the trapped call to `cleanup` references it.
+(
+  # Make sure env variables don't propagate to mongod process.
+  unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+
+  mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}"
+) &
+wait

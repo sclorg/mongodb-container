@@ -7,29 +7,12 @@ set -o pipefail
 source ${CONTAINER_SCRIPTS_PATH}/common.sh
 source ${CONTAINER_SCRIPTS_PATH}/setup_rhmap.sh
 
-# Data directory where MongoDB database files live. The data subdirectory is here
-# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
-# override it.
-export MONGODB_DATADIR=/var/lib/mongodb/data
-
-# Configuration settings.
-export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
-export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
-export MONGODB_QUIET=${MONGODB_QUIET:-true}
-export MONGODB_TEXT_SEARCH_ENABLED=${MONGODB_TEXT_SEARCH_ENABLED:-false}
-
-export MONGODB_KEYFILE_SOURCE_PATH="/var/run/secrets/mongo/keyfile"
-export MONGODB_KEYFILE_PATH="${HOME}/keyfile"
-
 function usage() {
   echo "You must specify the following environment variables:"
   echo "  MONGODB_USER"
   echo "  MONGODB_PASSWORD"
   echo "  MONGODB_DATABASE"
   echo "  MONGODB_ADMIN_PASSWORD"
-  echo "Optional variables:"
-  echo "  MONGODB_REPLICA_NAME"
-  echo "  MONGODB_INITIAL_REPLICA_COUNT"
   echo "MongoDB settings:"
   echo "  MONGODB_NOPREALLOC (default: true)"
   echo "  MONGODB_SMALLFILES (default: true)"
@@ -45,80 +28,46 @@ function unset_env_vars() {
 }
 
 function cleanup() {
-  # NOTE: The `endpoints` function in `common.sh` used to return ephemeral pod
-  # IPs, but now we have it return a fixed list of host names. Since the list of
-  # host names is static, we do not need nor want to add/remove new members to the
-  # replica set configuration as part of a pod lifecycle, therefore we comment out
-  # the code below.
-
-  # if [ -n "${MONGODB_REPLICA_NAME-}" ]; then
-  #   mongo_remove
-  # fi
-
   echo "=> Shutting down MongoDB server ..."
-  if pgrep mongod; then
-    pkill -2 mongod
-  fi
+  pkill -INT mongod || :
   wait_for_mongo_down
   exit 0
 }
 
-if [ $# -gt 0 ] && [ "$1" == "initiate" ]; then
-  if ! [[ -v MONGODB_ADMIN_PASSWORD ]]; then
-    usage
-  fi
-  setup_keyfile
-  exec ${CONTAINER_SCRIPTS_PATH}/initiate_replica.sh
+trap 'cleanup' SIGINT SIGTERM
+
+# If user provides own config file use it and do not generate new one
+if [ ! -s $MONGODB_CONFIG_PATH ]; then
+  # Generate config file for MongoDB
+  envsubst < ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template > $MONGODB_CONFIG_PATH
 fi
 
-# Generate config file for MongoDB
-envsubst < ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template > $MONGODB_CONFIG_PATH
+mongo_common_args="-f $MONGODB_CONFIG_PATH"
+if ! [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE && -v MONGODB_ADMIN_PASSWORD ]]; then
+  usage
+fi
 
-# Need to cache the container address for the cleanup
-cache_container_addr
-mongo_common_args="-f $MONGODB_CONFIG_PATH --oplogSize 64"
-if [ -z "${MONGODB_REPLICA_NAME-}" ]; then
-  if ! [[ -v MONGODB_ADMIN_PASSWORD ]]; then
-    usage
-  fi
-  # Run the MongoDB in 'standalone' mode
-  mongod $mongo_common_args &
-  wait_for_mongo_up
-  js_command="db.system.users.count({'user':'admin'})"
-  if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
-    echo "=> Admin user is already created. Resetting password ..."
-    mongo_reset_admin
-  else
-    mongo_create_admin
-  fi
-
-  # Set up users and databases for RHMAP
-  setUpDatabases
-
-  # Restart the MongoDB daemon to bind on all interfaces
-  mongod $mongo_common_args --shutdown
-  wait_for_mongo_down
-  unset_env_vars
-  exec mongod $mongo_common_args --auth
+# Run the MongoDB in 'standalone' mode
+mongod $mongo_common_args &
+wait_for_mongo_up
+js_command="db.system.users.count({'user':'admin'})"
+if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+  echo "=> Admin user is already created. Resetting password ..."
+  mongo_reset_admin
 else
-  setup_keyfile
-  # Run the MongoDB in 'clustered' mode with --replSet
-  if [ ! -v MONGODB_NO_SUPERVISOR ]; then
-    run_mongod_supervisor
-    trap 'cleanup' SIGINT SIGTERM
-  fi
-  # In MongoDB 2.4 --keyFile does not imply authentication, so enabling it explicitly
-  # When not initializing the MongoDB cluster, we have to run with authentication
-  if [ -v MONGODB_NO_AUTH ]; then
-    mongo_common_args+=" --auth"
-  fi
-  # Run `unset_env_vars` and `mongod` in a subshell because
-  # MONGODB_ADMIN_PASSWORD should still be defined when the trapped call to
-  # `cleanup` references it.
-  (
-    unset_env_vars
-    mongod $mongo_common_args --replSet "${MONGODB_REPLICA_NAME}" \
-      --keyFile "${MONGODB_KEYFILE_PATH}"
-  ) &
-  wait
+  mongo_create_admin
 fi
+js_command="db.system.users.count({'user':'${MONGODB_USER}'})"
+if [ "$(mongo ${MONGODB_DATABASE} --quiet --eval "$js_command")" == "1" ]; then
+  echo "=> MONGODB_USER user is already created. Resetting password ..."
+  mongo_reset_user
+else
+  mongo_create_user
+fi
+# Restart the MongoDB daemon to bind on all interfaces
+mongod $mongo_common_args --shutdown
+wait_for_mongo_down
+
+# Make sure env variables don't propagate to mongod process.
+unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+exec mongod $mongo_common_args --auth

@@ -1,21 +1,34 @@
-# mongodb.conf
+##
+## For list of options visit:
+## https://docs.mongodb.org/manual/reference/configuration-options/
+##
 
-port = 27017
-pidfilepath = ${MONGODB_PID_FILE}
+# systemLog Options - How to do logging
+systemLog:
+  # Runs the mongod in a quiet mode that attempts to limit the amount of output
+  quiet: ${MONGODB_QUIET}
 
-# Set this value to designate a directory for the mongod instance to store its data.
-# Default: /var/lib/mongodb/data
-dbpath = ${MONGODB_DATADIR}
 
-# Disable data file preallocation. Default: true
-noprealloc = ${MONGODB_NOPREALLOC}
+# net Options - Network interfaces settings
+net:
+  # Specify port number (27017 by default)
+  port: ${CONTAINER_PORT}
 
-# Set MongoDB to use a smaller default data file size. Default: true
-smallfiles = ${MONGODB_SMALLFILES}
 
-# Runs MongoDB in a quiet mode that attempts to limit the amount of output.
-# Default: true
-quiet = ${MONGODB_QUIET}
+# storage Options - How and Where to store data
+storage:
+  # Directory for datafiles (defaults to /data/db/)
+  dbPath: ${MONGODB_DATADIR}
 
-# Disable the HTTP interface (Defaults to localhost:28017).
-nohttpinterface = true
+  # Enable or disable the preallocation of data files (true by default)
+  preallocDataFiles: ${MONGODB_PREALLOC}
+
+  # Use a smaller default file size (false by default)
+  smallFiles: ${MONGODB_SMALLFILES}
+
+
+# replication Options - Configures replication
+replication:
+  # Specifies a maximum size in megabytes for the replication operation log (i.e. the oplog,
+  # 5% of disk space by default)
+  oplogSizeMB: 64

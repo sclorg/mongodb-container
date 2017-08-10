@@ -4,39 +4,20 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Used for wait_for_mongo_* functions
-MAX_ATTEMPTS=60
-SLEEP_TIME=1
-
-export MONGODB_CONFIG_PATH=/etc/mongod.conf
-export MONGODB_PID_FILE=/var/lib/mongodb/mongodb.pid
-export MONGODB_KEYFILE_PATH=/var/lib/mongodb/keyfile
+# Data directory where MongoDB database files live. The data subdirectory is here
+# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
+# override it.
+export MONGODB_DATADIR=/var/lib/mongodb/data
 export CONTAINER_PORT=27017
+# Configuration settings.
+export MONGODB_QUIET=${MONGODB_QUIET:-true}
 
-# container_addr returns the current container external IP address
-function container_addr() {
-  echo -n $(cat ${HOME}/.address)
-}
+MONGODB_CONFIG_PATH=/etc/mongod.conf
+MONGODB_KEYFILE_PATH="${HOME}/keyfile"
 
-# mongo_addr returns the IP:PORT of the currently running MongoDB instance
-function mongo_addr() {
-  echo -n "$(container_addr):${CONTAINER_PORT}"
-}
-
-# cache_container_addr waits till the container gets the external IP address and
-# cache it to disk
-function cache_container_addr() {
-  echo -n "=> Waiting for container IP address ..."
-  local i
-  for i in $(seq "$MAX_ATTEMPTS"); do
-    if ip -oneline -4 addr show up scope global | grep -Eo '[0-9]{,3}(\.[0-9]{,3}){3}' > "${HOME}"/.address; then
-      echo " $(mongo_addr)"
-      return 0
-    fi
-    sleep $SLEEP_TIME
-  done
-  echo "Failed to get Docker container IP address." && exit 1
-}
+# Constants used for waiting
+readonly MAX_ATTEMPTS=60
+readonly SLEEP_TIME=1
 
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
 function wait_for_mongo_up() {
@@ -58,12 +39,10 @@ function _wait_for_mongo() {
     message="down"
   fi
 
-  local mongo_cmd="mongo admin --host ${2:-localhost} --port ${CONTAINER_PORT} "
+  local mongo_cmd="mongo admin --host ${2:-localhost} "
 
   local i
-  # Wait indefinitely for MongoDB daemon
-  while true
-  do
+  for i in $(seq $MAX_ATTEMPTS); do
     echo "=> ${2:-} Waiting for MongoDB daemon ${message}"
     if ([[ ${operation} -eq 1 ]] && ${mongo_cmd} --eval "quit()" &>/dev/null) || ([[ ${operation} -eq 0 ]] && ! ${mongo_cmd} --eval "quit()" &>/dev/null); then
       echo "=> MongoDB daemon is ${message}"
@@ -75,122 +54,36 @@ function _wait_for_mongo() {
   return 1
 }
 
-# endpoints returns a list of hosts to be part of a replica set. Host names are
-# generated from MONGODB_SERVICE_NAME, appending a suffix based on the number of
-# replicas defined in MONGODB_INITIAL_REPLICA_COUNT. For each host name, there
-# should be a service with the same name, so that the name points to a valid DNS
-# entry. Example output, where:
-# MONGODB_SERVICE_NAME=mongodb
-# MONGODB_INITIAL_REPLICA_COUNT=3
-# METADATA_NAMESPACE=3node-mbaas:
-#
-# mongodb-1.3node-mbaas
-# mongodb-2.3node-mbaas
-# mongodb-3.3node-mbaas
-function endpoints() {
-  printf -- "${MONGODB_SERVICE_NAME:-mongodb}-%d.${METADATA_NAMESPACE}\n" $(seq ${MONGODB_INITIAL_REPLICA_COUNT:-1})
-}
-
-# build_mongo_config builds the MongoDB replicaSet config used for the cluster
-# initialization.
-# Takes a list of space-separated member IPs as the first argument.
-function build_mongo_config() {
-  local current_endpoints
-  current_endpoints="$1"
-  local members
-  members="{ _id: 0, host: \"$(mongo_addr)\"},"
-  local member_id
-  member_id=1
-  local container_addr
-  container_addr="$(container_addr)"
-  local node
-  for node in ${current_endpoints}; do
-    if [ "$node" != "$container_addr" ]; then
-      members+="{ _id: ${member_id}, host: \"${node}:${CONTAINER_PORT}\"},"
-      let member_id++
-    fi
+function wait_for_service() {
+  for x in {1..100}; do                                                                                                                                                                                                                                                                                                    
+    test=$(dig $1 A +short +search)                                                                                                                                                                                                                                                                                 
+    if [ "$test" != "" ]; then                                                                                                                                                                                                                                                                                             
+      break                                                                                                                                                                                                                                                                                                              
+    fi                                                                                                                                                                                                                                                                                                                     
+    sleep 1; 
+    echo "=> Waiting for $1 service"
   done
-  echo -n "var config={ _id: \"${MONGODB_REPLICA_NAME}\", members: [ ${members%,} ] }"
+  return 0 
 }
 
-# mongo_initiate initiates the replica set.
-# Takes a list of space-separated member IPs as the first argument.
-function mongo_initiate() {
-  local mongo_wait
-  mongo_wait="while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { printjson( rs.status() ); sleep(1000); }; printjson( rs.status() );"
-  config=$(build_mongo_config "$1")
-  echo "=> Initiating MongoDB replica using: ${config}"
-  mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
+# endpoints returns list of IP addresses with other instances of MongoDB
+# To get list of endpoints, you need to have headless Service named 'mongodb'.
+# NOTE: This won't work with standalone Docker container.
+function endpoints() {
+  service_name=${MONGODB_SERVICE_NAME:-mongodb}
+  dig $(hostname -f | grep -o mongodb-[1-9]) A +search +short 2>/dev/null
 }
 
-# get the address of the current primary member
-function mongo_primary_member_addr() {
-  local rc=0
-
-  endpoints | grep -v "$(container_addr)" |
-  (
-    while read mongo_node; do
-      cmd_output="$(mongo admin -u admin -p "$MONGODB_ADMIN_PASSWORD" --host "$mongo_node:$CONTAINER_PORT" --eval 'print(rs.isMaster().primary)' --quiet || true)"
-
-      # Trying to find HOST:PORT in output and filter out error message because mongo prints it to stdout
-      host_and_port_regexp='[^:]\+:[0-9]\+'
-      if addr="$(echo "$cmd_output" | grep -x "$host_and_port_regexp")"; then
-        echo -n "$addr"
-        exit 0
-      fi
-
-      echo >&2 "Cannot get address of primary from $mongo_node node: $cmd_output"
-    done
-
-    exit 1
-  ) || rc=$?
-
-  if [ $rc -ne 0 ]; then
-    echo >&2 "Cannot get address of primary node: after checking all nodes we don't have the address"
+# replset_addr return the address of the current replSet
+function replset_addr() {
+  local current_endpoints
+  current_endpoints="$(endpoints)"
+  if [ -z "${current_endpoints}" ]; then
+    info "Cannot get address of replica set: no nodes are listed in service!"
+    info "CAUSE: DNS lookup for '${MONGODB_SERVICE_NAME:-mongodb}' returned no results."
     return 1
   fi
-}
-
-# mongo_remove removes the current MongoDB from the cluster
-function mongo_remove() {
-  local primary_addr
-  # if we cannot determine the IP address of the primary, exit without an error
-  # to allow callers to proceed with their logic
-  primary_addr="$(mongo_primary_member_addr || true)"
-  if [ -z "$primary_addr" ]; then
-    return
-  fi
-
-  local mongo_addr
-  mongo_addr="$(mongo_addr)"
-
-  echo "=> Removing ${mongo_addr} on ${primary_addr} ..."
-  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${primary_addr}" --eval "rs.remove('${mongo_addr}');" || true
-}
-
-# mongo_add advertise the current container to other mongo replicas
-function mongo_add() {
-  local primary_addr
-  # if we cannot determine the IP address of the primary, exit without an error
-  # to allow callers to proceed with their logic
-  primary_addr="$(mongo_primary_member_addr || true)"
-  if [ -z "$primary_addr" ]; then
-    return
-  fi
-
-  local mongo_addr
-  mongo_addr="$(mongo_addr)"
-
-  echo "=> Adding ${mongo_addr} to ${primary_addr} ..."
-  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${primary_addr}" --eval "rs.add('${mongo_addr}');"
-}
-
-# run_mongod_supervisor runs the MongoDB replica supervisor that manages
-# registration of the new members to the MongoDB replica cluster
-function run_mongod_supervisor() {
-  ${CONTAINER_SCRIPTS_PATH}/replica_supervisor.sh 2>&1 &
+  echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}"
 }
 
 # mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
@@ -198,14 +91,14 @@ function run_mongod_supervisor() {
 # $2 - host where to connect (localhost by default)
 function mongo_create_admin() {
   if [[ -z "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
-    echo "=> MONGODB_ADMIN_PASSWORD is not set. Authentication can not be set up."
+    echo >&2 "=> MONGODB_ADMIN_PASSWORD is not set. Authentication can not be set up."
     exit 1
   fi
 
   # Set admin password
   local js_command="db.createUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]});"
   if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
-    echo "=> Failed to create MongoDB admin user."
+    echo >&2 "=> Failed to create MongoDB admin user."
     exit 1
   fi
 }
@@ -217,22 +110,22 @@ function mongo_create_admin() {
 function mongo_create_user() {
   # Ensure input variables exists
   if [[ -z "${MONGODB_USER:-}" ]]; then
-    echo "=> MONGODB_USER is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> MONGODB_USER is not set. Failed to create MongoDB user"
     exit 1
   fi
   if [[ -z "${MONGODB_PASSWORD:-}" ]]; then
     echo "=> MONGODB_PASSWORD is not set. Failed to create MongoDB user: ${MONGODB_USER}"
-    exit 1
+    exit >&2 1
   fi
   if [[ -z "${MONGODB_DATABASE:-}" ]]; then
-    echo "=> MONGODB_DATABASE is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> MONGODB_DATABASE is not set. Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
 
   # Create database user
   local js_command="db.getSiblingDB('${MONGODB_DATABASE}').createUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
   if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
-    echo "=> Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
 }
@@ -242,7 +135,7 @@ function mongo_reset_user() {
   if [[ -n "${MONGODB_USER:-}" && -n "${MONGODB_PASSWORD:-}" && -n "${MONGODB_DATABASE:-}" ]]; then
     local js_command="db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
     if ! mongo ${MONGODB_DATABASE} --eval "${js_command}"; then
-      echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
+      echo >&2 "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
   fi
@@ -253,7 +146,7 @@ function mongo_reset_admin() {
   if [[ -n "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
     local js_command="db.changeUserPassword('admin', '${MONGODB_ADMIN_PASSWORD}')"
     if ! mongo admin --eval "${js_command}"; then
-      echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
+      echo >&2 "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
   fi
@@ -261,11 +154,119 @@ function mongo_reset_admin() {
 
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
 # mounts the secret files with 'too open' permissions.
+# add --keyFile argument to mongo_common_args
 function setup_keyfile() {
+  # If user specify keyFile in config file do not use generated keyFile
+  if grep -q "^\s*keyFile" ${MONGODB_CONFIG_PATH}; then
+    exit 0
+  fi
   if [ -z "${MONGODB_KEYFILE_VALUE-}" ]; then
-    echo "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"
+    echo >&2 "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"
+    exit 1
+  fi
+  local keyfile_dir
+  keyfile_dir="$(dirname "$MONGODB_KEYFILE_PATH")"
+  if [ ! -w "$keyfile_dir" ]; then
+    echo >&2 "ERROR: Couldn't create ${MONGODB_KEYFILE_PATH}"
+    echo >&2 "CAUSE: current user doesn't have permissions for writing to ${keyfile_dir} directory"
+    echo >&2 "DETAILS: current user id = $(id -u), user groups: $(id -G)"
+    echo >&2 "DETAILS: directory permissions: $(stat -c '%A owned by %u:%g' "${keyfile_dir}")"
     exit 1
   fi
   echo ${MONGODB_KEYFILE_VALUE} > ${MONGODB_KEYFILE_PATH}
   chmod 0600 ${MONGODB_KEYFILE_PATH}
+  mongo_common_args+=" --keyFile ${MONGODB_KEYFILE_PATH}"
+}
+
+# setup_default_datadir checks permissions of mounded directory into default
+# data directory MONGODB_DATADIR
+function setup_default_datadir() {
+  if [ ! -w "$MONGODB_DATADIR" ]; then
+    echo >&2 "ERROR: Couldn't write into ${MONGODB_DATADIR}"
+    echo >&2 "CAUSE: current user doesn't have permissions for writing to ${MONGODB_DATADIR} directory"
+    echo >&2 "DETAILS: current user id = $(id -u), user groups: $(id -G)"
+    echo >&2 "DETAILS: directory permissions: $(stat -c '%A owned by %u:%g, SELinux: %C' "${MONGODB_DATADIR}")"
+    exit 1
+  fi
+}
+
+# setup_wiredtiger_cache checks amount of available RAM (it has to use cgroups in container)
+# and if there are any memory restrictions set storage.wiredTiger.engineConfig.cacheSizeGB
+# in MONGODB_CONFIG_PATH to upstream default size
+# it is intended to update mongodb.conf.template, with custom config file it might create conflict
+function setup_wiredtiger_cache() {
+  local config_file
+  config_file=${1:-$MONGODB_CONFIG_PATH}
+
+  declare $(cgroup-limits)
+  if [[ ! -v MEMORY_LIMIT_IN_BYTES || "${NO_MEMORY_LIMIT:-}" == "true" ]]; then
+    return 0;
+  fi
+
+  cache_size=$(python -c "min=1; limit=int(($MEMORY_LIMIT_IN_BYTES / pow(2,30) - 1) * 0.6); print( min if limit < min else limit)")
+  echo "storage.wiredTiger.engineConfig.cacheSizeGB: ${cache_size}" >> ${config_file}
+
+  info "wiredTiger cacheSizeGB set to ${cache_size}"
+}
+
+# check_env_vars checks environmental variables
+# if variables to create non-admin user are provided, sets CREATE_USER=1
+# if REPLICATION variable is set, checks also replication variables
+function check_env_vars() {
+  local readonly database_regex='^[^/\. "$]*$'
+
+  [[ -v MONGODB_ADMIN_PASSWORD ]] || usage "MONGODB_ADMIN_PASSWORD has to be set."
+
+  if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
+    [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage "You have to set all or none of variables: MONGODB_USER, MONGODB_PASSWORD, MONGODB_DATABASE"
+
+    [[ "${MONGODB_DATABASE}" =~ $database_regex ]] || usage "Database name must match regex: $database_regex"
+    [ ${#MONGODB_DATABASE} -le 63 ] || usage "Database name too long (maximum 63 characters)"
+
+    export CREATE_USER=1
+  fi
+
+  if [[ -v REPLICATION ]]; then
+    [[ -v MONGODB_KEYFILE_VALUE && -v MONGODB_REPLICA_NAME ]] || usage "MONGODB_KEYFILE_VALUE and MONGODB_REPLICA_NAME have to be set"
+  fi
+}
+
+# usage prints info about required enviromental variables
+# if $1 is passed, prints error message containing $1
+# if REPLICATION variable is set, prints also info about replication variables
+function usage() {
+  if [ $# == 1 ]; then
+    echo >&2 "error: $1"
+  fi
+
+  echo "
+You must specify the following environment variables:
+  MONGODB_ADMIN_PASSWORD
+Optionally you can provide settings for a user with 'readWrite' role:
+(Note you MUST specify all three of these settings)
+  MONGODB_USER
+  MONGODB_PASSWORD
+  MONGODB_DATABASE
+Optional settings:
+  MONGODB_QUIET (default: true)"
+
+  if [[ -v REPLICATION ]]; then
+    echo "
+For replication you must also specify the following environment variables:
+  MONGODB_KEYFILE_VALUE
+  MONGODB_REPLICA_NAME
+Optional settings:
+  MONGODB_SERVICE_NAME (default: mongodb)
+"
+  fi
+  echo "
+For more information see /usr/share/container-scripts/mongodb/README.md
+within the container or visit https://github.com/sclorgk/mongodb-container/."
+
+  exit 1
+}
+
+# info prints a message prefixed by date and time.
+function info() {
+  printf "=> [%s] %s\n" "$(date +'%a %b %d %T')" "$*"
 }

@@ -4,14 +4,23 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Used for wait_for_mongo_* functions
-MAX_ATTEMPTS=60
-SLEEP_TIME=1
-
-export MONGODB_CONFIG_PATH=/etc/mongod.conf
-export MONGODB_PID_FILE=/var/lib/mongodb/mongodb.pid
-export MONGODB_KEYFILE_PATH=/var/lib/mongodb/keyfile
+# Data directory where MongoDB database files live. The data subdirectory is here
+# because mongodb.conf lives in /var/lib/mongodb/ and we don't want a volume to
+# override it.
+export MONGODB_DATADIR=/var/lib/mongodb/data
 export CONTAINER_PORT=27017
+# Configuration settings.
+export MONGODB_NOPREALLOC=${MONGODB_NOPREALLOC:-true}
+export MONGODB_SMALLFILES=${MONGODB_SMALLFILES:-true}
+export MONGODB_QUIET=${MONGODB_QUIET:-true}
+export MONGODB_TEXT_SEARCH_ENABLED=${MONGODB_TEXT_SEARCH_ENABLED:-false}
+
+MONGODB_CONFIG_PATH=/etc/mongod.conf
+MONGODB_KEYFILE_PATH="${HOME}/keyfile"
+
+# Constants used for waiting
+readonly MAX_ATTEMPTS=60
+readonly SLEEP_TIME=1
 
 # container_addr returns the current container external IP address
 function container_addr() {
@@ -35,7 +44,7 @@ function cache_container_addr() {
     fi
     sleep $SLEEP_TIME
   done
-  echo "Failed to get Docker container IP address." && exit 1
+  echo >&2 "Failed to get Docker container IP address." && exit 1
 }
 
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
@@ -121,74 +130,76 @@ function mongo_initiate() {
   mongo admin --eval "${config};rs.initiate(config);${mongo_wait}"
 }
 
-# get the address of the current primary member
-function mongo_primary_member_addr() {
-  local rc=0
-
-  endpoints | grep -v "$(container_addr)" |
-  (
-    while read mongo_node; do
-      cmd_output="$(mongo admin -u admin -p "$MONGODB_ADMIN_PASSWORD" --host "$mongo_node:$CONTAINER_PORT" --eval 'print(rs.isMaster().primary)' --quiet || true)"
-
-      # Trying to find HOST:PORT in output and filter out error message because mongo prints it to stdout
-      host_and_port_regexp='[^:]\+:[0-9]\+'
-      if addr="$(echo "$cmd_output" | grep -x "$host_and_port_regexp")"; then
-        echo -n "$addr"
-        exit 0
-      fi
-
-      echo >&2 "Cannot get address of primary from $mongo_node node: $cmd_output"
-    done
-
-    exit 1
-  ) || rc=$?
-
-  if [ $rc -ne 0 ]; then
-    echo >&2 "Cannot get address of primary node: after checking all nodes we don't have the address"
+# replset_addr return the address of the current replSet
+function replset_addr() {
+  local current_endpoints
+  current_endpoints="$(endpoints)"
+  if [ -z "${current_endpoints}" ]; then
+    echo >&2 "Cannot get address of replica set: no nodes are listed in service"
     return 1
   fi
+  echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}"
+}
+
+# replse_wait_sync wait for at least two members to be up to date (PRIMARY and one SECONDARY)
+function replset_wait_sync() {
+  local host
+  # if we cannot determine the IP address of the primary, exit without an error
+  # to allow callers to proceed with their logic
+  host="$(replset_addr || true)"
+  if [ -z "$host" ]; then
+    return 1
+  fi
+
+  mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" --host ${host} \
+    --eval "var i = ${MAX_ATTEMPTS};
+    while(i > 0) {
+      var status=rs.status();
+      var primary_optime=status.members.filter(function(el) {return el.state ==1})[0].optime;
+      // Check that at least one member has same optime as PRIMARY (PRIMARY and one SECONDARY ~ >= 2)
+      if(status.members.filter(function(el) {return el.optime.ts.tojson() == primary_optime.ts.tojson()}).length >= 2)
+        quit(0);
+      else
+        sleep(${SLEEP_TIME}*1000);
+      i--;
+    };
+    quit(1);"
 }
 
 # mongo_remove removes the current MongoDB from the cluster
 function mongo_remove() {
-  local primary_addr
+  local host
   # if we cannot determine the IP address of the primary, exit without an error
   # to allow callers to proceed with their logic
-  primary_addr="$(mongo_primary_member_addr || true)"
-  if [ -z "$primary_addr" ]; then
+  host="$(replset_addr || true)"
+  if [ -z "$host" ]; then
     return
   fi
 
   local mongo_addr
   mongo_addr="$(mongo_addr)"
 
-  echo "=> Removing ${mongo_addr} on ${primary_addr} ..."
+  echo "=> Removing ${mongo_addr} from replica set ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${primary_addr}" --eval "rs.remove('${mongo_addr}');" || true
+    --host "${host}" --eval "rs.remove('${mongo_addr}');" || true
 }
 
 # mongo_add advertise the current container to other mongo replicas
 function mongo_add() {
-  local primary_addr
+  local host
   # if we cannot determine the IP address of the primary, exit without an error
   # to allow callers to proceed with their logic
-  primary_addr="$(mongo_primary_member_addr || true)"
-  if [ -z "$primary_addr" ]; then
+  host="$(replset_addr || true)"
+  if [ -z "$host" ]; then
     return
   fi
 
   local mongo_addr
   mongo_addr="$(mongo_addr)"
 
-  echo "=> Adding ${mongo_addr} to ${primary_addr} ..."
+  echo "=> Adding ${mongo_addr} to replica set ..."
   mongo admin -u admin -p "${MONGODB_ADMIN_PASSWORD}" \
-    --host "${primary_addr}" --eval "rs.add('${mongo_addr}');"
-}
-
-# run_mongod_supervisor runs the MongoDB replica supervisor that manages
-# registration of the new members to the MongoDB replica cluster
-function run_mongod_supervisor() {
-  ${CONTAINER_SCRIPTS_PATH}/replica_supervisor.sh 2>&1 &
+    --host "${host}" --eval "rs.add('${mongo_addr}');"
 }
 
 # mongo_create_admin creates the MongoDB admin user with password: MONGODB_ADMIN_PASSWORD
@@ -196,14 +207,14 @@ function run_mongod_supervisor() {
 # $2 - host where to connect (localhost by default)
 function mongo_create_admin() {
   if [[ -z "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
-    echo "=> MONGODB_ADMIN_PASSWORD is not set. Authentication can not be set up."
+    echo >&2 "=> MONGODB_ADMIN_PASSWORD is not set. Authentication can not be set up."
     exit 1
   fi
 
   # Set admin password
   local js_command="db.addUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]});"
   if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
-    echo "=> Failed to create MongoDB admin user."
+    echo >&2 "=> Failed to create MongoDB admin user."
     exit 1
   fi
 }
@@ -215,22 +226,22 @@ function mongo_create_admin() {
 function mongo_create_user() {
   # Ensure input variables exists
   if [[ -z "${MONGODB_USER:-}" ]]; then
-    echo "=> MONGODB_USER is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> MONGODB_USER is not set. Failed to create MongoDB user"
     exit 1
   fi
   if [[ -z "${MONGODB_PASSWORD:-}" ]]; then
-    echo "=> MONGODB_PASSWORD is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> MONGODB_PASSWORD is not set. Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
   if [[ -z "${MONGODB_DATABASE:-}" ]]; then
-    echo "=> MONGODB_DATABASE is not set. Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> MONGODB_DATABASE is not set. Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
 
   # Create database user
   local js_command="db.getSiblingDB('${MONGODB_DATABASE}').addUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
   if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
-    echo "=> Failed to create MongoDB user: ${MONGODB_USER}"
+    echo >&2 "=> Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
 }
@@ -240,7 +251,7 @@ function mongo_reset_user() {
   if [[ -n "${MONGODB_USER:-}" && -n "${MONGODB_PASSWORD:-}" && -n "${MONGODB_DATABASE:-}" ]]; then
     local js_command="db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
     if ! mongo ${MONGODB_DATABASE} --eval "${js_command}"; then
-      echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
+      echo >&2 "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
   fi
@@ -251,7 +262,7 @@ function mongo_reset_admin() {
   if [[ -n "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
     local js_command="db.changeUserPassword('admin', '${MONGODB_ADMIN_PASSWORD}')"
     if ! mongo admin --eval "${js_command}"; then
-      echo "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
+      echo >&2 "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
   fi
@@ -259,11 +270,26 @@ function mongo_reset_admin() {
 
 # setup_keyfile fixes the bug in mounting the Kubernetes 'Secret' volume that
 # mounts the secret files with 'too open' permissions.
+# add --keyFile argument to mongo_common_args
 function setup_keyfile() {
+  # If user specify keyFile in config file do not use generated keyFile
+  if grep -q "^\s*keyFile" ${MONGODB_CONFIG_PATH}; then
+    exit 0
+  fi
   if [ -z "${MONGODB_KEYFILE_VALUE-}" ]; then
-    echo "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"
+    echo >&2 "ERROR: You have to provide the 'keyfile' value in MONGODB_KEYFILE_VALUE"
+    exit 1
+  fi
+  local keyfile_dir
+  keyfile_dir="$(dirname "$MONGODB_KEYFILE_PATH")"
+  if [ ! -w "$keyfile_dir" ]; then
+    echo >&2 "ERROR: Couldn't create ${MONGODB_KEYFILE_PATH}"
+    echo >&2 "CAUSE: current user doesn't have permissions for writing to ${keyfile_dir} directory"
+    echo >&2 "DETAILS: current user id = $(id -u), user groups: $(id -G)"
+    echo >&2 "DETAILS: directory permissions: $(stat -c '%A owned by %u:%g' "${keyfile_dir}")"
     exit 1
   fi
   echo ${MONGODB_KEYFILE_VALUE} > ${MONGODB_KEYFILE_PATH}
   chmod 0600 ${MONGODB_KEYFILE_PATH}
+  mongo_common_args+=" --keyFile ${MONGODB_KEYFILE_PATH}"
 }

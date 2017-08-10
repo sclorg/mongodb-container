@@ -6,7 +6,7 @@ function setUpMbaasDB(){
   local js_command="db.system.users.count({'user':'${MONGODB_FHMBAAS_USER}'})"
   if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
     echo "=> ${MONGODB_FHMBAAS_USER} user is already created. No action taken"
-  else 
+  else
     js_command="db.getSiblingDB('${MONGODB_FHMBAAS_DATABASE}').createUser({user: '${MONGODB_FHMBAAS_USER}', pwd: '${MONGODB_FHMBAAS_PASSWORD}', roles: [ 'readWrite' ]})"
     if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
       echo "=> Failed to create MongoDB user: ${MONGODB_FHMBAAS_USER}"

@@ -1,0 +1,81 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
+
+function usage() {
+  echo "You must specify the following environment variables:"
+  echo "  MONGODB_ADMIN_PASSWORD"
+  echo "Optionally you can provide settings for user with 'readWrite' role:"
+  echo "  MONGODB_USER"
+  echo "  MONGODB_PASSWORD"
+  echo "  MONGODB_DATABASE"
+  echo "MongoDB settings:"
+  echo "  MONGODB_PREALLOC (default: false)"
+  echo "  MONGODB_SMALLFILES (default: true)"
+  echo "  MONGODB_QUIET (default: true)"
+  exit 1
+}
+
+function cleanup() {
+  echo "=> Shutting down MongoDB server ..."
+  pkill -INT mongod || :
+  wait_for_mongo_down
+  exit 0
+}
+
+echo "
+
+
+Notice: This image is supported only for upgrade from MongoDB 2.6 to 3.2.
+
+
+"
+
+trap 'cleanup' SIGINT SIGTERM
+
+[[ -v MONGODB_ADMIN_PASSWORD ]] || usage
+if [[ -v MONGODB_USER || -v MONGODB_PASSWORD || -v MONGODB_DATABASE ]]; then
+  [[ -v MONGODB_USER && -v MONGODB_PASSWORD && -v MONGODB_DATABASE ]] || usage
+  export CREATE_USER=1
+fi
+
+# If user provides own config file use it and do not generate new one
+if [ ! -s $MONGODB_CONFIG_PATH ]; then
+  # Generate config file for MongoDB
+  envsubst < ${CONTAINER_SCRIPTS_PATH}/mongodb.conf.template > $MONGODB_CONFIG_PATH
+fi
+
+mongo_common_args="-f $MONGODB_CONFIG_PATH"
+
+setup_default_datadir
+
+# Must bring up MongoDB on localhost only until it has an admin password set.
+mongod $mongo_common_args --bind_ip 127.0.0.1 &
+wait_for_mongo_up
+js_command="db.system.users.count({'user':'admin', 'db':'admin'})"
+if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+  echo "=> Admin user is already created. Resetting password ..."
+  mongo_reset_admin
+else
+  mongo_create_admin
+fi
+if [[ -v CREATE_USER ]]; then
+  js_command="db.system.users.count({'user':'${MONGODB_USER}', 'db':'${MONGODB_DATABASE}'})"
+  if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+    echo "=> MONGODB_USER user is already created. Resetting password ..."
+    mongo_reset_user
+  else
+    mongo_create_user
+  fi
+fi
+# Restart the MongoDB daemon to bind on all interfaces
+mongod $mongo_common_args --shutdown
+wait_for_mongo_down
+
+# Make sure env variables don't propagate to mongod process.
+unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+exec mongod $mongo_common_args --auth
