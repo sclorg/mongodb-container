@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#
+# This serves as a container entrypoint for running a MongoDB Replica Set. See the README for required ENV variables
+#
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -51,11 +55,12 @@ if [ "${SHARD_ENABLED:-}" == "true" ]; then
 fi
 $MONGOD --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH ${TLS:-} ${SHARD_ARG:-} --replSet ${MONGODB_REPLICA_NAME:-} ${ADDITIONAL_STARTUP_OPTS:-} &
 
-# [TODO] Capture exit code and print error if initialization failed.
+log_info "Initializing.."
 configure_replicaset
 
 wait_for_mongo_up
 #Make sure environment variables don't propagate passed initialization
 unset_env_vars
+log_pass "Ready"
 tail_mongodb_log
 wait
