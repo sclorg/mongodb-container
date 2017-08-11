@@ -1,13 +1,8 @@
 #!/bin/bash
 
 #
-# Required environment variables to be set:
-# MONGODB_ADMIN_PASSWORD - password for the admin user
-# CONFIG_REPLSET_NAME - name of the config server replica set
-# CONFIG_REPLSET_SERVER - At least one server from the CONFIG_REPLSET_NAME group
-# REPLSET_NAMES - comma delimited names of each shard's replica set name
-# REPLSET_SERVERS - comma delimited server from each of the above REPLSET_NAMES. Order of the two must coorespond
-# MONGODB_KEYFILE_VALUE - key value for inter-mongo server communication
+# This serves as a container entrypoint for running a MongoDB shard router. See the README for required ENV variables
+#
 
 set -o errexit
 set -o nounset
@@ -51,10 +46,11 @@ $MONGOS --config "$MONGODB_CONFIG_PATH" --keyFile $MONGODB_KEYFILE_PATH ${TLS:-}
 
 wait_for_mongo_up
 
-# [TODO] Capture exit code and print error if initialization failed.
+log_info "Initializing.."
 configure_mongos
 
 #Make sure environment variables don't propagate passed initialization
 unset_env_vars
+log_pass "Ready"
 tail_mongodb_log
 wait

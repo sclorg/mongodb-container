@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#
+# This serves as a container entrypoint for running a MongoDB sharding configuration server. See the README for required ENV variables
+#
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -47,11 +51,12 @@ fi
 log_info "Starting mongo configuration server"
 $MONGOD --config "$MONGODB_CONFIG_PATH" --configsvr ${TLS:-} --keyFile $MONGODB_KEYFILE_PATH --replSet ${MONGODB_REPLICA_NAME:-} ${ADDITIONAL_STARTUP_OPTS:-} &
 
-# [TODO] Capture exit code and print error if initialization failed.
+log_info "Initializing.."
 configure_configsvr
 
 wait_for_mongo_up
 #Make sure environment variables don't propagate passed initialization
 unset_env_vars
+log_pass "Ready"
 tail_mongodb_log
 wait
