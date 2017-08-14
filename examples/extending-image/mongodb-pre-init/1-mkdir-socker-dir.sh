@@ -1,3 +1,3 @@
-# Create directory for socker
+# Create directory for socket
 
 mkdir ~/socket/

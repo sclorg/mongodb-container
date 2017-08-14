@@ -104,7 +104,7 @@ Optional settings:
   fi
   echo "
 For more information see /usr/share/container-scripts/mongodb/README.md
-within the container or visit https://github.com/sclorgk/mongodb-container/."
+within the container or visit https://github.com/sclorg/mongodb-container/."
 
   exit 1
 }
