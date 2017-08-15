@@ -61,13 +61,13 @@ Usage
 ---------------------------------
 
 For information about usage of Dockerfile for MongoDB 2.6,
-see [usage documentation](2.6/README.md).
+see [usage documentation](2.6/).
 
 For information about usage of Dockerfile for MongoDB 3.0-upg,
-see [usage documentation](3.0-upg/README.md).
+see [usage documentation](3.0-upg/).
 
 For information about usage of Dockerfile for MongoDB 3.2,
-see [usage documentation](3.2/README.md).
+see [usage documentation](3.2/).
 
 Test
 ---------------------------------
