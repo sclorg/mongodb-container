@@ -1,16 +1,16 @@
-% MONGODB-32(1) Container Image Pages
+% MONGODB-34(1) Container Image Pages
 % SoftwareCollections.org
 % July 18, 2017
 
-MongoDB 3.2 NoSQL Database Server Docker image
+MongoDB 3.4 NoSQL Database Server Docker image
 ====================
 
 This repository contains Dockerfiles for MongoDB images for general usage and OpenShift.
 Users can choose between RHEL and CentOS based images.
-The RHEL image is available in the [Red Hat Container Catalog](https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/mongodb-32-rhel7)
-as registry.access.redhat.com/rhscl/mongodb-32-rhel7.
-The CentOS image is then available on [Docker Hub](https://hub.docker.com/r/centos/mongodb-32-centos7/)
-as centos/mongodb-32-centos7.
+The RHEL image is available in the [Red Hat Container Catalog](https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/mongodb-34-rhel7)
+as registry.access.redhat.com/rhscl/mongodb-34-rhel7.
+The CentOS image is then available on [Docker Hub](https://hub.docker.com/r/centos/mongodb-34-centos7/)
+as centos/mongodb-34-centos7.
 
 
 Description
@@ -26,12 +26,12 @@ You can find more information on the MongoDB project from the project Web site
 Usage
 -----
 
-For this, we will assume that you are using the `rhscl/mongodb-32-rhel7` image.
+For this, we will assume that you are using the `rhscl/mongodb-34-rhel7` image.
 If you want to set only the mandatory environment variables and store the database
 in the `/home/user/database` directory on the host filesystem, execute the following command:
 
 ```
-$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -e MONGODB_ADMIN_PASSWORD=<admin_password> -v /home/user/database:/var/lib/mongodb/data rhscl/mongodb-32-rhel7
+$ docker run -d -e MONGODB_USER=<user> -e MONGODB_PASSWORD=<password> -e MONGODB_DATABASE=<database> -e MONGODB_ADMIN_PASSWORD=<admin_password> -v /home/user/database:/var/lib/mongodb/data rhscl/mongodb-34-rhel7
 ```
 
 If you are initializing the database and it's the first time you are using the
@@ -129,7 +129,7 @@ For example to build customized MongoDB database image `my-mongodb-centos7`
 with configuration in `~/image-configuration/` run:
 
 ```
-$ s2i build ~/image-configuration/ centos/mongodb-32-centos7 my-mongodb-centos7
+$ s2i build ~/image-configuration/ centos/mongodb-34-centos7 my-mongodb-centos7
 ```
 
 The directory passed to `s2i build` should contain one or more of the

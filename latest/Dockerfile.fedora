@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/f25/s2i-base:latest
+FROM registry.fedoraproject.org/f26/s2i-base:latest
 
 ENV NAME=mongodb \
     VERSION=0 \
@@ -21,12 +21,12 @@ LABEL summary="$SUMMARY" \
       architecture="$ARCH" \
       usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass $FGC/$NAME" \
       help="help.1" \
-      io.k8s.display-name="MongoDB 3.2" \
+      io.k8s.display-name="MongoDB 3.4" \
       io.openshift.expose-services="27017:mongodb" \
       io.openshift.tags="database,mongodb" \
       maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
-ENV MONGODB_VERSION=3.2 \
+ENV MONGODB_VERSION=3.4 \
     # Set paths to avoid hard-coding them in scripts.
     APP_DATA=/opt/app-root/src \
     HOME=/var/lib/mongodb \
