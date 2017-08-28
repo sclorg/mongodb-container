@@ -79,7 +79,7 @@ oc new-app --file=../examples/petset/mongodb-petset-persistent.yaml -p MONGODB_U
 wait_for_ready_pods "app=mongodb-petset-replication" 3
 wait_for_ready_pods "openshift.io/deployer-pod-for.name" 0
 
-host="rs0/$(oc get endpoints mongodb --no-headers | tr -s ' ' | cut -f2 -d' ')"
+host="$(oc get endpoints mongodb --no-headers | tr -s ' ' | cut -f2 -d' ')/admin?replicaSet=rs0"
 
 docker exec origin kubectl run --attach --restart=Never mongodb-test --image ${IMAGE_NAME} --env="MONGODB_ADMIN_PASSWORD=${ADMIN_PASS}" --command -- bash -c "set -x
 . /usr/share/container-scripts/mongodb/common.sh

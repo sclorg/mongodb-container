@@ -9,7 +9,7 @@ function mongo_create_admin() {
 
   # Set admin password
   local js_command="db.createUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]});"
-  if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
+  if ! mongo ${2:-"localhost"}/admin ${1:-} --eval "${js_command}"; then
     echo >&2 "=> Failed to create MongoDB admin user."
     exit 1
   fi
@@ -36,7 +36,7 @@ function mongo_create_user() {
 
   # Create database user
   local js_command="db.getSiblingDB('${MONGODB_DATABASE}').createUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
-  if ! mongo admin ${1:-} --host ${2:-"localhost"} --eval "${js_command}"; then
+  if ! mongo ${2:-"localhost"}/admin ${1:-} --eval "${js_command}"; then
     echo >&2 "=> Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi

@@ -34,7 +34,7 @@ function insert_and_wait_for_replication() {
     printjson(rs.status());
     quit(1);"
 
-  mongo admin --host "${host}" -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "${script}"
+  mongo "${host}" -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "${script}"
 }
 
 # wait_replicaset_members waits till replset has specified number of members
@@ -57,5 +57,5 @@ function wait_replicaset_members() {
   printjson(rs.status());
   quit(1);"
 
-  mongo admin --host "${host}" -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "${script}"
+  mongo "${host}" -u admin -p "${MONGODB_ADMIN_PASSWORD}" --eval "${script}"
 }
