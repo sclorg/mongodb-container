@@ -1,0 +1,11 @@
+#
+# General test for MongoDB image.
+#
+# Always use sourced from a specific container testfile
+
+function ctest_general() {
+    USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" test_general admin
+    # Test with random uid in container
+    CONTAINER_ARGS="-u 12345" USER="user1" PASS="pass1" DB="test_db" ADMIN_PASS="r00t" test_general admin_altuid
+}
+
