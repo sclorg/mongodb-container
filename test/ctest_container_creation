@@ -1,0 +1,24 @@
+#
+# Container creation test for MongoDB image.
+#
+# Always use sourced from a specific container testfile
+
+function ctest_container_creation() {
+  echo "  Testing wrong user variables usage"
+
+  ct_assert_container_creation_fails -e MONGODB_USER=user -e MONGODB_PASSWORD=pass
+  ct_assert_container_creation_fails -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass
+  ct_assert_container_creation_fails -e MONGODB_DATABASE=db -e MONGODB_USER=user
+  ct_assert_container_creation_fails -e MONGODB_USER=user -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass
+
+  ct_assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_USER=user
+  ct_assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_PASSWORD=pass
+  ct_assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_DATABASE=db
+
+  echo "  Success!"
+  echo "  Testing good user variables usage"
+  ct_assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass || [ $? -eq 1 ]
+  ct_assert_container_creation_fails -e MONGODB_ADMIN_PASSWORD=Pass -e MONGODB_USER=user -e MONGODB_DATABASE=db -e MONGODB_PASSWORD=pass || [ $? -eq 1 ]
+  echo "  Success!"
+}
+
