@@ -29,7 +29,7 @@ function initiate() {
 
   info "Waiting for PRIMARY status ..."
   mongo --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
-  
+
   mongo_create_admin
   #[[ -v CREATE_USER ]] && mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
 
@@ -51,11 +51,11 @@ function add_member() {
 
   # add wait for the mongodb-1 service
   wait_for_service mongodb-1
- 
-  # wait for mongodb daemon to come up 
+
+  # wait for mongodb daemon to come up
   wait_for_mongo_up  mongodb-1
 
-  
+
   local host="$1"
   info "Adding ${host} to replica set ..."
 
@@ -71,6 +71,18 @@ function add_member() {
   mongo --eval "while (!rs.isMaster().ismaster && !rs.isMaster().secondary) { sleep(200); }" --quiet
 
   info "Successfully joined replica set"
+}
+
+function get_fqdn_hostname() {
+
+   local short_host="$1"
+
+   namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+
+   local fqdn=$short_host.$namespace
+
+   echo $fqdn
+
 }
 
 info "Waiting for local MongoDB to accept connections  ..."
@@ -89,12 +101,12 @@ fi
 #  "mongodb-1" -> "1"
 #  "mongodb-2" -> "2"
 readonly MEMBER_ID="${MEMBER_HOST##*-}"
-
+fqdn=$(get_fqdn_hostname "${MEMBER_HOST}")
 # Initialize replica set only if we're the first member
 if [ "${MEMBER_ID}" = '1' ]; then
-  initiate "${MEMBER_HOST}"
+  initiate "${fqdn}"
 else
-  add_member "${MEMBER_HOST}"
+  add_member "${fqdn}"
 fi
 
 >/tmp/initialized
