@@ -5,15 +5,20 @@ This repository contains Dockerfiles for MongoDB images for OpenShift.
 Users can choose between RHEL and CentOS based images.
 
 For more information about using these images with OpenShift, please see the
-official [OpenShift
-Documentation](https://docs.openshift.org/latest/using_images/db_images/mongodb.html).
+official [OpenShift Documentation](https://docs.openshift.org/latest/using_images/db_images/mongodb.html).
+
+For more information about contributing, see
+[the Contribution Guidelines](https://github.com/sclorg/welcome/blob/master/contribution.md).
+For more information about concepts used in these docker images, see the
+[Landing page](https://github.com/sclorg/welcome).
+
 
 Versions
 ---------------------------------
 MongoDB versions currently provided are:
-* mongodb-2.6
-* mongodb-3.0-upg
-* mongodb-3.2
+* [MongoDB 2.6](2.6)
+* [MongoDB 3.0 (just for upgrades)](3.0)
+* [MongoDB 3.2](3.2)
 
 RHEL versions currently supported are:
 * RHEL7
@@ -28,12 +33,19 @@ Choose either the CentOS7 or RHEL7 based image:
 
 *  **RHEL7 based image**
 
+	This image is available in the [Red Hat Container Catalog](https://access.redhat.com/containers#/registry.access.redhat.com/rhscl/mongodb-32-rhel7). To download it run:
+
+	```
+	$ docker pull registry.access.redhat.com/rhscl/mongodb-32-rhel7
+	```
+
 	To build a RHEL7 based image, you need to run Docker build on a properly
     subscribed RHEL machine.
 
 	```
-	$ git clone https://github.com/openshift/mongodb.git
-	$ cd mongodb
+	$ git clone https://github.com/sclorg/mongodb-container.git
+	$ cd mongodb-container
+        $ git submodule update --init
 	$ make build TARGET=rhel7 VERSIONS=3.2
 	```
 
@@ -48,8 +60,9 @@ Choose either the CentOS7 or RHEL7 based image:
 	To build a MongoDB image from scratch run:
 
 	```
-	$ git clone https://github.com/openshift/mongodb.git
-	$ cd mongodb
+	$ git clone https://github.com/sclorg/mongodb-container.git
+	$ cd mongodb-container
+        $ git submodule update --init
 	$ make build TARGET=centos7 VERSIONS=3.2
 	```
 
@@ -83,14 +96,16 @@ Users can choose between testing MongoDB based on a RHEL or CentOS image.
     subscribed RHEL machine.
 
     ```
-    $ cd mongodb
+    $ cd mongodb-container
+    $ git submodule update --init
     $ make test TARGET=rhel7 VERSIONS=3.2
     ```
 
 *  **CentOS based image**
 
     ```
-    $ cd mongodb
+    $ cd mongodb-container
+    $ git submodule update --init
     $ make test TARGET=centos7 VERSIONS=3.2
     ```
 
