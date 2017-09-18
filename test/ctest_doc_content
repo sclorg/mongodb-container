@@ -1,0 +1,11 @@
+#
+# Documentation content test for MongoDB image.
+#
+# Always use sourced from a specific container testfile
+
+function ctest_doc_content() {
+  : "  Testing documentation content"
+  ct_doc_content_old MONGODB\\_ADMIN\\_PASSWORD volume
+  : "  Success!"
+}
+
