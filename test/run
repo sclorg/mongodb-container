@@ -9,10 +9,8 @@
 set -exo nounset
 shopt -s nullglob
 
-IMAGE_NAME=${IMAGE_NAME-centos/mongodb-32-centos7-candidate}
-
-source ../common/test-lib.sh
-source ../test/lib
+. test/common-lib
+. test/lib
 
 TEST_LIST="\
 ctest_container_creation

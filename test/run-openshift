@@ -8,6 +8,8 @@
 
 set -exo nounset
 
+test -n "${IMAGE_NAME-}" || false 'make sure $IMAGE_NAME is defined'
+
 function prepare_oc_client() {
   # Prepare oc command
   if [[ ! -d ../openshift-client/ ]]; then
