@@ -3,9 +3,8 @@
 #
 # Always use sourced from a specific container testfile
 
-function get_version() {
-  pwd | grep -Po '(?<=container/)[^/-]+'
-}
+test -n "${IMAGE_NAME-}" || false 'make sure $IMAGE_NAME is defined'
+test -n "${VERSION-}" || false 'make sure $VERSION is defined'
 
 function mongo_cmd() {
     docker run --rm $IMAGE_NAME mongo "$DB" --host $CONTAINER_IP -u "$USER" -p"$PASS" --eval "${@}"
@@ -98,7 +97,7 @@ function test_general() {
     CONTAINER_IP=$(ct_get_cip $name)
     test_connection $name
     echo "  Testing scl usage"
-    ct_scl_usage_old $name 'mongo --version' $(get_version)
+    ct_scl_usage_old $name 'mongo --version' $VERSION
     test_mongo $name
 }
 
