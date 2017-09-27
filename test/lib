@@ -6,6 +6,14 @@
 test -n "${IMAGE_NAME-}" || false 'make sure $IMAGE_NAME is defined'
 test -n "${VERSION-}" || false 'make sure $VERSION is defined'
 
+# get_version_number [version_string]
+# --------------------
+# Extracts the version number from provided version string.
+# e.g. 3.0upg => 3.0
+function get_version_number() {
+  echo $1 | sed -e 's/^\([0-9.]*\).*/\1/'
+}
+
 function mongo_cmd() {
     docker run --rm $IMAGE_NAME mongo "$DB" --host $CONTAINER_IP -u "$USER" -p"$PASS" --eval "${@}"
 }
@@ -97,7 +105,7 @@ function test_general() {
     CONTAINER_IP=$(ct_get_cip $name)
     test_connection $name
     echo "  Testing scl usage"
-    ct_scl_usage_old $name 'mongo --version' $VERSION
+    ct_scl_usage_old $name 'mongo --version' $(get_version_number $VERSION)
     test_mongo $name
 }
 
