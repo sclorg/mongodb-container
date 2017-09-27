@@ -19,20 +19,28 @@ ctest_general
 ctest_change_password
 ctest_mount_config
 ctest_doc_content
-ctest_WT_cache
 ctest_local_replication
 ctest_s2i"
 
+VERSION_NUM=$(get_version_number $VERSION | sed  -e 's/\.//g')
+if test $VERSION_NUM -ge 32; then
+    TEST_LIST="${TEST_LIST}
+ctest_WT_cache"
+fi
+
 test $# -eq 1 -a "${1-}" == --list && exit 0
-test -n "${IMAGE_NAME-}" || false 'make sure $IMAGE_NAME is defined'
 
 CID_FILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 
-# enable cleanup
-ct_enable_cleanup
-
 TEST_DIR="$(readlink -zf $(dirname "${BASH_SOURCE[0]}"))"
 S2I_ARGS="--force-pull=false "
+
+function cleanup() {
+  local network_name="mongodb-replset-$$"
+  ct_cleanup
+  ! docker network ls | grep -q ${network_name} || docker network rm ${network_name}
+}
+trap cleanup EXIT SIGINT
 
 function test_mongo() {
     echo "  Testing MongoDB"
@@ -56,6 +64,11 @@ function test_mongo() {
 function ctest_configuration() {
     echo "  Testing image configuration settings"
     test_config_option MONGODB_QUIET true "quiet: true"
+    if test $VERSION_NUM -le 30; then
+        test_config_option MONGODB_PREALLOC false "preallocDataFiles: false"
+        test_config_option MONGODB_NOPREALLOC true "preallocDataFiles: false"
+        test_config_option MONGODB_SMALLFILES true "smallFiles: true"
+    fi
     echo "  Success!"
 }
 
@@ -68,11 +81,18 @@ function ctest_mount_config() {
     local admin_password='adminPassword'
 
     local volume_dir
+    local config_content
     volume_dir=`mktemp -d --tmpdir mongodb-testdata.XXXXX`
     chmod a+rwx ${volume_dir}
     config_file=$volume_dir/mongod.conf
-    echo "dbpath=/var/lib/mongodb/dbpath
-unixSocketPrefix = /var/lib/mongodb" > $config_file
+    config_content="dbpath=/var/lib/mongodb/dbpath
+unixSocketPrefix = /var/lib/mongodb"
+    if test $VERSION_NUM -le 30; then
+    config_content="$config_content
+smallfiles = true
+noprealloc = true"
+    fi
+    echo "$config_content" > $config_file
     chmod a+wr ${config_file}
 
     CONTAINER_ARGS="
@@ -110,7 +130,12 @@ function ctest_s2i() {
 
     # Set configuration file (differs for mmapv1 storage engine)
     mv ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf.backup
-    ln -s mongod-WT.conf ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf
+
+    if test $VERSION_NUM -ge 32; then
+        ln -s mongod-WT.conf ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf
+    else
+        ln -s mongod-mmapv1.conf ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf
+    fi
 
     echo "  Testing s2i build"
     s2i build file://${TEST_DIR}/test-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
