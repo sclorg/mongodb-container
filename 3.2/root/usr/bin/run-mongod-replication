@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# Run mongod in a StatefulSet-based replica set. See
+# https://github.com/sclorg/mongodb-container/blob/master/examples/petset/README.md
+# for a description of how this is intended to work.
+#
+# Note:
+# - It does not attempt to remove the host from the replica set configuration
+#   when it is terminating. That is by design, because, in a StatefulSet, when a
+#   pod/container terminates and is restarted by OpenShift, it will always have
+#   the same hostname. Removing hosts from the configuration affects replica set
+#   elections and can impact the replica set stability.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
+
+function cleanup() {
+  echo "=> Shutting down MongoDB server ..."
+  pkill -INT mongod || :
+  wait_for_mongo_down
+  exit 0
+}
+
+trap 'cleanup' SIGINT SIGTERM
+
+# StatefulSet pods are named with a predictable name, following the pattern:
+#   $(statefulset name)-$(zero-based index)
+# MEMBER_ID is computed by removing the prefix matching "*-", i.e.:
+#  "mongodb-0" -> "0"
+#  "mongodb-1" -> "1"
+#  "mongodb-2" -> "2"
+export readonly MEMBER_ID="${HOSTNAME##*-}"
+mongo_common_args=
+
+
+# pre-init files
+process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
+
+
+# Make sure env variables don't propagate to mongod process.
+(unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}") &
+
+# Initialize the replicaset or add container to it
+${CONTAINER_SCRIPTS_PATH}/init-replset.sh
+
+
+# init files
+[ -f /tmp/initialized ] || process_extending_files ${APP_DATA}/mongodb-init/ ${CONTAINER_SCRIPTS_PATH}/init/
+
+
+>/tmp/initialized
+wait
