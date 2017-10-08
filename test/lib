@@ -15,11 +15,11 @@ function get_version_number() {
 }
 
 function mongo_cmd() {
-    docker run --rm $IMAGE_NAME mongo "$DB" --host $CONTAINER_IP -u "$USER" -p"$PASS" --eval "${@}"
+    docker run --rm $IMAGE_NAME mongo $CONTAINER_IP/$DB -u "$USER" -p"$PASS" --eval "${@}"
 }
 
 function mongo_admin_cmd() {
-    docker run --rm $IMAGE_NAME mongo admin --host $CONTAINER_IP -u admin -p"$ADMIN_PASS" --eval "${@}"
+    docker run --rm $IMAGE_NAME mongo $CONTAINER_IP/admin -u admin -p"$ADMIN_PASS" --eval "${@}"
 }
 
 function test_connection() {

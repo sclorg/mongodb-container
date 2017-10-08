@@ -45,7 +45,7 @@ function _wait_for_mongo() {
     message="down"
   fi
 
-  local mongo_cmd="mongo admin --host ${2:-localhost} "
+  local mongo_cmd="mongo ${2:-localhost} "
 
   local i
   for i in $(seq $MAX_ATTEMPTS); do
@@ -70,14 +70,15 @@ function endpoints() {
 
 # replset_addr return the address of the current replSet
 function replset_addr() {
-  local current_endpoints
+  local current_endpoints db
+  db="${1:-}"
   current_endpoints="$(endpoints)"
   if [ -z "${current_endpoints}" ]; then
     info "Cannot get address of replica set: no nodes are listed in service!"
     info "CAUSE: DNS lookup for '${MONGODB_SERVICE_NAME:-mongodb}' returned no results."
     return 1
   fi
-  echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}"
+  echo "${MONGODB_REPLICA_NAME}/${current_endpoints//[[:space:]]/,}/${db}"
 }
 
 # usage prints info about required enviromental variables
