@@ -61,6 +61,21 @@ Optionally you can provide settings for user with 'readWrite' role.
 |  `MONGODB_PASSWORD`       | Password for the user account               |
 |  `MONGODB_DATABASE`       | Database name                               |
 
+Running image as Replica Set
+
+|    Variable Name           |    Description                   |    Value |
+| :------------------------  | ---------------------------------| ---------|
+|  `MONGODB_KEYFILE_VALUE`   | Specific replica set secret      | -        |
+|  `MONGODB_REPLICA_NAME`    | Specific replica set name        | -        |
+|  `MONGODB_SERVICE_NAME`    | Specific replica set service     | mongodb  |
+
+Running image as Configuration Server
+|    Variable Name           |    Description                   |    Value |
+| :------------------------  | ---------------------------------| ---------|
+|    `CONFIG_REPLSET_NAME`   | Replica Set name of the config server  | |
+|   `CONFIG_REPLSET_SERVER`  | A single member URI of the config server replica set | |
+|   `REPLSET_NAMES`          | Comma delimited names of replica sets apart of shard cluster | |
+|   `REPLSET_SERVERS`        | Comma delimited members of each replica set in shard cluster. One from each replica set, in order | |
 
 The following environment variables influence the MongoDB configuration file.
 They are all optional.
