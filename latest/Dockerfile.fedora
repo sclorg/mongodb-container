@@ -35,7 +35,7 @@ ENV MONGODB_VERSION=3.4 \
 EXPOSE 27017
 
 ENTRYPOINT ["container-entrypoint"]
-CMD ["run-mongod"]
+CMD ["run-standalone"]
 
 RUN INSTALL_PKGS="bind-utils gettext iproute rsync tar findutils python shadow-utils mongodb mongodb-server mongo-tools groff-base" && \
     dnf install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \

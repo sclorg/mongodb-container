@@ -30,7 +30,7 @@ ENV MONGODB_VERSION=3.4 \
 EXPOSE 27017
 
 ENTRYPOINT ["container-entrypoint"]
-CMD ["run-mongod"]
+CMD ["run-standalone"]
 
 # We need to call 2 (!) yum commands before being able to enable repositories properly
 # This is a workaround for https://bugzilla.redhat.com/show_bug.cgi?id=1479388
