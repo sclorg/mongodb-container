@@ -18,60 +18,11 @@ try out this example is using the
 [`oc cluster up`](https://github.com/openshift/origin/blob/master/docs/cluster_up_down.md)
 command.
 
-This tutorial assumes you have the `oc` tool, are logged in and have 3
-pre-created persistent volumes (or configured [persistent volume
-provisioning](https://docs.openshift.org/latest/install_config/persistent_storage/dynamically_provisioning_pvs.html)).
+## Tutorial 
 
-In the context of a project where you want to create a MongoDB cluster, run
-`oc new-app` passing the template file as an argument:
+See https://github.com/redhat-cop/containers-quickstarts/tree/master/mongo-statefulset for instructions
 
-```bash
-oc new-app https://raw.githubusercontent.com/sclorg/mongodb-container/master/examples/petset/mongodb-petset-persistent.yaml
-```
-
-The command above will create a MongoDB cluster with 3 replica set members.
-
-To list all pods:
-
-```console
-$ oc get pods -l name=mongodb
-NAME        READY     STATUS    RESTARTS   AGE
-mongodb-0   1/1       Running   0          50m
-mongodb-1   1/1       Running   0          50m
-mongodb-2   1/1       Running   0          49m
-```
-
-To see logs from the particular pod:
-
-```console
-$ oc logs mongodb-0
-```
-
-To log in to the pod:
-
-```console
-$ oc rsh mongodb-0
-sh-4.2$
-```
-
-And later from one of the pods you can also login into MongoDB:
-
-```console
-sh-4.2$ mongo $MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD
-MongoDB shell version: 3.2.6
-connecting to: sampledb
-rs0:PRIMARY>
-```
-
-## Example Working Scenarios
-
-This section describes how this example is designed to work.
-
-### Initial Deployment: 3-member Replica Set
-
-After creating a cluster with the example template, we have a replica set with 3
-members. That should be enough for most cases, as described in the
-[official MongoDB documentation](https://docs.mongodb.com/manual/tutorial/deploy-replica-set/#overview).
+## General Information
 
 During the lifetime of your OpenShift project, one or more of those members
 might crash or fail. OpenShift automatically restarts unhealthy pods
