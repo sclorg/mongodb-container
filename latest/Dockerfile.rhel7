@@ -38,7 +38,6 @@ RUN yum repolist > /dev/null && \
     yum install -y yum-utils && \
     yum-config-manager --disable \* &> /dev/null && \
     yum-config-manager --enable rhel-server-rhscl-7-rpms && \
-    yum-config-manager --enable rhel-server-rhscl-7-beta-rpms && \
     yum-config-manager --enable rhel-7-server-rpms && \
     yum-config-manager --enable rhel-7-server-optional-rpms && \
     INSTALL_PKGS="bind-utils gettext iproute rsync tar hostname shadow-utils rh-mongodb34-mongodb rh-mongodb34 rh-mongodb34-mongo-tools groff-base" && \
@@ -56,7 +55,8 @@ RUN touch /etc/mongod.conf && \
     # Set owner 'mongodb:0' and 'g+rw(x)' permission - to avoid problems running container with arbitrary UID
     /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongod.conf.template \
     ${HOME} ${APP_DATA}/.. && \
-    usermod -a -G root mongodb
+    usermod -a -G root mongodb && \
+    rpm-file-permissions
 
 VOLUME ["/var/lib/mongodb/data"]
 
