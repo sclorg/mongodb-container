@@ -33,7 +33,7 @@ test $# -eq 1 -a "${1-}" == --list && exit 0
 CID_FILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 
 TEST_DIR="$(readlink -zf $(dirname "${BASH_SOURCE[0]}"))"
-S2I_ARGS="--force-pull=false "
+S2I_ARGS="--pull-policy=never "
 
 function cleanup() {
   local network_name="mongodb-replset-$$"
