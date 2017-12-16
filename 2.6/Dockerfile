@@ -14,8 +14,8 @@ LABEL summary="$SUMMARY" \
       io.openshift.tags="database,mongodb,rh-mongodb26" \
       com.redhat.component="rh-mongodb26-docker" \
       name="centos/mongodb-26-centos7" \
+      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass centos/mongodb-26-centos7" \
       version="2.6" \
-      release="1" \
       maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
 ENV MONGODB_VERSION=2.6 \
