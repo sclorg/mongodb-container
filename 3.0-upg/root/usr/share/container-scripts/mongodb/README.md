@@ -1,7 +1,3 @@
-% MONGODB-30-upg(1) Container Image Pages
-% SoftwareCollections.org
-% July 18, 2017
-
 MongoDB 3.0-upg NoSQL Database Server Docker image
 ====================
 
@@ -47,37 +43,47 @@ Environment variables and volumes
 The image recognizes the following environment variables that you can set
 during initialization by passing `-e VAR=VALUE` to the Docker run command.
 
-|    Variable name          |    Description                              |
-| :------------------------ | -----------------------------------------   |
-|  `MONGODB_ADMIN_PASSWORD` | Password for the admin user                 |
+**`MONGODB_ADMIN_PASSWORD`**  
+       Password for the admin user
+
 
 Optionally you can provide settings for user with 'readWrite' role.
 (Note you MUST specify all three of these settings)
 
-|    Variable name          |    Description                              |
-| :------------------------ | -----------------------------------------   |
-|  `MONGODB_USER`           | User name for MONGODB account to be created |
-|  `MONGODB_PASSWORD`       | Password for the user account               |
-|  `MONGODB_DATABASE`       | Database name                               |
+**`MONGODB_USER`**  
+       User name for MONGODB account to be created
+
+**`MONGODB_PASSWORD`**  
+       Password for the user account
+
+**`MONGODB_DATABASE`**  
+       Database name
+
 
 
 The following environment variables influence the MongoDB configuration file.
 They are all optional.
 
-|    Variable name      |    Description                                                            |    Default
-| :-------------------- | ------------------------------------------------------------------------- | ----------------
-|  `MONGODB_PREALLOC`   | Enable data file preallocation.                                           |  false
-|  `MONGODB_NOPREALLOC`   | DEPRECATED - use `MONGODB_PREALLOC` instead. Disable data file preallocation. |
-|  `MONGODB_SMALLFILES` | Set MongoDB to use a smaller default data file size.                      |  true
-|  `MONGODB_QUIET`      | Runs MongoDB in a quiet mode that attempts to limit the amount of output. |  true
+**`MONGODB_PREALLOC (default: false)`**  
+       Enable data file preallocation.
+
+**`MONGODB_NOPREALLOC`**  
+       DEPRECATED - use `MONGODB_PREALLOC` instead. Disable data file preallocation.
+
+**`MONGODB_SMALLFILES (default: true)`**  
+       Set MongoDB to use a smaller default data file size.
+
+**`MONGODB_QUIET (default: true)`**  
+       Runs MongoDB in a quiet mode that attempts to limit the amount of output.
+
 
 
 You can also set the following mount points by passing the `-v
 /host:/container` flag to Docker.
 
-|  Volume mount point         | Description            |
-| :-------------------------- | ---------------------- |
-|  `/var/lib/mongodb/data`   | MongoDB data directory |
+**`/var/lib/mongodb/data`**  
+       MongoDB data directory
+
 
 **Notice: When mounting a directory from the host into the container, ensure
 that the mounted directory has the appropriate permissions and that the owner

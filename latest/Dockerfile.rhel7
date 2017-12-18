@@ -14,7 +14,9 @@ LABEL summary="$SUMMARY" \
       io.openshift.tags="database,mongodb,rh-mongodb34" \
       com.redhat.component="rh-mongodb34-docker" \
       name="rhscl/mongodb-34-rhel7" \
-      version="1"
+      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass rhscl/mongodb-34-rhel7" \
+      version="1" \
+      maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
 ENV MONGODB_VERSION=3.4 \
     # Set paths to avoid hard-coding them in scripts.

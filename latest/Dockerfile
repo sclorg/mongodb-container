@@ -14,6 +14,7 @@ LABEL summary="$SUMMARY" \
       io.openshift.tags="database,mongodb,rh-mongodb34" \
       com.redhat.component="rh-mongodb34-docker" \
       name="centos/mongodb-34-centos7" \
+      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass centos/mongodb-34-centos7" \
       version="1" \
       maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 

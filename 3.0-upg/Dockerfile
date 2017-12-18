@@ -14,8 +14,8 @@ LABEL summary="$SUMMARY" \
       io.openshift.tags="database,mongodb,rh-mongodb30upg" \
       com.redhat.component="rh-mongodb30-upg-docker" \
       name="centos/mongodb-30-upg-centos7" \
+      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass centos/mongodb-30-upg-centos7" \
       version="3.0-upg" \
-      release="1" \
       maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
 ENV MONGODB_VERSION=3.0-upg \
