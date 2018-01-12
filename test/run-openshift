@@ -33,19 +33,22 @@ function check_mongodb_os_service_connection() {
   local user=$1 ; shift
   local pass=$1 ; shift
   local database=$1 ; shift
+  local timeout=${1:-60} ; shift || :
   local pod_ip=$(ct_os_get_service_ip ${service_name})
 
   : "  Service ${service_name} check ..."
 
-  local cmd="source /usr/share/container-scripts/mongodb/common.sh; wait_for_mongo_up mongodb://${pod_ip}/${database}; mongo mongodb://${pod_ip}/${database} -u ${user} -p ${pass}"
+  local cmd="mongo ${pod_ip}/${database} -u ${user} -p${pass} --eval 'quit()'"
+  SECONDS=0
 
   echo -n "Waiting for ${service_name} service becoming ready ..."
-  if docker run --rm ${util_image_name} bash -c "${cmd}"; then
-    echo " PASS"
-    return 0
-  fi
-  echo " FAIL"
-  return 1
+  while ! docker run --rm ${util_image_name} bash -c "${cmd}" ; do
+    echo -n "."
+    [ ${SECONDS} -gt ${timeout} ] && echo " FAIL" && return 1
+    sleep 3
+  done
+  echo " PASS"
+  return 0
 }
 
 function wait_statefulsets_ready() {
@@ -77,7 +80,7 @@ function test_mongodb_pure_image() {
                           --env MONGODB_ADMIN_PASSWORD=test
 
   ct_os_wait_pod_ready "${service_name}" 60
-  check_mongodb_os_service_connection "${image_name}" "${service_name}" admin test admin
+  check_mongodb_os_service_connection "${image_name}" "${service_name}" admin test admin 120
 
   ct_os_delete_project
 }

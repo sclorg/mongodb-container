@@ -147,7 +147,7 @@ function ctest_s2i() {
     test_app_dir=$(mktemp -d)
     cp -r ${TEST_DIR}/examples/extending-image/ ${test_app_dir}/
     chmod -R a+rX ${test_app_dir}
-    _s2i_test_image "s2i_test_mount" "-v ${test_app_dir}/examples/extending-image:/opt/app-root/src/:z"
+    _s2i_test_image "s2i_test_mount" "-v ${test_app_dir}/extending-image:/opt/app-root/src/:z"
     rm -rf ${test_app_dir}
     mv ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf.backup ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf
     echo "  Success!"
