@@ -129,27 +129,27 @@ function ctest_s2i() {
     s2i usage ${S2I_ARGS} ${IMAGE_NAME} &>/dev/null
 
     # Set configuration file (differs for mmapv1 storage engine)
-    mv ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf.backup
+    mv ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf.backup
 
     if test $VERSION_NUM -ge 32; then
-        ln -s mongod-WT.conf ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf
+        ln -s mongod-WT.conf ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf
     else
-        ln -s mongod-mmapv1.conf ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf
+        ln -s mongod-mmapv1.conf ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf
     fi
 
     echo "  Testing s2i build"
-    s2i build file://${TEST_DIR}/test-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
+    s2i build file://${TEST_DIR}/examples/extending-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
 
     local container_name=s2i_config_build
     IMAGE_NAME=${IMAGE_NAME}-testapp _s2i_test_image "s2i_config_build" ""
 
     echo "  Testing s2i mount"
     test_app_dir=$(mktemp -d)
-    cp -r ${TEST_DIR}/test-image/ ${test_app_dir}/
+    cp -r ${TEST_DIR}/examples/extending-image/ ${test_app_dir}/
     chmod -R a+rX ${test_app_dir}
-    _s2i_test_image "s2i_test_mount" "-v ${test_app_dir}/test-image:/opt/app-root/src/:z"
+    _s2i_test_image "s2i_test_mount" "-v ${test_app_dir}/examples/extending-image:/opt/app-root/src/:z"
     rm -rf ${test_app_dir}
-    mv ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf.backup ${TEST_DIR}/test-image/mongodb-cfg/mongod.conf
+    mv ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf.backup ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf
     echo "  Success!"
 }
 
