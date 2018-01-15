@@ -17,15 +17,26 @@ test -n "${IMAGE_NAME-}" || false 'make sure $IMAGE_NAME is defined'
 test -n "${VERSION-}" || false 'make sure $VERSION is defined'
 test -n "${OS-}" || false 'make sure $OS is defined'
 
-function print_logs() {
-  oc get all
-  while read pod_info; do
-    pod=$(echo ${pod_info} | tr -s ' ' | cut -f1 -d' ')
-    echo "INFO: printing logs for pod ${pod}"
-    oc logs ${pod}
-  done < <(oc get pods --no-headers=true)
+# ct_os_print_logs
+# --------------------
+# Returns status of all objects and logs from all pods.
+function ct_os_print_logs() {
+  ct_os_get_status
+  while read pod_name; do
+    echo "INFO: printing logs for pod ${pod_name}"
+    oc logs ${pod_name}
+  done < <(oc get pods --no-headers=true -o custom-columns=NAME:.metadata.name)
 }
-trap print_logs ERR
+
+# ct_os_enable_print_logs
+# --------------------
+# Enables automatic printing of pod logs on ERR.
+function ct_os_enable_print_logs() {
+  set -E
+  trap ct_os_print_logs ERR
+}
+
+ct_os_enable_print_logs
 
 function check_mongodb_os_service_connection() {
   local util_image_name=$1 ; shift
@@ -51,12 +62,17 @@ function check_mongodb_os_service_connection() {
   return 0
 }
 
-function wait_statefulsets_ready() {
+# ct_os_wait_rc_ready POD_PREFIX TIMEOUT
+# --------------------
+# Wait maximum [timeout] for the rc having desired number of replicas ready.
+# Arguments: pod_prefix - prefix of the replication controller
+# Arguments: timeout - how many seconds to wait seconds
+function ct_os_wait_rc_ready() {
   local pod_prefix="${1}" ; shift
   local timeout="${1}" ; shift
   SECONDS=0
   echo -n "Waiting for ${pod_prefix} pod becoming ready ..."
-  while ! test "$(oc get statefulsets --no-headers 2>/dev/null \
+  while ! test "$((oc get --no-headers statefulsets; oc get --no-headers rc) 2>/dev/null \
                  | grep "^${pod_prefix}" | awk '$2==$3 {print "ready"}')" == "ready" ; do
     echo -n "."
     [ ${SECONDS} -gt ${timeout} ] && echo " FAIL" && return 1
@@ -104,7 +120,7 @@ function test_mongodb_replication() {
                               MONGODB_ADMIN_PASSWORD=${ADMIN_PASS} \
                               VOLUME_CAPACITY=500M
 
-  wait_statefulsets_ready "${service_name}" 300
+  ct_os_wait_rc_ready "${service_name}" 600
   check_mongodb_os_service_connection "${image_name}" "${service_name}" admin ${ADMIN_PASS} admin
   check_mongodb_os_service_connection "${image_name}" "${service_name}" testu testp testdb
 
