@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH:-}/db/replset/common.sh
+
+function configure_configsvr() {
+  configure_replicaset_mode configsvr_rs_init
+}
+readonly configure_configsvr
+
+# @public Initializes the replica set configuration for this configuration server.
+#
+# @value  MONGODB_REPLICA_NAME
+# @value  MEMBER_HOST
+# @value  MONGODB_ADMIN_PASSWORD
+# @value  MONGODB_ADMIN_USER
+#
+# 05/2017 Marked function as readonly.
+# 05/2017 Enforced keyfile access control.
+# 06/2017 Added 'MONGODB_ADMIN_USER' (default admin).
+function configsvr_rs_init() {
+  local conf="{_id: '${MONGODB_REPLICA_NAME:-}', configsvr: true, members: [{_id: 0, host: '$MEMBER_HOST'}]}"
+
+  log_info "Setting up config document"
+  $MONGO --eval "quit(rs.initiate(${conf}).ok ? 0 : 1)" --quiet
+
+  log_info "Waiting for PRIMARY status"
+  $MONGO --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
+
+  mongo_create_admin
+  [[ -v CREATE_USER ]] && mongo_create_user "-u ${MONGODB_ADMIN_USER:-} -p ${MONGODB_ADMIN_PASSWORD:-}"
+
+  log_pass "Replica set initialized"
+}
+readonly -f configsvr_rs_init
