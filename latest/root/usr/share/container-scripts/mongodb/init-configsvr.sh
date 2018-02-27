@@ -21,11 +21,7 @@ readonly MEMBER_HOST="$(hostname -f)"
 function initiate() {
   local host="$1"
 
-  local config="{_id: '${MONGODB_REPLICA_NAME}', members: [{_id: 0, host: '${host}'}]}"
-
-  if [[ "$MONGODB_MODE" == 'configsvr' ]]; then
-    config="{_id: '${MONGODB_REPLICA_NAME}', configsvr: true, members: [{_id: 0, host: '${host}'}]}"
-  fi
+  local config="{_id: '${MONGODB_REPLICA_NAME}', configsvr: true, members: [{_id: 0, host: '${host}'}]}"
 
   info "Initiating MongoDB replica using: ${config}"
   mongo --eval "quit(rs.initiate(${config}).ok ? 0 : 1)" --quiet
@@ -33,7 +29,7 @@ function initiate() {
   info "Waiting for PRIMARY status ..."
   mongo --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
 
-  info "Successfully initialized replica set"
+  info "Successfully initialized configsvr replica set"
 }
 
 # Adds a host to the replica set configuration.

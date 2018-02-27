@@ -11,8 +11,13 @@ export MONGODB_DATADIR=/var/lib/mongodb/data
 export CONTAINER_PORT=27017
 # Configuration settings.
 export MONGODB_QUIET=${MONGODB_QUIET:-true}
+export MONGODB_MODE=${MONGODB_MODE:-mongod}
 
-MONGODB_CONFIG_PATH=/etc/mongod.conf
+if [[ "$MONGODB_MODE" == mongos ]]; then
+  MONGODB_CONFIG_PATH=/etc/mongos.conf
+else
+  MONGODB_CONFIG_PATH=/etc/mongod.conf
+fi
 MONGODB_KEYFILE_PATH="${HOME}/keyfile"
 
 # Constants used for waiting

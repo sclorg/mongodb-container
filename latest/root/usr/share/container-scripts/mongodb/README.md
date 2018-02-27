@@ -44,6 +44,11 @@ Environment variables and volumes
 The image recognizes the following environment variables that you can set
 during initialization by passing `-e VAR=VALUE` to the Docker run command.
 
+**`MONGODB_MODE`**
+       Specifies mode in which to run the container, may be set to "configsvr",
+       "shardsvr", or "mongos"
+
+
 **`MONGODB_ADMIN_PASSWORD`**  
        Password for the admin user
 
@@ -61,14 +66,25 @@ Optionally you can provide settings for user with 'readWrite' role.
        Database name
 
 
+**`MONGODB_REPLICA_NAME`**
+
+**`MONGODB_REPLSET_NAMES`**
+
+**`MONGODB_REPLSET_SERVERS`**
+
+**`MONGODB_CONFIG_REPLSET_NAME`**
+
+**`MONGODB_CONFIG_REPLSET_SERVER`**
+
+**`MONGODB_KEYFILE_VALUE`**
+
+**`MONGODB_SERVICE_NAME`**
 
 The following environment variables influence the MongoDB configuration file.
 They are all optional.
 
 **`MONGODB_QUIET (default: true)`**  
        Runs MongoDB in a quiet mode that attempts to limit the amount of output.
-
-
 
 You can also set the following mount points by passing the `-v
 /host:/container` flag to Docker.

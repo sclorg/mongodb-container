@@ -17,4 +17,6 @@ function setup_wiredtiger_cache() {
   info "wiredTiger cacheSizeGB set to ${cache_size}"
 }
 
-setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongod.conf.template
+if [[ $MONGODB_MODE != mongos ]]; then
+  setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongod.conf.template
+fi

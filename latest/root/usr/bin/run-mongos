@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
+
+function cleanup() {
+  echo "=> Shutting down MongoDB server ..."
+  pkill -INT mongos || :
+  wait_for_mongo_down
+  exit 0
+}
+
+trap 'cleanup' SIGINT SIGTERM
+
+mongo_common_args=
+
+
+# pre-init files
+process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
+
+
+# Must bring up MongoDB on localhost only until it has an admin password set.
+mongos $mongo_common_args --configdb "${MONGODB_CONFIG_REPLSET_NAME}/${MONGODB_CONFIG_REPLSET_SERVER}" &
+
+info "Waiting for local mongos to accept connections  ..."
+wait_for_mongo_up &>/dev/null
+
+# Initialize the replicaset or add container to it
+${CONTAINER_SCRIPTS_PATH}/init-mongos.sh
+
+>/tmp/initialized
+wait
