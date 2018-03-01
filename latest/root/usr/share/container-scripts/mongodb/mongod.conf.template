@@ -13,6 +13,8 @@ systemLog:
 net:
   # Specify port number (27017 by default)
   port: ${CONTAINER_PORT}
+  # Specify on which interfaces start listening
+  bindIp: "0.0.0.0"
 
 
 # storage Options - How and Where to store data
