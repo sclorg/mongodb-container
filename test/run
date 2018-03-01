@@ -35,12 +35,28 @@ CID_FILE_DIR=$(mktemp --suffix=mongodb_test_cidfiles -d)
 TEST_DIR="$(readlink -zf $(dirname "${BASH_SOURCE[0]}"))"
 S2I_ARGS="--pull-policy=never "
 
+volumes_to_clean=
+
 function cleanup() {
   local network_name="mongodb-replset-$$"
   ct_cleanup
   ! docker network ls | grep -q ${network_name} || docker network rm ${network_name}
+
+  ct_path_foreach "$volumes_to_clean" cleanup_volume_dir
 }
 trap cleanup EXIT SIGINT
+
+cleanup_volume_dir ()
+{
+  test ! -d "$1" && : "WARN: cleaned $1 for some reason" && return 0
+  # When we run this test script as non-root (we should?), the MongoDB server
+  # within container is still run under 'mongodb' user.  It means that we are
+  # unable to remove files created by server.  That's why we need to let docker
+  # escalate the privileges again.
+  local datadir=/var/lib/mongodb/data
+  docker run -v "$1:$datadir:Z" --rm "$IMAGE_NAME" /bin/sh -c "/bin/rm -rf $datadir/*"
+  rmdir "$1"
+}
 
 function test_mongo() {
     echo "  Testing MongoDB"
@@ -84,9 +100,11 @@ function ctest_mount_config() {
     local config_content
     volume_dir=`mktemp -d --tmpdir mongodb-testdata.XXXXX`
     chmod a+rwx ${volume_dir}
+    ct_path_append volumes_to_clean "$volume_dir"
     config_file=$volume_dir/mongod.conf
     config_content="dbpath=/var/lib/mongodb/dbpath
-unixSocketPrefix = /var/lib/mongodb"
+unixSocketPrefix = /var/lib/mongodb
+bind_ip = 0.0.0.0"
     if test $VERSION_NUM -le 30; then
     config_content="$config_content
 smallfiles = true
@@ -116,10 +134,6 @@ noprealloc = true"
     test_connection ${name}
     echo "  Testing config file works"
     docker exec $(ct_get_cid ${name}) bash -c "test -S /var/lib/mongodb/mongodb-27017.sock"
-
-    # need to remove volume_dir with sudo because of permissions of files written
-    # by the container
-    sudo rm -rf ${volume_dir}
 
     echo "  Success!"
 }
