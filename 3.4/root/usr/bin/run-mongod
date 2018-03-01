@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH}/common.sh
+
+function cleanup() {
+  echo "=> Shutting down MongoDB server ..."
+  pkill -INT mongod || :
+  wait_for_mongo_down
+  exit 0
+}
+
+trap 'cleanup' SIGINT SIGTERM
+
+mongo_common_args=
+
+
+# pre-init files
+process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
+
+
+# Must bring up MongoDB on localhost only until it has an admin password set.
+mongod $mongo_common_args --bind_ip 127.0.0.1 --noauth &
+wait_for_mongo_up
+
+
+# init files
+process_extending_files ${APP_DATA}/mongodb-init/ ${CONTAINER_SCRIPTS_PATH}/init/
+
+
+# Restart the MongoDB daemon to bind on all interfaces
+mongod $mongo_common_args --shutdown
+wait_for_mongo_down
+
+# Make sure env variables don't propagate to mongod process.
+unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
+exec mongod $mongo_common_args --auth
