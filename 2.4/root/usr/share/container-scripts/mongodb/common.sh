@@ -44,7 +44,7 @@ function cache_container_addr() {
     fi
     sleep $SLEEP_TIME
   done
-  echo >&2 "Failed to get Docker container IP address." && exit 1
+  echo >&2 "Failed to get container IP address." && exit 1
 }
 
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
@@ -84,7 +84,7 @@ function _wait_for_mongo() {
 
 # endpoints returns list of IP addresses with other instances of MongoDB
 # To get list of endpoints, you need to have headless Service named 'mongodb'.
-# NOTE: This won't work with standalone Docker container.
+# NOTE: This won't work with standalone container.
 function endpoints() {
   service_name=${MONGODB_SERVICE_NAME:-mongodb}
   dig ${service_name} A +search +short 2>/dev/null

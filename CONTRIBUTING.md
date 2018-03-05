@@ -4,7 +4,7 @@ This guide aims to help developers working on this repository.
 
 ## Making changes to runtime scripts
 
-The Docker images created from this repository contain several runtime scripts
+The container images created from this repository contain several runtime scripts
 that are executed from the image entrypoint / default command. These scripts are
 located under `${IMAGE_VERSION}/root/`.
 

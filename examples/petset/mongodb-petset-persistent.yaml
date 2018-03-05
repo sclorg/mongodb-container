@@ -48,8 +48,8 @@ parameters:
     required: true
 
   - name: MONGODB_IMAGE
-    displayName: "MongoDB Docker Image"
-    description: "A reference to a supported MongoDB Docker image."
+    displayName: "MongoDB Container Image"
+    description: "A reference to a supported MongoDB container image."
     value: "centos/mongodb-32-centos7"
     required: true
 

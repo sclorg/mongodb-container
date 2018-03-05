@@ -1,4 +1,4 @@
-MongoDB 2.6 NoSQL Database Server Docker image
+MongoDB 2.6 NoSQL Database Server container image
 ====================
 
 This repository contains Dockerfiles for MongoDB images for general usage and OpenShift.

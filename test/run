@@ -118,7 +118,7 @@ noprealloc = true"
     docker exec $(ct_get_cid ${name}) bash -c "test -S /var/lib/mongodb/mongodb-27017.sock"
 
     # need to remove volume_dir with sudo because of permissions of files written
-    # by the Docker container
+    # by the container
     sudo rm -rf ${volume_dir}
 
     echo "  Success!"
