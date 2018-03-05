@@ -1,4 +1,4 @@
-MongoDB 3.0-upg NoSQL Database Server Docker image
+MongoDB 3.0-upg NoSQL Database Server container image
 ====================
 
 This repository contains Dockerfiles for MongoDB images for general usage and OpenShift.
