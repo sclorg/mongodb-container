@@ -27,8 +27,8 @@ mongod $mongo_common_args --bind_ip 127.0.0.1 --noauth &
 wait_for_mongo_up
 
 
-# init files
-process_extending_files ${APP_DATA}/mongodb-init/ ${CONTAINER_SCRIPTS_PATH}/init/
+# start files - on every start
+process_extending_files ${APP_DATA}/mongodb-start/ ${CONTAINER_SCRIPTS_PATH}/start/
 
 
 # Restart the MongoDB daemon to bind on all interfaces

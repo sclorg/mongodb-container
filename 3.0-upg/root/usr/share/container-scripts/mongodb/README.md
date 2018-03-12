@@ -165,7 +165,7 @@ when running `run-mongod` or `run-mongod-replication` commands contained
 contained shell scripts (`*.sh`) are sourced before `mongod` server is
 started
 
-##### `mongodb-init/`
+##### `mongodb-start/`
 
 contained shell scripts (`*.sh`) are sourced when `mongod` server is
 started
