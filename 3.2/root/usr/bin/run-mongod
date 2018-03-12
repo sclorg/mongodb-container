@@ -22,10 +22,14 @@ mongo_common_args=
 process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
 
 
+datadir_files="$(ls -A $MONGODB_DATADIR)"
 # Must bring up MongoDB on localhost only until it has an admin password set.
 mongod $mongo_common_args --bind_ip 127.0.0.1 --noauth &
 wait_for_mongo_up
 
+
+# init files - on first start
+[ "$datadir_files" ] || process_extending_files ${APP_DATA}/mongodb-init/ ${CONTAINER_SCRIPTS_PATH}/init/
 
 # start files - on every start
 process_extending_files ${APP_DATA}/mongodb-start/ ${CONTAINER_SCRIPTS_PATH}/start/

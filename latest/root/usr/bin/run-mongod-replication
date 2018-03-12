@@ -40,6 +40,7 @@ mongo_common_args=
 process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/pre-init/
 
 
+datadir_files="$(ls -A $MONGODB_DATADIR)"
 # Make sure env variables don't propagate to mongod process.
 (unset MONGODB_USER MONGODB_PASSWORD MONGODB_DATABASE MONGODB_ADMIN_PASSWORD
 mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}") &
@@ -47,6 +48,9 @@ mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}") &
 # Initialize the replicaset or add container to it
 ${CONTAINER_SCRIPTS_PATH}/init-replset.sh
 
+
+# init files - on first start
+[ -f /tmp/initialized ] || [ "$datadir_files" ] || process_extending_files ${APP_DATA}/mongodb-init/ ${CONTAINER_SCRIPTS_PATH}/init/
 
 # start files - on every start
 [ -f /tmp/initialized ] || process_extending_files ${APP_DATA}/mongodb-start/ ${CONTAINER_SCRIPTS_PATH}/start/
