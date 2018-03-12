@@ -48,8 +48,8 @@ mongod ${mongo_common_args} --replSet "${MONGODB_REPLICA_NAME}") &
 ${CONTAINER_SCRIPTS_PATH}/init-replset.sh
 
 
-# init files
-[ -f /tmp/initialized ] || process_extending_files ${APP_DATA}/mongodb-init/ ${CONTAINER_SCRIPTS_PATH}/init/
+# start files - on every start
+[ -f /tmp/initialized ] || process_extending_files ${APP_DATA}/mongodb-start/ ${CONTAINER_SCRIPTS_PATH}/start/
 
 
 >/tmp/initialized
