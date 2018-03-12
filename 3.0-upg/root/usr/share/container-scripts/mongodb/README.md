@@ -165,15 +165,20 @@ when running `run-mongod` or `run-mongod-replication` commands contained
 contained shell scripts (`*.sh`) are sourced before `mongod` server is
 started
 
-##### `mongodb-start/`
+##### `mongodb-init/`
 
 contained shell scripts (`*.sh`) are sourced when `mongod` server is
-started
+started for the first time (= datadir is empty)
 ~~~~~
 - `run-mongod` command doesn't have enabled authentication in this phase
 
 - `run-mongod-replication` command has enabled authentication in this phase
 ~~~~~
+
+##### `mongodb-start/`
+
+same sematics as `mongodb-init/`, except that these scripts are always sourced
+(after `mongodb-init/` scripts, if they exist)
 
 these scripts are skipped if `run-mongod-replication` is run with already
 initialized data directory
