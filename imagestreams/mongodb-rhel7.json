@@ -21,6 +21,9 @@
         "from": {
           "kind": "ImageStreamTag",
           "name": "3.4"
+        },
+        "referencePolicy": {
+          "type": "Local"
         }
       },
       {
@@ -36,6 +39,9 @@
         "from": {
           "kind": "DockerImage",
           "name": "registry.access.redhat.com/openshift3/mongodb-24-rhel7:latest"
+        },
+        "referencePolicy": {
+          "type": "Local"
         }
       },
       {
@@ -45,12 +51,15 @@
           "openshift.io/provider-display-name": "Red Hat, Inc.",
           "description": "Provides a MongoDB 2.6 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mongodb-container/tree/master/2.6/README.md.",
           "iconClass": "icon-mongodb",
-          "tags": "database,mongodb",
+          "tags": "hidden,database,mongodb",
           "version": "2.6"
         },
         "from": {
           "kind": "DockerImage",
           "name": "registry.access.redhat.com/rhscl/mongodb-26-rhel7:latest"
+        },
+        "referencePolicy": {
+          "type": "Local"
         }
       },
       {
@@ -66,6 +75,9 @@
         "from": {
           "kind": "DockerImage",
           "name": "registry.access.redhat.com/rhscl/mongodb-32-rhel7:latest"
+        },
+        "referencePolicy": {
+          "type": "Local"
         }
       },
       {
@@ -81,6 +93,9 @@
         "from": {
           "kind": "DockerImage",
           "name": "registry.access.redhat.com/rhscl/mongodb-34-rhel7:latest"
+        },
+        "referencePolicy": {
+          "type": "Local"
         }
       }
     ]
