@@ -32,7 +32,7 @@ ENV MONGODB_VERSION=3.4 \
 EXPOSE 27017
 
 ENTRYPOINT ["container-entrypoint"]
-CMD ["run-mongod"]
+CMD ["run-standalone"]
 
 RUN yum install -y centos-release-scl && \
     yum-config-manager --enable centos-sclo-rh-testing && \

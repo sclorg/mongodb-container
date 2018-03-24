@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source ${CONTAINER_SCRIPTS_PATH:-}/db/replset/common.sh
+
+# @public Create either a replica set or add a member to an existing set
+function configure_replicaset() {
+  configure_replicaset_mode rs_init
+}
+readonly -f configure_replicaset_mode
+
+# @public Initializes the replica set configuration.
+function rs_init() {
+  local conf="{_id: '${MONGODB_REPLICA_NAME:-}', members: [{_id: 0, host: '$MEMBER_HOST'}]}"
+
+  log_info "Setting up config document"
+  $MONGO --host localhost --eval "quit(rs.initiate(${conf}).ok ? 0 : 1)" --quiet
+
+  log_info "Waiting for PRIMARY status"
+  $MONGO --host localhost --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
+
+  mongo_create_admin
+  [[ -v CREATE_USER ]] && mongo_create_user
+
+  log_pass "Replica set initialized"
+}
+readonly -f rs_init
