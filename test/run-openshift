@@ -71,10 +71,9 @@ function test_mongodb_replication() {
   ADMIN_PASS=adminPass
 
   ct_os_new_project
-  ct_os_upload_image "${image_name}" "mongodb:$VERSION"
 
   ct_os_deploy_template_image "$TEMPLATES/mongodb-petset-persistent.yaml" \
-                              MONGODB_IMAGE="$image_name" \
+                              MONGODB_IMAGE="${image_name}:$VERSION" \
                               MONGODB_SERVICE_NAME="${service_name}" \
                               MONGODB_USER=testu \
                               MONGODB_PASSWORD=testp \
@@ -83,13 +82,15 @@ function test_mongodb_replication() {
                               VOLUME_CAPACITY=500M
 
   ct_os_wait_rc_ready "${service_name}" 600
-  check_mongodb_os_service_connection "${image_name}" "${service_name}" admin ${ADMIN_PASS} admin
-  check_mongodb_os_service_connection "${image_name}" "${service_name}" testu testp testdb
+  for pod in $(ct_os_get_pod_name mongodb); do
+    ct_os_wait_pod_ready $pod 300
+  done
+  check_mongodb_os_service_connection "${image_name}:$VERSION" "${service_name}" admin ${ADMIN_PASS} admin
+  check_mongodb_os_service_connection "${image_name}:$VERSION" "${service_name}" testu testp testdb
 
-  oc exec $(ct_os_get_pod_name mongodb | head -n 1) -- bash -c 'set -x
+  ct_os_run_in_pod $(ct_os_get_pod_name mongodb | head -n 1) bash -c 'set -x
 . /usr/share/container-scripts/mongodb/common.sh
 . /usr/share/container-scripts/mongodb/test-functions.sh
-wait_replicaset_members "$(replset_addr admin)" 3
 insert_and_wait_for_replication "$(replset_addr admin)" "{a:5, b:10}"'
 
   ct_os_delete_project
