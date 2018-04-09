@@ -71,6 +71,7 @@ function test_mongodb_replication() {
   ADMIN_PASS=adminPass
 
   ct_os_new_project
+  docker tag "${image_name}" "${image_name}:$VERSION"
 
   ct_os_deploy_template_image "$TEMPLATES/mongodb-petset-persistent.yaml" \
                               MONGODB_IMAGE="${image_name}:$VERSION" \
