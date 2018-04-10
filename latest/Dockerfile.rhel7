@@ -35,7 +35,7 @@ ENTRYPOINT ["container-entrypoint"]
 CMD ["run-mongod"]
 
 RUN yum install -y yum-utils && \
-    prepare-yum-repositories rhel-server-rhscl-7-rpms && \
+    prepare-yum-repositories rhel-server-rhscl-beta-7-rpms rhel-server-rhscl-7-beta-rpms && \
     INSTALL_PKGS="bind-utils gettext iproute rsync tar hostname shadow-utils rh-mongodb36-mongodb rh-mongodb36 rh-mongodb36-mongo-tools groff-base" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \

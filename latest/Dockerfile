@@ -35,6 +35,7 @@ ENTRYPOINT ["container-entrypoint"]
 CMD ["run-mongod"]
 
 RUN yum install -y centos-release-scl && \
+    echo -e "[CBS-tag]\nbaseurl=http://cbs.centos.org/repos/sclo7-rh-mongodb36-rh-candidate/x86_64/os/\ngpgcheck=0" > /etc/yum.repos.d/cbs.repo && \
     yum-config-manager --enable centos-sclo-rh-testing && \
     INSTALL_PKGS="bind-utils gettext iproute rsync tar shadow-utils rh-mongodb36-mongodb rh-mongodb36 rh-mongodb36-mongo-tools groff-base" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
