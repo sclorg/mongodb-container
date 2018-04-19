@@ -57,7 +57,7 @@ sh-4.2$
 And later from one of the pods you can also login into MongoDB:
 
 ```console
-sh-4.2$ mongo $MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD
+sh-4.2$ mongo $MONGODB_DATABASE -u $MONGODB_USER -p$MONGODB_PASSWORD
 MongoDB shell version: 3.2.6
 connecting to: sampledb
 rs0:PRIMARY>
