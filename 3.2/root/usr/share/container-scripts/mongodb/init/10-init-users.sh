@@ -94,6 +94,6 @@ else
   if [ "${MEMBER_ID}" -eq 0 ]; then
     info "Creating MongoDB users ..."
     mongo_create_admin
-    [[ -v CREATE_USER ]] && mongo_create_user "-u admin -p ${MONGODB_ADMIN_PASSWORD}"
+    [[ -v CREATE_USER ]] && mongo_create_user "-u admin -p${MONGODB_ADMIN_PASSWORD}"
   fi
 fi

@@ -57,7 +57,7 @@ To be able to select a container, which initialize the ReplicaSet, `HOSTNAME` of
 And later from one of the containers you can easilly connect to MongoDB:
 
 ```console
-sh-4.2$ mongo $MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD --host $MONGODB_REPLICA_NAME/localhost
+sh-4.2$ mongo $MONGODB_DATABASE -u $MONGODB_USER -p$MONGODB_PASSWORD --host $MONGODB_REPLICA_NAME/localhost
 MongoDB shell version: 3.2.6
 connecting to: sampledb
 rs0:PRIMARY>
