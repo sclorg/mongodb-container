@@ -33,6 +33,7 @@ trap 'cleanup' SIGINT SIGTERM
 #  "mongodb-1" -> "1"
 #  "mongodb-2" -> "2"
 export readonly MEMBER_ID="${HOSTNAME##*-}"
+
 mongo_common_args=
 
 

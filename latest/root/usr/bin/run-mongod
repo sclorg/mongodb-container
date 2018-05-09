@@ -24,7 +24,7 @@ process_extending_files ${APP_DATA}/mongodb-pre-init/ ${CONTAINER_SCRIPTS_PATH}/
 
 datadir_files="$(ls -A $MONGODB_DATADIR)"
 # Must bring up MongoDB on localhost only until it has an admin password set.
-mongod $mongo_common_args --bind_ip 127.0.0.1 --noauth &
+mongod $mongo_common_args --bind_ip localhost --noauth &
 wait_for_mongo_up
 
 

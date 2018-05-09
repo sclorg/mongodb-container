@@ -20,7 +20,8 @@ ctest_change_password
 ctest_mount_config
 ctest_doc_content
 ctest_local_replication
-ctest_s2i"
+ctest_s2i
+ctest_ssl"
 
 VERSION_NUM=$(get_version_number $VERSION | sed  -e 's/\.//g')
 if test $VERSION_NUM -ge 32; then
@@ -54,7 +55,7 @@ cleanup_volume_dir ()
   # unable to remove files created by server.  That's why we need to let docker
   # escalate the privileges again.
   local datadir=/var/lib/mongodb/data
-  docker run -v "$1:$datadir:Z" --rm "$IMAGE_NAME" /bin/sh -c "/bin/rm -rf $datadir/*"
+  docker run -v "$1:$datadir:z" --rm "$IMAGE_NAME" /bin/sh -c "/bin/rm -rf $datadir/*"
   rmdir "$1"
 }
 
@@ -118,8 +119,8 @@ noprealloc = true"
 -e MONGODB_USER=${user}
 -e MONGODB_PASSWORD=${password}
 -e MONGODB_ADMIN_PASSWORD=${admin_password}
--v ${config_file}:/etc/mongod.conf:Z
--v ${volume_dir}:/var/lib/mongodb/dbpath:Z
+-v ${config_file}:/etc/mongod.conf:z
+-v ${volume_dir}:/var/lib/mongodb/dbpath:z
 "
     ct_create_container $name
 

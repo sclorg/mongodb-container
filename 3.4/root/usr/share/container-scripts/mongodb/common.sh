@@ -19,6 +19,13 @@ MONGODB_KEYFILE_PATH="${HOME}/keyfile"
 readonly MAX_ATTEMPTS=60
 readonly SLEEP_TIME=1
 
+# function to use by extension scripts instead of mongo shell binary
+# - to be able to change shell params in all scripts
+# for example to use SSL certificate
+function mongo_cmd() {
+  mongo ${shell_args:-} $@;
+}
+
 # wait_for_mongo_up waits until the mongo server accepts incomming connections
 function wait_for_mongo_up() {
   _wait_for_mongo 1 "$@"
@@ -39,12 +46,10 @@ function _wait_for_mongo() {
     message="down"
   fi
 
-  local mongo_cmd="mongo ${2:-localhost} "
-
   local i
   for i in $(seq $MAX_ATTEMPTS); do
     echo "=> ${2:-} Waiting for MongoDB daemon ${message}"
-    if ([[ ${operation} -eq 1 ]] && ${mongo_cmd} --eval "quit()" &>/dev/null) || ([[ ${operation} -eq 0 ]] && ! ${mongo_cmd} --eval "quit()" &>/dev/null); then
+    if ([[ ${operation} -eq 1 ]] && mongo_cmd ${2:-localhost} <<<"quit()") || ([[ ${operation} -eq 0 ]] && ! mongo_cmd ${2:-localhost} <<<"quit()"); then
       echo "=> MongoDB daemon is ${message}"
       return 0
     fi
@@ -108,6 +113,27 @@ For more information see /usr/share/container-scripts/mongodb/README.md
 within the container or visit https://github.com/sclorg/mongodb-container/."
 
   exit 1
+}
+
+# log_info MESSAGE
+# ---------------------------------------
+# System log information message.
+function log_info() {
+  printf "\xE2\x9E\xA1 [%s INFO] %s\n" "$(date +'%a %b %d %T')" "${1:-}"
+}
+
+# log_fail MESSAGE
+# ---------------------------------------
+# System log failure message.
+function log_fail() {
+  printf "\xe2\x9c\x98 [%s FAIL] %s\n" "$(date +'%a %b %d %T')" "${1:-}"
+}
+
+# log_pass MESSAGE
+# ---------------------------------------
+# System log success message.
+function log_pass() {
+  printf "\xE2\x9C\x94 [%s PASS] %s\n" "$(date +'%a %b %d %T')" "${1:-}"
 }
 
 # get_matched_files PATTERN DIR [DIR ...]
