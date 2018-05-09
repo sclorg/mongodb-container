@@ -9,7 +9,8 @@ function mongo_create_admin() {
 
   # Set admin password
   local js_command="db.createUser({user: 'admin', pwd: '${MONGODB_ADMIN_PASSWORD}', roles: ['dbAdminAnyDatabase', 'userAdminAnyDatabase' , 'readWriteAnyDatabase','clusterAdmin' ]});"
-  if ! mongo ${2:-"localhost"}/admin ${1:-} --eval "${js_command}"; then
+
+  if ! mongo_cmd --host "localhost" admin ${1:-} <<<"$js_command"; then
     echo >&2 "=> Failed to create MongoDB admin user."
     exit 1
   fi
@@ -36,7 +37,8 @@ function mongo_create_user() {
 
   # Create database user
   local js_command="db.getSiblingDB('${MONGODB_DATABASE}').createUser({user: '${MONGODB_USER}', pwd: '${MONGODB_PASSWORD}', roles: [ 'readWrite' ]});"
-  if ! mongo ${2:-"localhost"}/admin ${1:-} --eval "${js_command}"; then
+
+  if ! mongo_cmd --host "localhost" admin ${1:-} <<<"$js_command"; then
     echo >&2 "=> Failed to create MongoDB user: ${MONGODB_USER}"
     exit 1
   fi
@@ -46,7 +48,7 @@ function mongo_create_user() {
 function mongo_reset_user() {
   if [[ -n "${MONGODB_USER:-}" && -n "${MONGODB_PASSWORD:-}" && -n "${MONGODB_DATABASE:-}" ]]; then
     local js_command="db.changeUserPassword('${MONGODB_USER}', '${MONGODB_PASSWORD}')"
-    if ! mongo ${MONGODB_DATABASE} --eval "${js_command}"; then
+    if ! mongo_cmd --host localhost ${MONGODB_DATABASE} <<<"${js_command}"; then
       echo >&2 "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
@@ -57,7 +59,7 @@ function mongo_reset_user() {
 function mongo_reset_admin() {
   if [[ -n "${MONGODB_ADMIN_PASSWORD:-}" ]]; then
     local js_command="db.changeUserPassword('admin', '${MONGODB_ADMIN_PASSWORD}')"
-    if ! mongo admin --eval "${js_command}"; then
+    if ! mongo_cmd --host localhost admin <<<"${js_command}"; then
       echo >&2 "=> Failed to reset password of MongoDB user: ${MONGODB_USER}"
       exit 1
     fi
@@ -69,7 +71,7 @@ function mongo_reset_admin() {
 # environment variables
 function update_users() {
   js_command="db.system.users.count({'user':'admin', 'db':'admin'})"
-  if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+  if [ "$(mongo_cmd --host localhost admin --quiet <<<$js_command)" == "1" ]; then
     info "Admin user is already created. Resetting password ..."
     mongo_reset_admin
   else
@@ -78,7 +80,7 @@ function update_users() {
   fi
   if [[ -v CREATE_USER ]]; then
     js_command="db.system.users.count({'user':'${MONGODB_USER}', 'db':'${MONGODB_DATABASE}'})"
-    if [ "$(mongo admin --quiet --eval "$js_command")" == "1" ]; then
+    if [ "$(mongo_cmd --host localhost admin --quiet <<<$js_command)" == "1" ]; then
       info "MONGODB_USER user is already created. Resetting password ..."
       mongo_reset_user
     else

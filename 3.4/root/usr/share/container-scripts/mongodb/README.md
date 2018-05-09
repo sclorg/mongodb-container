@@ -152,6 +152,21 @@ when running `run-mongod` or `run-mongod-replication` commands contained
 - it is not possible to configure SSL using custom configuration file
 ~~~~~
 
+#####  `mongodb-ssl/`
+
+SSL/TLS certificates used to configure MongoDB server SSL/TLS support
+
+~~~~~
+- `mongodb.pem` - file containing a public key certificate and its
+associated private key. See [upstream
+documentation](https://docs.mongodb.com/manual/tutorial/configure-ssl/#pem-file)
+(encryption of private key is not supported).
+
+- `ca.pem` - optional file containing the root certificate chain from
+the Certificate Authority. See [upstream
+documentation](https://docs.mongodb.com/manual/tutorial/configure-ssl/#set-up-mongod-and-mongos-with-certificate-validation)
+~~~~~
+
 ##### `mongodb-pre-init/`
 
 contained shell scripts (`*.sh`) are sourced before `mongod` server is
@@ -182,6 +197,10 @@ Variables that can be used in the scripts provided to s2i:
 ~~~~~
 - `mongo_common_args` -- contains arguments for the `mongod` server (changing
 this can break existing customization scripts, e.g. default scripts)
+
+- `shell_args` -- arguments to mongo shell which should be used with every `mongo`
+invocation (e.g. it's used to set parameters for SSL connection). Same as in
+internal scripts, `mongo_cmd` function, which uses `shell_args`, can be used.
 
 - `$MEMBER_ID` -- contains 'id' of the container. It is defined only in
 scripts for replication (`run-mongod-replication` command) and has different

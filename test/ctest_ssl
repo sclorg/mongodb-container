@@ -1,0 +1,40 @@
+function _ssl_test_image() {
+    local name="$1"
+
+    local CONTAINER_ARGS="${CONTAINER_ARGS:-} \
+-e MONGODB_ADMIN_PASSWORD=adminPass \
+-e MONGODB_USER=user \
+-e MONGODB_PASSWORD=password \
+-e MONGODB_DATABASE=db"
+    ADMIN_PASS=adminPass
+
+    ct_create_container $name
+    CONTAINER_IP=$(ct_get_cip ${name})
+    # mongod fails after connection with ssl, even when binded to localhost
+    # so waiting till initialization ends 
+    sleep 10
+
+    echo "    Testing connection without SSL args"
+    ! DB=db USER=user PASS=password test_connection "${name}"
+
+    local shell_args='--ssl --sslAllowInvalidCertificates --sslPEMKeyFile /opt/app-root/src/mongodb-ssl/mongodb.pem'
+
+    echo "    Testing SSL connection"
+    DB=db USER=user PASS=password test_connection "${name}"
+    shell_args=
+}
+
+function ctest_ssl() {
+    CONTAINER_ARGS=
+    echo "  Testing SSL s2i"
+    s2i build file://${TEST_DIR}/examples/ssl/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
+    IMAGE_NAME=${IMAGE_NAME}-testapp _ssl_test_image "ssl_config_s2i"
+
+    echo "  Testing SSL mount"
+    test_app_dir=$(mktemp -d)
+    cp -r ${TEST_DIR}/examples/ssl/ ${test_app_dir}/
+    chmod -R a+rX ${test_app_dir}
+    CONTAINER_ARGS="-v ${test_app_dir}/ssl/:/opt/app-root/src/:z" _ssl_test_image "ssl_config_mount"
+    rm -rf ${test_app_dir}
+    echo "  Success!"
+}

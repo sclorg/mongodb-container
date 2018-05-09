@@ -24,10 +24,10 @@ function initiate() {
   local config="{_id: '${MONGODB_REPLICA_NAME}', members: [{_id: 0, host: '${host}'}]}"
 
   info "Initiating MongoDB replica using: ${config}"
-  mongo --eval "quit(rs.initiate(${config}).ok ? 0 : 1)" --quiet
+  mongo_cmd --host localhost --quiet <<<"quit(rs.initiate(${config}).ok ? 0 : 1)"
 
   info "Waiting for PRIMARY status ..."
-  mongo --eval "while (!rs.isMaster().ismaster) { sleep(100); }" --quiet
+  mongo_cmd --host localhost --quiet <<<"while (!rs.isMaster().ismaster) { sleep(100); }"
 
   info "Successfully initialized replica set"
 }
@@ -44,13 +44,13 @@ function add_member() {
   local host="$1"
   info "Adding ${host} to replica set ..."
 
-  if ! mongo "$(replset_addr admin)" -u admin -p"${MONGODB_ADMIN_PASSWORD}" --eval "while (!rs.add('${host}').ok) { sleep(100); }" --quiet; then
+  if ! mongo_cmd "$(replset_addr admin)" -u admin -p"${MONGODB_ADMIN_PASSWORD}" --quiet <<<"while (!rs.add('${host}').ok) { sleep(100); }"; then
     info "ERROR: couldn't add host to replica set!"
     return 1
   fi
 
   info "Waiting for PRIMARY/SECONDARY status ..."
-  mongo --eval "while (!rs.isMaster().ismaster && !rs.isMaster().secondary) { sleep(100); }" --quiet
+  mongo_cmd --host localhost --quiet <<<"while (!rs.isMaster().ismaster && !rs.isMaster().secondary) { sleep(100); }"
 
   info "Successfully joined replica set"
 }
@@ -59,7 +59,7 @@ function add_member() {
 info "Waiting for local MongoDB to accept connections  ..."
 wait_for_mongo_up &>/dev/null
 
-if [[ $(mongo --eval 'db.isMaster().setName' --quiet) == "${MONGODB_REPLICA_NAME}" ]]; then
+if [[ $(mongo_cmd --host localhost --quiet <<<'db.isMaster().setName') == "${MONGODB_REPLICA_NAME}" ]]; then
   info "Replica set '${MONGODB_REPLICA_NAME}' already exists, skipping initialization"
   >/tmp/initialized
   exit 0
