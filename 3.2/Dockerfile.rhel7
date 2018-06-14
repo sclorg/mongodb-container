@@ -12,7 +12,7 @@ LABEL summary="$SUMMARY" \
       io.k8s.display-name="MongoDB 3.2" \
       io.openshift.expose-services="27017:mongodb" \
       io.openshift.tags="database,mongodb,rh-mongodb32" \
-      com.redhat.component="rh-mongodb32-docker" \
+      com.redhat.component="rh-mongodb32-container" \
       name="rhscl/mongodb-32-rhel7" \
       usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass rhscl/mongodb-32-rhel7" \
       version="3.2" \

@@ -12,7 +12,7 @@ LABEL summary="$SUMMARY" \
       io.k8s.display-name="MongoDB 3.4" \
       io.openshift.expose-services="27017:mongodb" \
       io.openshift.tags="database,mongodb,rh-mongodb34" \
-      com.redhat.component="rh-mongodb34-docker" \
+      com.redhat.component="rh-mongodb34-container" \
       name="centos/mongodb-34-centos7" \
       usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass centos/mongodb-34-centos7" \
       version="1" \
