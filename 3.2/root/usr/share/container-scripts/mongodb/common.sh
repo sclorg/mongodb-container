@@ -55,15 +55,15 @@ function _wait_for_mongo() {
 }
 
 function wait_for_service() {
-  for x in {1..100}; do                                                                                                                                                                                                                                                                                                    
-    test=$(dig $1 A +short +search)                                                                                                                                                                                                                                                                                 
-    if [ "$test" != "" ]; then                                                                                                                                                                                                                                                                                             
-      break                                                                                                                                                                                                                                                                                                              
-    fi                                                                                                                                                                                                                                                                                                                     
-    sleep 1; 
+  for x in {1..100}; do
+    test=$(dig $1 A +short +search)
+    if [ "$test" != "" ]; then
+      break
+    fi
+    sleep 1;
     echo "=> Waiting for $1 service"
   done
-  return 0 
+  return 0
 }
 
 # endpoints returns list of IP addresses with other instances of MongoDB
@@ -270,3 +270,8 @@ within the container or visit https://github.com/sclorgk/mongodb-container/."
 function info() {
   printf "=> [%s] %s\n" "$(date +'%a %b %d %T')" "$*"
 }
+
+## The default amount of memory allocated to the a MongoDB pod is 1Gi
+## The MONGODB_WIRED_TIGER_CACHE_SIZE defined is because of the default tiger max cache size is 1Gi which
+## will cause issues since it will use all available resource of the pod.
+export MONGODB_MAX_WIRED_TIGER_CACHE_SIZE=600M

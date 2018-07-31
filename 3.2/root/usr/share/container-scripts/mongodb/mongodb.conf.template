@@ -19,7 +19,9 @@ net:
 storage:
   # Directory for datafiles (defaults to /data/db/)
   dbPath: ${MONGODB_DATADIR}
-
+  wiredTiger:
+    engineConfig:
+      configString: cache_size=${MONGODB_MAX_WIRED_TIGER_CACHE_SIZE}
 
 # replication Options - Configures replication
 replication:
