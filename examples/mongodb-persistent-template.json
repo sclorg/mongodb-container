@@ -288,8 +288,8 @@
     {
       "name": "MONGODB_VERSION",
       "displayName": "Version of MongoDB Image",
-      "description": "Version of MongoDB image to be used (2.4, 2.6, 3.2 or latest).",
-      "value": "3.2",
+      "description": "Version of MongoDB image to be used (3.6 or latest).",
+      "value": "3.6",
       "required": true
     }
   ]
