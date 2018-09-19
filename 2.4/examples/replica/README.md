@@ -34,7 +34,7 @@ mongodb A +short +search`).
 
 ### DeploymentConfig 'mongodb'
 
-This resource defines a [deployment configuration](https://docs.openshift.org/latest/architecture/core_concepts/deployments.html#deployments-and-deployment-configurations) to manage replica set members.
+This resource defines a [deployment configuration](https://docs.okd.io/latest/architecture/core_concepts/deployments.html#deployments-and-deployment-configurations) to manage replica set members.
 Each member starts the MongoDB server without replication data. Once it is
 ready, it advertises itself to the current replica set PRIMARY, which will then
 add it to the replica set.
