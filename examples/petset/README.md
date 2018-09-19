@@ -5,7 +5,7 @@ uses a [StatefulSet](https://kubernetes.io/docs/concepts/abstractions/controller
 to manage replica set members.
 
 It is supported by an example [OpenShift
-template](https://docs.openshift.org/latest/dev_guide/templates.html) and
+template](https://docs.okd.io/latest/dev_guide/templates.html) and
 scripts that automate replica set initiation, baked in the
 [centos/mongodb-32-centos7](https://hub.docker.com/r/centos/mongodb-32-centos7/)
 image (and its RHEL variant) built from this source repository.
@@ -20,7 +20,7 @@ command.
 
 This tutorial assumes you have the `oc` tool, are logged in and have 3
 pre-created persistent volumes (or configured [persistent volume
-provisioning](https://docs.openshift.org/latest/install_config/persistent_storage/dynamically_provisioning_pvs.html)).
+provisioning](https://docs.okd.io/latest/install_config/persistent_storage/dynamically_provisioning_pvs.html)).
 
 In the context of a project where you want to create a MongoDB cluster, run
 `oc new-app` passing the template file as an argument:
