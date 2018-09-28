@@ -27,4 +27,4 @@ storage:
 replication:
   # Specifies a maximum size in megabytes for the replication operation log (i.e. the oplog,
   # 5% of disk space by default)
-  oplogSizeMB: 64
+#  oplogSizeMB: 64
