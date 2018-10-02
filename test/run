@@ -141,7 +141,7 @@ noprealloc = true"
 
 function ctest_s2i() {
     echo "  Testing s2i usage"
-    s2i usage ${S2I_ARGS} ${IMAGE_NAME} &>/dev/null
+    ct_s2i_usage ${IMAGE_NAME} ${S2I_ARGS} &>/dev/null
 
     # Set configuration file (differs for mmapv1 storage engine)
     mv ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf ${TEST_DIR}/examples/extending-image/mongodb-cfg/mongod.conf.backup
@@ -153,7 +153,7 @@ function ctest_s2i() {
     fi
 
     echo "  Testing s2i build"
-    s2i build file://${TEST_DIR}/examples/extending-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
+    ct_s2i_build_as_df file://${TEST_DIR}/examples/extending-image/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
 
     local container_name=s2i_config_build
     IMAGE_NAME=${IMAGE_NAME}-testapp _s2i_test_image "s2i_config_build" ""

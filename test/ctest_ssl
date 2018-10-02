@@ -27,7 +27,7 @@ function _ssl_test_image() {
 function ctest_ssl() {
     CONTAINER_ARGS=
     echo "  Testing SSL s2i"
-    s2i build file://${TEST_DIR}/examples/ssl/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
+    ct_s2i_build_as_df file://${TEST_DIR}/examples/ssl/ ${IMAGE_NAME} ${IMAGE_NAME}-testapp
     IMAGE_NAME=${IMAGE_NAME}-testapp _ssl_test_image "ssl_config_s2i"
 
     echo "  Testing SSL mount"
