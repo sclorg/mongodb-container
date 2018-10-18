@@ -24,7 +24,7 @@ function setup_keyfile() {
   mongo_common_args+=" --keyFile ${MONGODB_KEYFILE_PATH}"
 }
 
-if [[ -v MEMBER_ID ]]; then
+if [[ -v MEMBER_ID || "$MONGODB_MODE" == mongos ]]; then
   # Attention: setup_keyfile may modify value of mongo_common_args!
   setup_keyfile
 fi
