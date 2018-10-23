@@ -45,7 +45,7 @@ COPY s2i/bin/ $STI_SCRIPTS_PATH
 COPY root /
 
 # Container setup
-RUN touch /etc/mongod.conf && \
+RUN : > /etc/mongod.conf && \
     mkdir -p ${HOME}/data && \
     # Set owner 'mongodb:0' and 'g+rw(x)' permission - to avoid problems running container with arbitrary UID
     /usr/libexec/fix-permissions /etc/mongod.conf ${CONTAINER_SCRIPTS_PATH}/mongod.conf.template \

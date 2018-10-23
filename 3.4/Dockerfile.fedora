@@ -2,7 +2,6 @@ FROM registry.fedoraproject.org/f26/s2i-base:latest
 
 ENV NAME=mongodb \
     VERSION=0 \
-    RELEASE=1 \
     ARCH=x86_64
 
 ENV SUMMARY="MongoDB NoSQL database server" \
@@ -14,16 +13,13 @@ container image contains programs to run mongod server."
 LABEL summary="$SUMMARY" \
       description="$DESCRIPTION" \
       io.k8s.description="$DESCRIPTION" \
-      com.redhat.component="$NAME" \
-      name="$FGC/$NAME" \
-      version="$VERSION" \
-      release="$RELEASE.$DISTTAG" \
-      architecture="$ARCH" \
-      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass $FGC/$NAME" \
-      help="help.1" \
       io.k8s.display-name="MongoDB 3.4" \
       io.openshift.expose-services="27017:mongodb" \
       io.openshift.tags="database,mongodb" \
+      com.redhat.component="$NAME" \
+      name="$FGC/$NAME" \
+      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass $FGC/$NAME" \
+      version="$VERSION" \
       maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
 ENV MONGODB_VERSION=3.4 \
