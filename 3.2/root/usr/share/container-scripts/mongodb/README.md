@@ -156,6 +156,8 @@ when running `run-mongod` or `run-mongod-replication` commands contained
 
 SSL/TLS certificates used to configure MongoDB server SSL/TLS support
 
+**Notice: To allow connections from internal scripts it is required to have `localhost` specified in SAN filed of SSL certificate.**
+
 ~~~~~
 - `mongodb.pem` - file containing a public key certificate and its
 associated private key. See [upstream
