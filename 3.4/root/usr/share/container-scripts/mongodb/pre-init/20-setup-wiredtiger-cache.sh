@@ -15,10 +15,10 @@ function setup_wiredtiger_cache() {
     return 0;
   fi
 
-  cache_size=$($PYTHON -c "min=1; limit=int(($MEMORY_LIMIT_IN_BYTES / pow(2,30) - 1) * 0.6); print( min if limit < min else limit)")
-  echo "storage.wiredTiger.engineConfig.cacheSizeGB: ${cache_size}" >> ${config_file}
+  cache_size=$($PYTHON -c "min=256; limit=int(($MEMORY_LIMIT_IN_BYTES / pow(2,20) - 1024) * 0.5); print( min if limit < min else limit)")
+  echo "storage.wiredTiger.engineConfig.configString: cache_size=${cache_size}M" >> ${config_file}
 
-  info "wiredTiger cacheSizeGB set to ${cache_size}"
+  info "wiredTiger cache_size set to ${cache_size}M"
 }
 
 setup_wiredtiger_cache ${CONTAINER_SCRIPTS_PATH}/mongod.conf.template
