@@ -22,16 +22,16 @@ ctest_WT_cache() {
     DB=${database}
     ADMIN_PASS=${admin_password}
 
-    # minimum is 1G
+    # minimum is 256MB
     CONTAINER_ARGS="$common_arguments -m 200M"
     ct_create_container "${name}_200M"
     test_connection ${name}_200M
-    mongo_admin_cmd "if (db.serverStatus()['wiredTiger']['cache']['maximum bytes configured'] == Math.pow(2,30)){quit(0)}; quit(1)"
-    # if greater that 1G, use 60% of (RAM - 1G)
+    mongo_admin_cmd "if (db.serverStatus()['wiredTiger']['cache']['maximum bytes configured'] == 256*Math.pow(2,20)){quit(0)}; quit(1)"
+    # if greater that 256MB, use 50% of (RAM - 1G)
     CONTAINER_ARGS="$common_arguments -m 6G"
     ct_create_container "${name}_6G"
     test_connection ${name}_6G
-    mongo_admin_cmd "if (db.serverStatus()['wiredTiger']['cache']['maximum bytes configured'] == 3*Math.pow(2,30)){quit(0)}; quit(1)"
+    mongo_admin_cmd "if (db.serverStatus()['wiredTiger']['cache']['maximum bytes configured'] == 2.5*Math.pow(2,30)){quit(0)}; quit(1)"
 
     echo "  Success!"
     echo
