@@ -62,12 +62,14 @@ Optionally you can provide settings for user with 'readWrite' role.
 
 
 
-The following environment variables influence the MongoDB configuration file.
+The following environment variables influence the MongoDB default configuration file.
 They are all optional.
 
-**`MONGODB_QUIET (default: true)`**  
+**`MONGODB_QUIET (default: true)`**
        Runs MongoDB in a quiet mode that attempts to limit the amount of output.
 
+**`WIREDTIGER_CACHE_SIZE`**
+       Size of WiredTiger cache (value for `cache_size` configString option).
 
 
 You can also set the following mount points by passing the `-v
