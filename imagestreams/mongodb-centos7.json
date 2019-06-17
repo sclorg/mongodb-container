@@ -69,7 +69,7 @@
           "openshift.io/provider-display-name": "Red Hat, Inc.",
           "description": "Provides a MongoDB 3.2 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mongodb-container/tree/master/3.2/README.md.",
           "iconClass": "icon-mongodb",
-          "tags": "database,mongodb",
+          "tags": "hidden,database,mongodb",
           "version": "3.2"
         },
         "from": {
