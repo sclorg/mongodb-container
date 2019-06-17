@@ -16,7 +16,6 @@ For more information about concepts used in these container images, see the
 Versions
 ---------------------------------
 MongoDB versions currently provided are:
-* [MongoDB 3.2](3.2)
 * [MongoDB 3.4](3.4)
 * [MongoDB 3.6](latest)
 
@@ -72,9 +71,6 @@ performed on all provided versions of MongoDB.**
 
 Usage
 ---------------------------------
-
-For information about usage of Dockerfile for MongoDB 3.2,
-see [usage documentation](3.2/).
 
 For information about usage of Dockerfile for MongoDB 3.4,
 see [usage documentation](3.4/).
