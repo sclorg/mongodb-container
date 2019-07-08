@@ -27,42 +27,6 @@
         }
       },
       {
-        "name": "2.4",
-        "annotations": {
-          "openshift.io/display-name": "MongoDB 2.4",
-          "openshift.io/provider-display-name": "Red Hat, Inc.",
-          "description": "Provides a MongoDB 2.4 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mongodb-container/tree/master/2.4/README.md.",
-          "iconClass": "icon-mongodb",
-          "tags": "hidden,mongodb",
-          "version": "2.4"
-        },
-        "from": {
-          "kind": "DockerImage",
-          "name": "docker.io/openshift/mongodb-24-centos7:latest"
-        },
-        "referencePolicy": {
-          "type": "Local"
-        }
-      },
-      {
-        "name": "2.6",
-        "annotations": {
-          "openshift.io/display-name": "MongoDB 2.6",
-          "openshift.io/provider-display-name": "Red Hat, Inc.",
-          "description": "Provides a MongoDB 2.6 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mongodb-container/tree/master/2.6/README.md.",
-          "iconClass": "icon-mongodb",
-          "tags": "hidden,database,mongodb",
-          "version": "2.6"
-        },
-        "from": {
-          "kind": "DockerImage",
-          "name": "docker.io/centos/mongodb-26-centos7:latest"
-        },
-        "referencePolicy": {
-          "type": "Local"
-        }
-      },
-      {
         "name": "3.2",
         "annotations": {
           "openshift.io/display-name": "MongoDB 3.2",
