@@ -38,7 +38,7 @@ RUN yum install -y centos-release-scl && \
     INSTALL_PKGS="bind-utils gettext iproute rsync tar shadow-utils v8314 rh-mongodb26-mongodb rh-mongodb26 groff-base" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
-    yum clean all
+    yum -y clean all --enablerepo='*'
 
 COPY s2i/bin/ $STI_SCRIPTS_PATH
  
