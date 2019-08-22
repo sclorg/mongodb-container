@@ -26,7 +26,7 @@ In the context of a project where you want to create a MongoDB cluster, run
 `oc new-app` passing the template file as an argument:
 
 ```bash
-oc new-app https://raw.githubusercontent.com/sclorg/mongodb-container/master/examples/petset/mongodb-statefulset-persistent.yaml
+oc new-app https://raw.githubusercontent.com/sclorg/mongodb-container/master/examples/statefulset/mongodb-statefulset-persistent.yaml
 ```
 
 The command above will create a MongoDB cluster with 3 replica set members.
