@@ -33,7 +33,7 @@ EXPOSE 27017
 ENTRYPOINT ["container-entrypoint"]
 CMD ["run-mongod"]
 
-RUN INSTALL_PKGS="bind-utils gettext iproute rsync tar hostname findutils shadow-utils mongodb mongodb-server mongo-tools groff-base" && \
+RUN INSTALL_PKGS="bind-utils gettext iproute rsync tar hostname findutils mongodb mongodb-server mongo-tools groff-base" && \
     dnf install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     dnf clean all
