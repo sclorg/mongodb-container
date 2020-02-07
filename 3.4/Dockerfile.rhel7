@@ -37,7 +37,7 @@ CMD ["run-mongod"]
 
 RUN yum install -y yum-utils && \
     prepare-yum-repositories rhel-server-rhscl-7-rpms && \
-    INSTALL_PKGS="bind-utils gettext iproute rsync tar hostname rh-mongodb34-mongodb rh-mongodb34 rh-mongodb34-mongo-tools groff-base" && \
+    INSTALL_PKGS="bind-utils gettext iproute rsync tar hostname rh-mongodb34-mongodb rh-mongodb34 rh-mongodb34-mongo-tools rh-mongodb34-syspaths groff-base" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum -y clean all --enablerepo='*'
