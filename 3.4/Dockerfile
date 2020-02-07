@@ -35,7 +35,7 @@ ENTRYPOINT ["container-entrypoint"]
 CMD ["run-mongod"]
 
 RUN yum install -y centos-release-scl && \
-    INSTALL_PKGS="bind-utils gettext iproute rsync tar rh-mongodb34-mongodb rh-mongodb34 rh-mongodb34-mongo-tools groff-base" && \
+    INSTALL_PKGS="bind-utils gettext iproute rsync tar rh-mongodb34-mongodb rh-mongodb34 rh-mongodb34-mongo-tools rh-mongodb34-syspaths groff-base" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum -y clean all --enablerepo='*'
