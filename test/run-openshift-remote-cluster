@@ -24,7 +24,13 @@ export CT_SKIP_NEW_PROJECT=true
 export CT_SKIP_UPLOAD_IMAGE=true
 export CT_NAMESPACE=openshift
 
-test_mongodb_integration mongodb ${VERSION} "${IMAGE_NAME}"
+# Check the template
+test_mongodb_integration "${IMAGE_NAME}" ${VERSION} mongodb
+
+# Check the imagestream
+test_mongodb_imagestream
 
 OS_TESTSUITE_RESULT=0
+
+# vim: set tabstop=2:shiftwidth=2:expandtab:
 
