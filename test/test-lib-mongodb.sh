@@ -13,9 +13,7 @@ source ${THISDIR}/test-lib-openshift.sh
 
 function test_mongodb_integration() {
   local image_name=$1
-  local VERSION=$2
-  local service_name=$3
-  local image_tagged="${service_name}:${VERSION}"
+  local service_name=mongodb
   ct_os_template_exists mongodb-ephemeral && t=mongodb-ephemeral || t=mongodb-persistent
   ct_os_test_template_app_func "${image_name}" \
                                "${t}" \
