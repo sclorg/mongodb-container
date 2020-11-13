@@ -16,7 +16,6 @@ For more information about concepts used in these container images, see the
 Versions
 ---------------------------------
 MongoDB versions currently provided are:
-* [MongoDB 3.4](3.4)
 * [MongoDB 3.6](latest)
 
 RHEL versions currently supported are:
@@ -71,9 +70,6 @@ performed on all provided versions of MongoDB.**
 
 Usage
 ---------------------------------
-
-For information about usage of Dockerfile for MongoDB 3.4,
-see [usage documentation](3.4/).
 
 For information about usage of Dockerfile for MongoDB 3.6,
 see [usage documentation](latest/).
