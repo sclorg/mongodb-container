@@ -1,4 +1,4 @@
-FROM centos/s2i-core-centos7
+FROM quay.io/centos7/s2i-core-centos7
 
 ENV SUMMARY="MongoDB NoSQL database server" \
     DESCRIPTION="MongoDB (from humongous) is a free and open-source \
@@ -13,8 +13,8 @@ LABEL summary="$SUMMARY" \
       io.openshift.expose-services="27017:mongodb" \
       io.openshift.tags="database,mongodb,rh-mongodb36" \
       com.redhat.component="rh-mongodb36-container" \
-      name="centos/mongodb-36-centos7" \
-      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass centos/mongodb-36-centos7" \
+      name="centos7/mongodb-36-centos7" \
+      usage="docker run -d -e MONGODB_ADMIN_PASSWORD=my_pass quay.io/centos7/mongodb-36-centos7" \
       version="1" \
       maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 

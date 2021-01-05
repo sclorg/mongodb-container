@@ -1,12 +1,12 @@
 MongoDB 3.6 NoSQL Database Server container image
-====================
+=================================================
 
 This repository contains Dockerfiles for MongoDB images for general usage and OpenShift.
 Users can choose between RHEL and CentOS based images.
 The RHEL image is available in the [Red Hat Container Catalog](https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/mongodb-36-rhel7)
 as registry.access.redhat.com/rhscl/mongodb-36-rhel7.
-The CentOS image is then available on [Docker Hub](https://hub.docker.com/r/centos/mongodb-36-centos7/)
-as centos/mongodb-36-centos7.
+The CentOS image is then available on [Quay.io](https://quay.io/organization/centos7)
+as centos7/mongodb-36-centos7.
 
 
 Description
@@ -86,7 +86,7 @@ inside the container.**
 
 
 MongoDB admin user
----------------------------------
+------------------
 
 The admin user name is set to `admin` and you have to to specify the password by
 setting the `MONGODB_ADMIN_PASSWORD` environment variable.
@@ -98,7 +98,7 @@ reference](https://docs.mongodb.com/manual/reference/built-in-roles/)).
 
 
 Optional unprivileged user
----------------------------------
+--------------------------
 
 The user with `$MONGODB_USER` name is created in database `$MONGODB_DATABASE`
 and you have to to specify the password by setting the `MONGODB_PASSWORD`
@@ -108,7 +108,7 @@ This user has only 'readWrite' role in the database.
 
 
 Changing passwords
----------------------------------
+------------------
 
 Since passwords are part of the image configuration, the only supported method
 to change passwords for the database user (`MONGODB_USER`) and admin user is
@@ -122,7 +122,7 @@ the environment variables.
 
 
 Extending image
----------------------------------
+---------------
 
 This image can be extended using
 [source-to-image](https://github.com/openshift/source-to-image).
