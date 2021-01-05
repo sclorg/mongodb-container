@@ -1,5 +1,7 @@
 MongoDB container images
-=====================
+========================
+
+MongoDB 3.6 status: [![Docker Repository on Quay](https://quay.io/repository/centos7/mongodb-36-centos7/status "Docker Repository on Quay")](https://quay.io/repository/centos7/mongodb-36-centos7)
 
 This repository contains Dockerfiles for MongoDB images for OpenShift.
 Users can choose between RHEL, Fedora and CentOS based images.
@@ -14,7 +16,7 @@ For more information about concepts used in these container images, see the
 
 
 Versions
----------------------------------
+--------
 MongoDB versions currently provided are:
 * [MongoDB 3.6](latest)
 
@@ -26,7 +28,7 @@ CentOS versions currently supported are:
 
 
 Installation
----------------------------------
+------------
 Choose either the CentOS7 or RHEL7 based image:
 
 *  **RHEL7 based image**
@@ -52,7 +54,7 @@ Choose either the CentOS7 or RHEL7 based image:
     This image is available on DockerHub. To download it run:
 
     ```
-    $ docker pull centos/mongodb-36-centos7
+    $ docker pull quay.io/centos7/mongodb-36-centos7
     ```
 
     To build a MongoDB image from scratch run:
@@ -69,13 +71,13 @@ performed on all provided versions of MongoDB.**
 
 
 Usage
----------------------------------
+-----
 
 For information about usage of Dockerfile for MongoDB 3.6,
 see [usage documentation](latest/).
 
 Test
----------------------------------
+----
 
 This repository also provides a test framework which checks basic
 functionality of the MongoDB image.
