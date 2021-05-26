@@ -1,7 +1,7 @@
 # Variables are documented in hack/build.sh.
 BASE_IMAGE_NAME = mongodb
-VERSIONS = 3.6
-OPENSHIFT_NAMESPACES = 2.4
+VERSIONS =
+OPENSHIFT_NAMESPACES =
 
 # HACK:  Ensure that 'git pull' for old clones doesn't cause confusion.
 # New clones should use '--recursive'.
