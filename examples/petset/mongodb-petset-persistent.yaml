@@ -103,7 +103,7 @@ objects:
         name: "${MONGODB_SERVICE_NAME}"
 
   - kind: StatefulSet
-    apiVersion: apps/v1beta1
+    apiVersion: apps/v1
     metadata:
       name: "${MONGODB_SERVICE_NAME}"
     spec:
